@@ -17,6 +17,7 @@ pub(all) enum Value {
   Bool(Bool)
   Null
   Arr(Array[Value])
+  Map(Map[String, Value])
 } derive(Eq, Debug)
 
 ///|
@@ -123,39 +124,76 @@ pub fn DB::set(self : DB, key : String, value : Value, ttl? : Int) -> Unit {
 }
 
 ///|
-/// 获取键值。
+/// 获取键值。若键已过期（TTL <= clock），自动清理并返回 None，触发 Expire 事件。
 pub fn DB::get(self : DB, key : String) -> Value? {
   guard self.data.get(key) is Some(entry) else { return None }
+  if self.is_expired(entry) {
+    self.do_expire(key, entry.value)
+    return None
+  }
   Some(entry.value)
 }
 
 ///|
-/// 删除键，触发 Delete 事件。返回被删除的值（键不存在时为 None）。
+/// 删除键，触发 Delete 事件。返回被删除的值（键不存在或已过期时为 None）。
 pub fn DB::delete(self : DB, key : String) -> Value? {
   guard self.data.get(key) is Some(entry) else { return None }
+  if self.is_expired(entry) {
+    self.do_expire(key, entry.value)
+    return None
+  }
   self.data.remove(key)
   self.notify(key, Event::Delete(key, entry.value))
   Some(entry.value)
 }
 
 ///|
-/// 键是否存在。
+/// 键是否存在。已过期的键返回 false，并在检查时自动清理。
 pub fn DB::contains(self : DB, key : String) -> Bool {
-  self.data.contains(key)
+  guard self.data.get(key) is Some(entry) else { return false }
+  if self.is_expired(entry) {
+    self.do_expire(key, entry.value)
+    return false
+  }
+  true
 }
 
 ///|
-/// 键值对数量。
+/// 键值对数量。过期键在计数前被清理。
 pub fn DB::size(self : DB) -> Int {
+  let _ = self.expire_now()
   self.data.length()
 }
 
 ///|
-/// 所有键。
+/// 所有键。过期键在收集前被清理。
 pub fn DB::keys(self : DB) -> Array[String] {
+  let _ = self.expire_now()
   let out : Array[String] = []
   for k, _ in self.data {
     out.push(k)
+  }
+  out
+}
+
+///|
+/// 所有值。过期键在收集前被清理。
+pub fn DB::values(self : DB) -> Array[Value] {
+  let _ = self.expire_now()
+  let out : Array[Value] = []
+  for _, e in self.data {
+    out.push(e.value)
+  }
+  out
+}
+
+///|
+/// 所有键值对。过期键在收集前被清理。
+pub fn DB::entries(self : DB) -> Array[(String, Value)] {
+  let _ = self.expire_now()
+  let out : Array[(String, Value)] = []
+  for k, e in self.data {
+    out.push((k, e.value))
   }
   out
 }
@@ -189,6 +227,81 @@ pub fn DB::mdelete(self : DB, keys : Array[String]) -> Array[Value?] {
     out.push(self.delete(k))
   }
   out
+}
+
+///|
+/// 原子增加计数器。键不存在或过期时初始化为 0 后再加。
+/// 值不是 Int 时返回 false 且不修改。返回是否成功。
+pub fn DB::incr(self : DB, key : String, delta? : Int) -> Bool {
+  let d = match delta {
+    Some(x) => x
+    None => 1
+  }
+  let cur = self.get(key)
+  match cur {
+    Some(Value::Int(n)) => {
+      self.set(key, Value::Int(n + d))
+      true
+    }
+    None => {
+      self.set(key, Value::Int(d))
+      true
+    }
+    _ => false
+  }
+}
+
+///|
+/// 原子减少计数器。等价于 incr(key, -delta)。
+pub fn DB::decr(self : DB, key : String, delta? : Int) -> Bool {
+  let d = match delta {
+    Some(x) => -x
+    None => -1
+  }
+  self.incr(key, delta=d)
+}
+
+///|
+/// 重置键的过期时间为 ttl（ttl<=0 表示永不过期）。键不存在或已过期时返回 false。
+pub fn DB::touch(self : DB, key : String, ttl : Int) -> Bool {
+  guard self.data.get(key) is Some(entry) else { return false }
+  if self.is_expired(entry) {
+    self.do_expire(key, entry.value)
+    return false
+  }
+  let new_expires = if ttl > 0 { Some(self.clock + ttl) } else { None }
+  self.data.set(key, { value: entry.value, expires_at: new_expires, })
+  true
+}
+
+///|
+/// 移除键的 TTL，使其永不过期。键不存在或已过期时返回 false。
+pub fn DB::persist(self : DB, key : String) -> Bool {
+  self.touch(key, 0)
+}
+
+///|
+/// 清空所有键和订阅者。对每个存在的键触发 Delete 事件（TTL 永不过期的也触发 Delete，不是 Expire）。
+pub fn DB::clear(self : DB) -> Unit {
+  let ks = self.keys()
+  for k in ks {
+    let _ = self.delete(k)
+  }
+}
+
+///|
+/// 仅在键不存在（或已过期）时设置值。返回是否成功设置。
+pub fn DB::setnx(self : DB, key : String, value : Value, ttl? : Int) -> Bool {
+  match self.get(key) {
+    Some(_) => false
+    None => {
+      match ttl {
+        Some(t) => self.set(key, value, ttl=t)
+        None => self.set(key, value)
+      }
+      true
+    }
+  }
 }
 
 ///|
@@ -332,6 +445,19 @@ pub fn Value::to_string(self : Value) -> String {
         s = s + v.to_string()
       }
       s + "]"
+    }
+    Map(m) => {
+      let mut s = "{"
+      let mut first = true
+      for k, v in m {
+        if first {
+          first = false
+        } else {
+          s = s + ", "
+        }
+        s = s + k + "=" + v.to_string()
+      }
+      s + "}"
     }
   }
 }

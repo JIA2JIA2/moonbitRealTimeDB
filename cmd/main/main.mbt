@@ -4,7 +4,10 @@
 /// - `moon run cmd/main -- "cmd1" "cmd2" ...`：逐条执行命令。
 ///
 /// 命令：
-///   set <k> <v> [ttl]   get <k>   del <k>   keys   size   clock   snapshot
+///   set <k> <v> [ttl]   setnx <k> <v> [ttl]
+///   get <k>   del <k>   incr <k> [delta]   decr <k> [delta]
+///   keys   size   clock   entries   snapshot   clear
+///   touch <k> <ttl>   persist <k>
 ///   watch <k>   watchp <prefix>   watchall   unwatch <id>
 ///   advance <n>   expire   help   quit
 fn main {
@@ -149,6 +152,74 @@ fn run_command(db : @db.DB, line : String) -> Bool {
       }
       true
     }
+    "entries" => {
+      for (k, v) in db.entries() {
+        println("    \{k} = \{v.to_string()}")
+      }
+      true
+    }
+    "setnx" => {
+      guard tokens.length() >= 3 else {
+        println("  usage: setnx <key> <value> [ttl]")
+        return true
+      }
+      let k = tokens[1]
+      let v = parse_value(tokens[2])
+      let ok = if tokens.length() >= 4 {
+        db.setnx(k, v, ttl=parse_int_or(tokens[3], 0))
+      } else {
+        db.setnx(k, v)
+      }
+      println("  setnx=\{ok}")
+      true
+    }
+    "incr" => {
+      guard tokens.length() >= 2 else {
+        println("  usage: incr <key> [delta]")
+        return true
+      }
+      let ok = if tokens.length() >= 3 {
+        db.incr(tokens[1], delta=parse_int_or(tokens[2], 1))
+      } else {
+        db.incr(tokens[1])
+      }
+      println("  incr=\{ok}")
+      true
+    }
+    "decr" => {
+      guard tokens.length() >= 2 else {
+        println("  usage: decr <key> [delta]")
+        return true
+      }
+      let ok = if tokens.length() >= 3 {
+        db.decr(tokens[1], delta=parse_int_or(tokens[2], 1))
+      } else {
+        db.decr(tokens[1])
+      }
+      println("  decr=\{ok}")
+      true
+    }
+    "touch" => {
+      guard tokens.length() >= 3 else {
+        println("  usage: touch <key> <ttl>")
+        return true
+      }
+      println("  touch=\{db.touch(tokens[1], parse_int_or(tokens[2], 0))}")
+      true
+    }
+    "persist" => {
+      guard tokens.length() >= 2 else {
+        println("  usage: persist <key>")
+        return true
+      }
+      println("  persist=\{db.persist(tokens[1])}")
+      true
+    }
+    "clear" => {
+      db.clear()
+      println("  ok")
+      true
+    }
     "help" => {
       print_help()
       true
@@ -216,8 +287,10 @@ fn parse_int_or(s : String, default : Int) -> Int {
 ///|
 fn print_help() -> Unit {
   println("  commands:")
-  println("    set <k> <v> [ttl]   get <k>   del <k>")
-  println("    keys   size   clock   snapshot")
+  println("    set <k> <v> [ttl]   setnx <k> <v> [ttl]")
+  println("    get <k>   del <k>   incr <k> [delta]   decr <k> [delta]")
+  println("    keys   size   clock   entries   snapshot   clear")
+  println("    touch <k> <ttl>   persist <k>")
   println("    watch <k>   watchp <prefix>   watchall   unwatch <id>")
   println("    advance <n>   expire   quit   help")
   println(

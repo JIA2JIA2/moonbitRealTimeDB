@@ -20,19 +20,27 @@ pub struct DB {
   mut clock : Int
 }
 pub fn DB::advance(Self, Int) -> Int
+pub fn DB::clear(Self) -> Unit
 pub fn DB::clock(Self) -> Int
 pub fn DB::contains(Self, String) -> Bool
+pub fn DB::decr(Self, String, delta? : Int) -> Bool
 pub fn DB::delete(Self, String) -> Value?
+pub fn DB::entries(Self) -> Array[(String, Value)]
 pub fn DB::expire_now(Self) -> Int
 pub fn DB::get(Self, String) -> Value?
+pub fn DB::incr(Self, String, delta? : Int) -> Bool
 pub fn DB::keys(Self) -> Array[String]
 pub fn DB::mdelete(Self, Array[String]) -> Array[Value?]
 pub fn DB::mget(Self, Array[String]) -> Array[Value?]
 pub fn DB::mset(Self, Array[(String, Value)], ttl? : Int) -> Unit
 pub fn DB::new() -> Self
+pub fn DB::persist(Self, String) -> Bool
 pub fn DB::set(Self, String, Value, ttl? : Int) -> Unit
+pub fn DB::setnx(Self, String, Value, ttl? : Int) -> Bool
 pub fn DB::size(Self) -> Int
+pub fn DB::touch(Self, String, Int) -> Bool
 pub fn DB::unwatch(Self, Int) -> Bool
+pub fn DB::values(Self) -> Array[Value]
 pub fn DB::watch(Self, String, (Event) -> Unit) -> Int
 pub fn DB::watch_all(Self, (Event) -> Unit) -> Int
 pub fn DB::watch_prefix(Self, String, (Event) -> Unit) -> Int
@@ -54,6 +62,7 @@ pub(all) enum Value {
   Bool(Bool)
   Null
   Arr(Array[Value])
+  Map(Map[String, Value])
 } derive(Eq, @debug.Debug)
 pub fn Value::to_string(Self) -> String
 

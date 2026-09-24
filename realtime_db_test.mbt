@@ -273,3 +273,167 @@ test "clock_tracks_time" {
   let _ = db.advance(3)
   assert_eq(db.clock(), 8)
 }
+
+///|
+test "lazy_expire_on_get" {
+  // 过期未清理的键，get 时自动触发 Expire 事件并返回 None。
+  let db = @realtime_db.DB::new()
+  let events : Array[@realtime_db.Event] = []
+  let _ = db.watch_all(fn(e) { events.push(e) })
+  db.set("k", @realtime_db.Int(1), ttl=2) // clock=0, expires_at=2
+  let _ = db.advance(2) // clock=2, 触发 Expire
+  assert_eq(events.length(), 2) // Set + Expire
+  assert_true(events[1] is @realtime_db.Expire("k", @realtime_db.Int(1)))
+  assert_eq(db.get("k"), None)
+}
+
+///|
+test "lazy_expire_on_contains_and_delete" {
+  // 过期后 delete 应该触发 Expire 而非 Delete。
+  let db = @realtime_db.DB::new()
+  let events : Array[@realtime_db.Event] = []
+  let _ = db.watch_all(fn(e) { events.push(e) })
+  db.set("k", @realtime_db.Int(1), ttl=2)
+  let _ = db.advance(2)
+  assert_false(db.contains("k")) // 触发 Expire 事件
+  assert_eq(events.length(), 2) // Set + Expire
+  // 键已被清理，delete 返回 None
+  assert_eq(db.delete("k"), None)
+  assert_eq(events.length(), 2) // 没有 Delete 事件
+}
+
+///|
+test "values_and_entries" {
+  let db = @realtime_db.DB::new()
+  db.set("a", @realtime_db.Int(1))
+  db.set("b", @realtime_db.Str("x"))
+  assert_true(db.values().length() >= 2)
+  assert_true(db.entries().length() >= 2)
+}
+
+///|
+test "incr_decr" {
+  let db = @realtime_db.DB::new()
+  // 不存在的键初始化为 delta
+  assert_true(db.incr("counter"))
+  assert_eq(db.get("counter"), Some(@realtime_db.Int(1)))
+  assert_true(db.incr("counter"))
+  assert_eq(db.get("counter"), Some(@realtime_db.Int(2)))
+  assert_true(db.incr("counter", delta=5))
+  assert_eq(db.get("counter"), Some(@realtime_db.Int(7)))
+  assert_true(db.decr("counter"))
+  assert_eq(db.get("counter"), Some(@realtime_db.Int(6)))
+  assert_true(db.decr("counter", delta=3))
+  assert_eq(db.get("counter"), Some(@realtime_db.Int(3)))
+}
+
+///|
+test "incr_decr_on_non_int_fails" {
+  let db = @realtime_db.DB::new()
+  db.set("s", @realtime_db.Str("hello"))
+  assert_false(db.incr("s"))
+  assert_false(db.decr("s"))
+  assert_eq(db.get("s"), Some(@realtime_db.Str("hello"))) // 未被修改
+}
+
+///|
+test "touch_resets_ttl" {
+  let db = @realtime_db.DB::new()
+  db.set("k", @realtime_db.Int(1), ttl=2) // clock=0, expires_at=2
+  assert_true(db.touch("k", 10)) // expires_at=10
+  let _ = db.advance(5) // clock=5, 未过期
+  assert_eq(db.get("k"), Some(@realtime_db.Int(1)))
+  // 不存在的键 touch 返回 false
+  assert_false(db.touch("no_such_key", 1))
+}
+
+///|
+test "persist_removes_ttl" {
+  let db = @realtime_db.DB::new()
+  db.set("k", @realtime_db.Int(1), ttl=2)
+  assert_true(db.persist("k")) // 永不清理
+  let _ = db.advance(100) // 远超过原 TTL
+  assert_eq(db.get("k"), Some(@realtime_db.Int(1)))
+}
+
+///|
+test "clear_deletes_all" {
+  let db = @realtime_db.DB::new()
+  let events : Array[@realtime_db.Event] = []
+  let _ = db.watch_all(fn(e) { events.push(e) })
+  db.set("a", @realtime_db.Int(1))
+  db.set("b", @realtime_db.Int(2))
+  db.clear()
+  assert_eq(db.size(), 0)
+  assert_false(db.contains("a"))
+  assert_false(db.contains("b"))
+  // 2 Set + 2 Delete = 4 事件
+  assert_eq(events.length(), 4)
+}
+
+///|
+test "size_and_keys_skip_expired" {
+  // size/keys 在返回前会清理过期键，保证与 get/contains 一致。
+  let db = @realtime_db.DB::new()
+  db.set("a", @realtime_db.Int(1), ttl=2)
+  db.set("b", @realtime_db.Int(2)) // 永不过期
+  let _ = db.advance(2)
+  // get/contains 触发了 a 的 Expire
+  assert_false(db.contains("a"))
+  // size 不应包括已过期的 a
+  assert_eq(db.size(), 1)
+  assert_eq(db.keys(), ["b"])
+}
+
+///|
+test "setnx" {
+  let db = @realtime_db.DB::new()
+  // 不存在的键可以设置
+  assert_true(db.setnx("k", @realtime_db.Int(1)))
+  assert_eq(db.get("k"), Some(@realtime_db.Int(1)))
+  // 存在的键不能覆盖
+  assert_false(db.setnx("k", @realtime_db.Int(99)))
+  assert_eq(db.get("k"), Some(@realtime_db.Int(1)))
+  // setnx 也支持 ttl
+  assert_true(db.setnx("ttl_key", @realtime_db.Int(1), ttl=2))
+  let _ = db.advance(2)
+  assert_false(db.contains("ttl_key"))
+  // 过期后可以再次 setnx
+  assert_true(db.setnx("ttl_key", @realtime_db.Int(2)))
+  assert_eq(db.get("ttl_key"), Some(@realtime_db.Int(2)))
+}
+
+///|
+test "value_map_basic" {
+  let db = @realtime_db.DB::new()
+  let m = Map([
+    ("name", @realtime_db.Str("alice")),
+    ("age", @realtime_db.Int(30)),
+  ])
+  db.set("user", @realtime_db.Map(m))
+  assert_eq(db.get("user"), Some(@realtime_db.Map(m)))
+}
+
+///|
+test "value_map_to_string" {
+  let m = Map([("a", @realtime_db.Int(1)), ("b", @realtime_db.Str("x"))])
+  let s = @realtime_db.Map(m).to_string()
+  // Map 迭代顺序不确定，检查包含所有元素
+  assert_true(s.contains("a"))
+  assert_true(s.contains("1"))
+  assert_true(s.contains("b"))
+  assert_true(s.contains("x"))
+}
+
+///|
+test "value_map_nested_in_arr" {
+  let inner = Map([("k", @realtime_db.Int(42))])
+  let arr = [@realtime_db.Int(1), @realtime_db.Map(inner)]
+  assert_eq(@realtime_db.Arr(arr).to_string(), "[1, {k=42}]")
+}
+
+///|
+test "value_empty_map" {
+  let m : Map[String, @realtime_db.Value] = Map([])
+  assert_eq(@realtime_db.Map(m).to_string(), "{}")
+}

@@ -1,7 +1,0 @@
-import {
-  "moonbit/realtime_db" @db,
-  "moonbitlang/core/env",
-  "moonbitlang/core/string",
-}
-
-pkgtype(kind: "executable")
