@@ -1,0 +1,88 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit/realtime_db/persistence"
+
+import {
+  "moonbit/realtime_db",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct Lsn {
+  value : Int
+}
+pub fn Lsn::new(Int) -> Self
+pub fn Lsn::value(Self) -> Int
+
+pub(all) enum Operation {
+  Set(String, @realtime_db.Value)
+  Delete(String)
+  Begin(Int)
+  Commit(Int)
+  Rollback(Int)
+}
+pub fn Operation::to_string(Self) -> String
+
+pub struct Snapshot {
+  metadata : SnapshotMetadata
+  data : Map[String, String]
+}
+pub fn Snapshot::create(Map[String, String], Int) -> Self
+pub fn Snapshot::data(Self) -> Map[String, String]
+pub fn Snapshot::load(Map[String, String], SnapshotMetadata) -> Self
+pub fn Snapshot::metadata(Self) -> SnapshotMetadata
+
+pub struct SnapshotMetadata {
+  create_time : Int
+  size : Int
+  checksum : String
+  version : Int
+}
+pub fn SnapshotMetadata::checksum(Self) -> String
+pub fn SnapshotMetadata::create_time(Self) -> Int
+pub fn SnapshotMetadata::new(Int, Int, String, Int) -> Self
+pub fn SnapshotMetadata::size(Self) -> Int
+pub fn SnapshotMetadata::version(Self) -> Int
+
+pub struct SnapshotScheduler {
+  interval : Int
+  mut last_snapshot_time : Int
+  max_retention : Int
+  snapshots : Array[String]
+}
+pub fn SnapshotScheduler::max_retention(Self) -> Int
+pub fn SnapshotScheduler::new(Int, Int) -> Self
+pub fn SnapshotScheduler::record_snapshot(Self, String, Int) -> Unit
+pub fn SnapshotScheduler::should_snapshot(Self, Int) -> Bool
+pub fn SnapshotScheduler::snapshots(Self) -> Array[String]
+
+pub struct WAL {
+  file_path : String
+  mut current_lsn : Int
+  mut buffer : Array[WalEntry]
+  persisted : Array[WalEntry]
+  buffer_threshold : Int
+}
+pub fn WAL::append(Self, Operation, timestamp? : Int, tx_id? : Int) -> Lsn
+pub fn WAL::append_and_flush(Self, Operation, timestamp? : Int, tx_id? : Int) -> Lsn
+pub fn WAL::buffer_size(Self) -> Int
+pub fn WAL::current_lsn(Self) -> Int
+pub fn WAL::new(String, Int) -> Self
+pub fn WAL::persisted_size(Self) -> Int
+pub fn WAL::replay(Self, (Operation, Int?) -> Unit) -> Unit
+pub fn WAL::should_flush(Self) -> Bool
+pub fn WAL::sync(Self) -> Int
+
+pub struct WalEntry {
+  lsn : Lsn
+  operation : Operation
+  timestamp : Int
+  tx_id : Int?
+}
+pub fn WalEntry::to_string(Self) -> String
+
+// Type aliases
+
+// Traits

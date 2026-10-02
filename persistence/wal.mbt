@@ -16,7 +16,7 @@ pub struct Lsn {
 /// 操作类型
 pub(all) enum Operation {
   /// 设置键值
-  Set(String, Value)
+  Set(String, @realtime_db.Value)
   /// 删除键
   Delete(String)
   /// 事务开始

@@ -1,0 +1,58 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit/realtime_db/monitor"
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct Metric {
+  name : String
+  metric_type : MetricType
+  labels : Map[String, String]
+  mut value : Double
+}
+pub fn Metric::metric_type(Self) -> MetricType
+pub fn Metric::name(Self) -> String
+pub fn Metric::new(String, MetricType, Map[String, String], Double) -> Self
+pub fn Metric::to_prometheus(Self) -> String
+pub fn Metric::value(Self) -> Double
+
+pub(all) enum MetricType {
+  Counter
+  Gauge
+  Histogram
+}
+
+pub struct Metrics {
+  collection_time : Int
+  metrics : Array[Metric]
+}
+pub fn Metrics::add_metric(Self, Metric) -> Unit
+pub fn Metrics::metrics(Self) -> Array[Metric]
+pub fn Metrics::new(Int) -> Self
+
+pub struct Monitor {
+  registry : Map[String, Metric]
+  interval : Int
+}
+pub fn Monitor::collect(Self) -> Metrics
+pub fn Monitor::expose(Self) -> String
+pub fn Monitor::incr(Self, String, delta? : Double) -> Result[Unit, MonitorError]
+pub fn Monitor::interval(Self) -> Int
+pub fn Monitor::metric_count(Self) -> Int
+pub fn Monitor::new(Int) -> Self
+pub fn Monitor::observe(Self, String, Double) -> Result[Unit, MonitorError]
+pub fn Monitor::register(Self, Metric) -> Result[Unit, MonitorError]
+pub fn Monitor::set_gauge(Self, String, Double) -> Result[Unit, MonitorError]
+pub fn Monitor::unregister(Self, String) -> Result[Unit, MonitorError]
+
+pub(all) enum MonitorError {
+  Metric_Duplicate
+  Metric_Not_Found
+  Metric_Type_Mismatch
+}
+
+// Type aliases
+
+// Traits

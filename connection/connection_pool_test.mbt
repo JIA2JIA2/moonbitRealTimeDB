@@ -2,7 +2,7 @@
 
 ///|
 test "pool_create_and_reach_limit" {
-  let pool = @realtime_db.ConnectionPool::new(2)
+  let pool = @connection.ConnectionPool::new(2)
   assert_eq(pool.current_count(), 0)
   assert_eq(pool.idle_count(), 0)
   assert_eq(pool.max_connections(), 2)
@@ -17,7 +17,7 @@ test "pool_create_and_reach_limit" {
   }
   assert_eq(pool.current_count(), 2)
   // 池满且无空闲连接
-  assert_true(pool.get("c", 0) is Err(@realtime_db.Pool_Exhausted))
+  assert_true(pool.get("c", 0) is Err(@connection.Pool_Exhausted))
 
   // 连接访问器
   assert_eq(c1.addr(), "a")
@@ -27,7 +27,7 @@ test "pool_create_and_reach_limit" {
 
 ///|
 test "pool_reuse_idle_connection" {
-  let pool = @realtime_db.ConnectionPool::new(3)
+  let pool = @connection.ConnectionPool::new(3)
   let c1 = match pool.get("a", 0) {
     Ok(c) => c
     Err(_) => abort("c1")
@@ -48,7 +48,7 @@ test "pool_reuse_idle_connection" {
 
 ///|
 test "pool_double_return_is_ignored" {
-  let pool = @realtime_db.ConnectionPool::new(3)
+  let pool = @connection.ConnectionPool::new(3)
   let c1 = match pool.get("a", 0) {
     Ok(c) => c
     Err(_) => abort("c1")
@@ -60,7 +60,7 @@ test "pool_double_return_is_ignored" {
 
 ///|
 test "pool_destroys_unhealthy_on_return" {
-  let pool = @realtime_db.ConnectionPool::new(2)
+  let pool = @connection.ConnectionPool::new(2)
   let c1 = match pool.get("a", 0) {
     Ok(c) => c
     Err(_) => abort("c1")
@@ -89,7 +89,7 @@ test "pool_destroys_unhealthy_on_return" {
 ///|
 test "pool_unhealthy_idle_is_skipped" {
   // 空闲中的坏连接在 get 时被跳过并销毁
-  let pool = @realtime_db.ConnectionPool::new(1)
+  let pool = @connection.ConnectionPool::new(1)
   let c1 = match pool.get("a", 0) {
     Ok(c) => c
     Err(_) => abort("c1")
