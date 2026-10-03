@@ -1,0 +1,246 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit/realtime_db/perf_pipeline"
+
+import {
+  "moonbit/realtime_db",
+  "moonbit/realtime_db/monitor",
+  "moonbit/realtime_db/persistence",
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct BackpressureController {
+  threshold : Int
+  mut triggered : Bool
+  mut trigger_time : Int
+  mut timeout_ms : Int
+}
+pub fn BackpressureController::check(Self, Int) -> Bool
+pub fn BackpressureController::check_at(Self, Int, Int) -> Bool
+pub fn BackpressureController::is_backpressured(Self) -> Bool
+pub fn BackpressureController::is_timeout(Self, Int) -> Bool
+pub fn BackpressureController::new(Int) -> Self
+pub fn BackpressureController::reset(Self) -> Unit
+pub fn BackpressureController::set_timeout(Self, Int) -> Unit
+pub fn BackpressureController::trigger(Self) -> Unit
+pub fn BackpressureController::trigger_time(Self) -> Int
+
+pub struct BatchAggregator {
+  watchers : Map[Int, BatchWatcher]
+  watcher_buffers : Map[Int, Array[@realtime_db.Event]]
+  watcher_window_starts : Map[Int, Int]
+  config : PipelineConfig
+  mut next_watcher_id : Int
+}
+pub fn BatchAggregator::flush(Self, Int) -> Unit
+pub fn BatchAggregator::flush_due(Self, Int) -> Unit
+pub fn BatchAggregator::new(PipelineConfig) -> Self
+pub fn BatchAggregator::notify(Self, @realtime_db.Event) -> Unit
+pub fn BatchAggregator::notify_at(Self, @realtime_db.Event, Int) -> Unit
+pub fn BatchAggregator::subscribe_batch(Self, (BatchNotification) -> Unit, Int?) -> Int
+pub fn BatchAggregator::unsubscribe_batch(Self, Int) -> Unit
+
+pub struct BatchImporter {
+  mut db : @realtime_db.DB?
+  mut wal : @persistence.WAL?
+  mut mempool : MemoryPool?
+  config : PipelineConfig
+}
+pub fn BatchImporter::import_batch(Self, Array[(String, @realtime_db.Value)], Int?) -> BatchResult
+pub fn BatchImporter::new(@realtime_db.DB?, @persistence.WAL?, MemoryPool?, PipelineConfig) -> Self
+pub fn BatchImporter::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn BatchImporter::set_mempool(Self, MemoryPool?) -> Unit
+pub fn BatchImporter::set_wal(Self, @persistence.WAL?) -> Unit
+
+pub struct BatchNotification {
+  events : Array[@realtime_db.Event]
+  timestamp : Int
+  batch_id : Int
+}
+pub fn BatchNotification::batch_id(Self) -> Int
+pub fn BatchNotification::events(Self) -> Array[@realtime_db.Event]
+pub fn BatchNotification::new(Array[@realtime_db.Event], Int, Int) -> Self
+pub fn BatchNotification::timestamp(Self) -> Int
+
+pub struct BatchResult {
+  mut success_count : Int
+  mut failed_count : Int
+  failed_records : Array[(Int, String)]
+}
+pub fn BatchResult::add_failure(Self, Int, String) -> Unit
+pub fn BatchResult::add_success(Self) -> Unit
+pub fn BatchResult::failed_count(Self) -> Int
+pub fn BatchResult::failed_records(Self) -> Array[(Int, String)]
+pub fn BatchResult::merge(Self, Self) -> Unit
+pub fn BatchResult::new() -> Self
+pub fn BatchResult::success_count(Self) -> Int
+
+pub struct BatchWatcher {
+  id : Int
+  callback : (BatchNotification) -> Unit
+  window_ms : Int
+  deduplicate : Bool
+}
+pub fn BatchWatcher::new(Int, (BatchNotification) -> Unit, Int, Bool) -> Self
+
+pub(all) enum ConfigError {
+  Invalid_Batch_Size
+  Invalid_Concurrency
+  Invalid_Backpressure_Threshold
+  Invalid_Buffer_Size
+}
+
+pub struct MemoryPool {
+  free_buffers : Array[Array[Int]]
+  all_buffers : Array[Array[Int]]
+  initial_size : Int
+  max_size : Int
+  grow_factor : Double
+  mut hit_count : Int
+  mut miss_count : Int
+}
+pub fn MemoryPool::acquire_buffer(Self) -> Array[Int]
+pub fn MemoryPool::current_size(Self) -> Int
+pub fn MemoryPool::free_count(Self) -> Int
+pub fn MemoryPool::hit_count(Self) -> Int
+pub fn MemoryPool::hit_rate(Self) -> Double
+pub fn MemoryPool::miss_count(Self) -> Int
+pub fn MemoryPool::new(Int, Int, Double) -> Self
+pub fn MemoryPool::release_buffer(Self, Array[Int]) -> Unit
+
+pub struct Pipeline {
+  config : PipelineConfig
+  mut importer : BatchImporter?
+  mut streamer : StreamingProcessor?
+  mut aggregator : BatchAggregator?
+  mut monitor : PipelineMonitor?
+  mut status : PipelineStatus
+  mut mempool : MemoryPool?
+}
+pub fn Pipeline::aggregator(Self) -> BatchAggregator?
+pub fn Pipeline::importer(Self) -> BatchImporter?
+pub fn Pipeline::is_running(Self) -> Bool
+pub fn Pipeline::mempool(Self) -> MemoryPool?
+pub fn Pipeline::monitor(Self) -> PipelineMonitor?
+pub fn Pipeline::new(PipelineConfig) -> Self
+pub fn Pipeline::pause(Self) -> Unit
+pub fn Pipeline::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn Pipeline::set_wal(Self, @persistence.WAL?) -> Unit
+pub fn Pipeline::start(Self) -> Result[Unit, String]
+pub fn Pipeline::status(Self) -> PipelineStatus
+pub fn Pipeline::stop(Self) -> Unit
+pub fn Pipeline::streamer(Self) -> StreamingProcessor?
+pub fn Pipeline::unpause(Self) -> Unit
+
+pub struct PipelineConfig {
+  mut batch_size : Int
+  max_in_flight : Int
+  import_timeout : Int
+  buffer_size : Int
+  mut backpressure_threshold : Int
+  mut concurrency : Int
+  retry_count : Int
+  mut aggregate_window : Int
+  mut max_batch_size : Int
+  deduplicate : Bool
+}
+pub fn PipelineConfig::aggregate_window(Self) -> Int
+pub fn PipelineConfig::backpressure_threshold(Self) -> Int
+pub fn PipelineConfig::batch_size(Self) -> Int
+pub fn PipelineConfig::concurrency(Self) -> Int
+pub fn PipelineConfig::default() -> Self
+pub fn PipelineConfig::set_aggregate_window(Self, Int) -> Unit
+pub fn PipelineConfig::set_backpressure_threshold(Self, Int) -> Unit
+pub fn PipelineConfig::set_batch_size(Self, Int) -> Unit
+pub fn PipelineConfig::set_concurrency(Self, Int) -> Unit
+pub fn PipelineConfig::set_max_batch_size(Self, Int) -> Unit
+pub fn PipelineConfig::validate(Self) -> Result[Unit, ConfigError]
+
+pub struct PipelineMetrics {
+  mut throughput : Double
+  mut latency_p99 : Int
+  mut buffer_usage : Int
+  mut pool_hit_rate : Double
+  mut backpressure_count : Int
+}
+pub fn PipelineMetrics::backpressure_count(Self) -> Int
+pub fn PipelineMetrics::buffer_usage(Self) -> Int
+pub fn PipelineMetrics::incr_backpressure(Self) -> Unit
+pub fn PipelineMetrics::latency_p99(Self) -> Int
+pub fn PipelineMetrics::new() -> Self
+pub fn PipelineMetrics::pool_hit_rate(Self) -> Double
+pub fn PipelineMetrics::set_buffer_usage(Self, Int) -> Unit
+pub fn PipelineMetrics::set_latency_p99(Self, Int) -> Unit
+pub fn PipelineMetrics::set_pool_hit_rate(Self, Double) -> Unit
+pub fn PipelineMetrics::set_throughput(Self, Double) -> Unit
+pub fn PipelineMetrics::throughput(Self) -> Double
+
+pub struct PipelineMonitor {
+  monitor : @monitor.Monitor?
+  metrics : PipelineMetrics
+  config : PipelineConfig
+  alerts : Array[String]
+}
+pub fn PipelineMonitor::alert_count(Self) -> Int
+pub fn PipelineMonitor::alerts(Self) -> Array[String]
+pub fn PipelineMonitor::expose(Self) -> String
+pub fn PipelineMonitor::incr_backpressure(Self) -> Unit
+pub fn PipelineMonitor::metrics(Self) -> PipelineMetrics
+pub fn PipelineMonitor::new(@monitor.Monitor?, PipelineConfig) -> Self
+pub fn PipelineMonitor::record_latency(Self, Int) -> Unit
+pub fn PipelineMonitor::record_throughput(Self, Int, Int) -> Unit
+pub fn PipelineMonitor::set_buffer_usage(Self, Int) -> Unit
+pub fn PipelineMonitor::set_pool_hit_rate(Self, Double) -> Unit
+
+pub(all) enum PipelineStatus {
+  Created
+  Running
+  Paused
+  Stopped
+}
+pub fn PipelineStatus::equal(Self, Self) -> Bool
+pub fn PipelineStatus::not_equal(Self, Self) -> Bool
+pub fn PipelineStatus::to_repr(Self) -> @debug.Repr
+pub impl Eq for PipelineStatus
+pub impl @debug.Debug for PipelineStatus
+
+pub struct StreamResult {
+  mut completed : Bool
+  mut total_records : Int
+  mut success_count : Int
+  mut failed_count : Int
+  mut latency_p99 : Int
+}
+pub fn StreamResult::add_failure(Self) -> Unit
+pub fn StreamResult::add_success(Self) -> Unit
+pub fn StreamResult::completed(Self) -> Bool
+pub fn StreamResult::failed_count(Self) -> Int
+pub fn StreamResult::latency_p99(Self) -> Int
+pub fn StreamResult::new() -> Self
+pub fn StreamResult::set_completed(Self, Bool) -> Unit
+pub fn StreamResult::set_latency_p99(Self, Int) -> Unit
+pub fn StreamResult::set_total_records(Self, Int) -> Unit
+pub fn StreamResult::success_count(Self) -> Int
+pub fn StreamResult::total_records(Self) -> Int
+
+pub struct StreamingProcessor {
+  mut db : @realtime_db.DB?
+  wal : @persistence.WAL?
+  mempool : MemoryPool?
+  buffer : Array[(@realtime_db.Value, Int)]
+  backpressure : BackpressureController?
+  config : PipelineConfig
+}
+pub fn StreamingProcessor::buffer_usage(Self) -> Int
+pub fn StreamingProcessor::in_flight(Self) -> Int
+pub fn StreamingProcessor::new(@realtime_db.DB?, @persistence.WAL?, MemoryPool?, PipelineConfig) -> Self
+pub fn StreamingProcessor::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn StreamingProcessor::stream_write(Self, Array[(@realtime_db.Value, Int)]) -> StreamResult
+
+// Type aliases
+
+// Traits

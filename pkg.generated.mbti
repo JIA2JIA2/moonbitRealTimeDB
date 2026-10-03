@@ -48,7 +48,7 @@ pub fn DB::watcher_count(Self) -> Int
 
 type Entry
 
-pub enum Event {
+pub(all) enum Event {
   Set(String, Value, Value?)
   Delete(String, Value)
   Expire(String, Value)

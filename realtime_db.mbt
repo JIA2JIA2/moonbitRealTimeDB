@@ -85,7 +85,7 @@ pub extend Value with Debug::{to_repr}
 ///|
 /// 订阅事件。当数据变更时通知订阅者。
 /// 事件包含变更类型、键名、新值和旧值（如果有）。
-pub enum Event {
+pub(all) enum Event {
   /// 设置键值：键、新值、旧值（键此前不存在或已过期时为 None）。
   Set(String, Value, Value?)
   /// 删除键：键、被删除的值。
