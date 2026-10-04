@@ -250,8 +250,3 @@ fn BatchAggregator::internal_flush(
   }
 }
 
-///|
-/// 获取当前时间（模拟）
-fn get_current_time() -> Int {
-  0 // 实际实现应使用系统时间
-}

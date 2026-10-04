@@ -57,6 +57,18 @@ pub struct Pipeline {
   mut aggregator : BatchAggregator?
   /// 监控器
   mut monitor : PipelineMonitor?
+  /// 压缩处理器
+  mut compressor : CompressionProcessor?
+  /// 转换引擎
+  mut transformer : TransformEngine?
+  /// 调度器
+  mut scheduler : PriorityScheduler?
+  /// 并行导入器
+  mut parallel_importer : ParallelImporter?
+  /// 自适应控制器
+  mut adaptive_controller : AdaptiveController?
+  /// 零拷贝读取器
+  mut zero_copy_reader : ZeroCopyReader?
   /// 状态
   mut status : PipelineStatus
   /// 内存池
@@ -72,6 +84,12 @@ pub fn Pipeline::new(config : PipelineConfig) -> Pipeline {
     streamer: None,
     aggregator: None,
     monitor: None,
+    compressor: None,
+    transformer: None,
+    scheduler: None,
+    parallel_importer: None,
+    adaptive_controller: None,
+    zero_copy_reader: None,
     status: Created,
     mempool: None,
   }
@@ -103,6 +121,29 @@ pub fn Pipeline::start(self : Pipeline) -> Result[Unit, String] {
       // 初始化监控器
       self.monitor = Some(PipelineMonitor::new(None, self.config))
 
+      // 初始化压缩处理器
+      let compression_config = CompressionConfig::default()
+      self.compressor = Some(CompressionProcessor::new(compression_config, self.mempool))
+
+      // 初始化转换引擎
+      let transform_config = TransformConfig::default()
+      self.transformer = Some(TransformEngine::new(transform_config))
+
+      // 初始化调度器
+      let scheduler_config = SchedulerConfig::default()
+      self.scheduler = Some(PriorityScheduler::new(scheduler_config))
+
+      // 初始化并行导入器
+      let parallel_config = ParallelImportConfig::default()
+      self.parallel_importer = Some(ParallelImporter::new(self.importer, parallel_config))
+
+      // 初始化自适应控制器
+      let adaptive_config = AdaptiveConfig::default()
+      self.adaptive_controller = Some(AdaptiveController::new(adaptive_config))
+
+      // 初始化零拷贝读取器
+      self.zero_copy_reader = Some(ZeroCopyReader::new(None, self.mempool))
+
       self.status = Running
       Ok(())
     }
@@ -120,6 +161,12 @@ pub fn Pipeline::stop(self : Pipeline) -> Unit {
   self.streamer = None
   self.aggregator = None
   self.monitor = None
+  self.compressor = None
+  self.transformer = None
+  self.scheduler = None
+  self.parallel_importer = None
+  self.adaptive_controller = None
+  self.zero_copy_reader = None
   self.mempool = None
 }
 
@@ -185,6 +232,42 @@ pub fn Pipeline::monitor(self : Pipeline) -> PipelineMonitor? {
 }
 
 ///|
+/// 获取压缩处理器
+pub fn Pipeline::compressor(self : Pipeline) -> CompressionProcessor? {
+  self.compressor
+}
+
+///|
+/// 获取转换引擎
+pub fn Pipeline::transformer(self : Pipeline) -> TransformEngine? {
+  self.transformer
+}
+
+///|
+/// 获取调度器
+pub fn Pipeline::scheduler(self : Pipeline) -> PriorityScheduler? {
+  self.scheduler
+}
+
+///|
+/// 获取并行导入器
+pub fn Pipeline::parallel_importer(self : Pipeline) -> ParallelImporter? {
+  self.parallel_importer
+}
+
+///|
+/// 获取自适应控制器
+pub fn Pipeline::adaptive_controller(self : Pipeline) -> AdaptiveController? {
+  self.adaptive_controller
+}
+
+///|
+/// 获取零拷贝读取器
+pub fn Pipeline::zero_copy_reader(self : Pipeline) -> ZeroCopyReader? {
+  self.zero_copy_reader
+}
+
+///|
 /// 获取内存池
 pub fn Pipeline::mempool(self : Pipeline) -> MemoryPool? {
   self.mempool
@@ -199,6 +282,10 @@ pub fn Pipeline::set_db(self : Pipeline, db : @realtime_db.DB?) -> Unit {
   }
   match self.streamer {
     Some(streamer) => streamer.set_db(db)
+    None => ()
+  }
+  match self.zero_copy_reader {
+    Some(reader) => reader.set_db(db)
     None => ()
   }
 }
