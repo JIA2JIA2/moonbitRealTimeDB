@@ -4,7 +4,7 @@
 
 ///|
 /// 转换动作类型
-pub enum TransformAction {
+pub(all) enum TransformAction {
   /// 重命名字段
   Rename
   /// 类型转换
@@ -17,7 +17,7 @@ pub enum TransformAction {
 
 ///|
 /// 聚合函数类型
-pub enum AggregateFunction {
+pub(all) enum AggregateFunction {
   /// 计数
   Count
   /// 求和
@@ -36,11 +36,11 @@ pub struct TransformRule {
   /// 源字段
   field : String
   /// 目标类型（可选）
-  target_type : String?
+  mut target_type : String?
   /// 目标字段名（可选）
-  target : String?
+  mut target : String?
   /// 条件（可选）
-  condition : String?
+  mut condition : String?
   /// 动作类型
   action : TransformAction
 }
@@ -51,39 +51,32 @@ pub struct TransformConfig {
   /// 转换规则列表
   rules : Array[TransformRule]
   /// 最大转换规则数
-  max_transforms : Int
+  mut max_transforms : Int
   /// 转换超时时间（毫秒）
-  transform_timeout : Int
+  mut transform_timeout : Int
 }
 
 ///|
 /// 创建默认转换配置
 pub fn TransformConfig::default() -> TransformConfig {
-  {
-    rules: [],
-    max_transforms: 10,
-    transform_timeout: 5000,
-  }
+  { rules: [], max_transforms: 10, transform_timeout: 5000, }
 }
 
 ///|
 /// 创建转换规则
 pub fn TransformRule::new(
   field : String,
-  action : TransformAction
+  action : TransformAction,
 ) -> TransformRule {
-  {
-    field,
-    target_type: None,
-    target: None,
-    condition: None,
-    action,
-  }
+  { field, target_type: None, target: None, condition: None, action, }
 }
 
 ///|
 /// 设置目标类型
-pub fn TransformRule::set_target_type(self : TransformRule, target_type : String) -> Unit {
+pub fn TransformRule::set_target_type(
+  self : TransformRule,
+  target_type : String,
+) -> Unit {
   self.target_type = Some(target_type)
 }
 
@@ -95,19 +88,27 @@ pub fn TransformRule::set_target(self : TransformRule, target : String) -> Unit 
 
 ///|
 /// 设置条件
-pub fn TransformRule::set_condition(self : TransformRule, condition : String) -> Unit {
+pub fn TransformRule::set_condition(
+  self : TransformRule,
+  condition : String,
+) -> Unit {
   self.condition = Some(condition)
 }
 
 ///|
 /// 添加转换规则
-pub fn TransformConfig::add_rule(self : TransformConfig, rule : TransformRule) -> Unit {
+pub fn TransformConfig::add_rule(
+  self : TransformConfig,
+  rule : TransformRule,
+) -> Unit {
   self.rules.push(rule)
 }
 
 ///|
 /// 验证配置
-pub fn TransformConfig::validate(self : TransformConfig) -> Result[Unit, String] {
+pub fn TransformConfig::validate(
+  self : TransformConfig,
+) -> Result[Unit, String] {
   if self.rules.length() > self.max_transforms {
     return Err("Too many transform rules")
   }
@@ -119,13 +120,19 @@ pub fn TransformConfig::validate(self : TransformConfig) -> Result[Unit, String]
 
 ///|
 /// 设置最大转换规则数
-pub fn TransformConfig::set_max_transforms(self : TransformConfig, max : Int) -> Unit {
+pub fn TransformConfig::set_max_transforms(
+  self : TransformConfig,
+  max : Int,
+) -> Unit {
   self.max_transforms = max
 }
 
 ///|
 /// 设置转换超时时间
-pub fn TransformConfig::set_transform_timeout(self : TransformConfig, timeout : Int) -> Unit {
+pub fn TransformConfig::set_transform_timeout(
+  self : TransformConfig,
+  timeout : Int,
+) -> Unit {
   self.transform_timeout = timeout
 }
 

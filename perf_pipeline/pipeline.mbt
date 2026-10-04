@@ -123,7 +123,9 @@ pub fn Pipeline::start(self : Pipeline) -> Result[Unit, String] {
 
       // 初始化压缩处理器
       let compression_config = CompressionConfig::default()
-      self.compressor = Some(CompressionProcessor::new(compression_config, self.mempool))
+      self.compressor = Some(
+        CompressionProcessor::new(compression_config, self.mempool),
+      )
 
       // 初始化转换引擎
       let transform_config = TransformConfig::default()
@@ -135,7 +137,9 @@ pub fn Pipeline::start(self : Pipeline) -> Result[Unit, String] {
 
       // 初始化并行导入器
       let parallel_config = ParallelImportConfig::default()
-      self.parallel_importer = Some(ParallelImporter::new(self.importer, parallel_config))
+      self.parallel_importer = Some(
+        ParallelImporter::new(self.importer, parallel_config),
+      )
 
       // 初始化自适应控制器
       let adaptive_config = AdaptiveConfig::default()

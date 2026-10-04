@@ -15,7 +15,7 @@ pub struct DataReference {
   /// 版本号
   version : Int
   /// 是否有效
-  valid : Bool
+  mut valid : Bool
 }
 
 ///|
@@ -24,9 +24,9 @@ pub struct DataReference {
 // 提供零拷贝批量读取功能。
 pub struct ZeroCopyReader {
   /// 数据库引用
-  db : @realtime_db.DB?
+  mut db : @realtime_db.DB?
   /// 内存池引用
-  mempool : MemoryPool?
+  mut mempool : MemoryPool?
   /// 引用计数
   mut ref_count : Int
 }
@@ -34,12 +34,7 @@ pub struct ZeroCopyReader {
 ///|
 /// 创建数据引用
 pub fn DataReference::new(ptr : Int, len : Int, version : Int) -> DataReference {
-  {
-    ptr,
-    len,
-    version,
-    valid: true,
-  }
+  { ptr, len, version, valid: true, }
 }
 
 ///|
@@ -74,38 +69,39 @@ pub fn DataReference::invalidate(self : DataReference) -> Unit {
 
 ///|
 /// 创建零拷贝读取器
-pub fn ZeroCopyReader::new(db : @realtime_db.DB?, mempool : MemoryPool?) -> ZeroCopyReader {
-  {
-    db,
-    mempool,
-    ref_count: 0,
-  }
+pub fn ZeroCopyReader::new(
+  db : @realtime_db.DB?,
+  mempool : MemoryPool?,
+) -> ZeroCopyReader {
+  { db, mempool, ref_count: 0, }
 }
 
 ///|
 /// 批量获取数据引用
 ///
 // 返回数据引用数组，指向原始存储区域，避免拷贝。
-pub fn ZeroCopyReader::get_batch(self : ZeroCopyReader, keys : Array[String]) -> Array[DataReference] {
+pub fn ZeroCopyReader::get_batch(
+  self : ZeroCopyReader,
+  keys : Array[String],
+) -> Array[DataReference] {
   let refs : Array[DataReference] = []
-  
+
   match self.db {
     None => return refs
-    Some(db) => {
+    Some(db) =>
       for key in keys {
         match db.get(key) {
-          Some(value) => {
+          Some(_) => {
             // 创建数据引用（模拟实现，实际应返回指向原始存储的指针）
             self.ref_count = self.ref_count + 1
-            let ref = DataReference::new(self.ref_count, 0, db.clock())
-            refs.push(ref)
+            let refer = DataReference::new(self.ref_count, 0, db.clock())
+            refs.push(refer)
           }
-          None => {}
+          None => ()
         }
       }
-    }
   }
-  
+
   refs
 }
 
@@ -113,10 +109,13 @@ pub fn ZeroCopyReader::get_batch(self : ZeroCopyReader, keys : Array[String]) ->
 /// 获取单条数据引用
 ///
 // 返回指向原始数据的引用。
-pub fn ZeroCopyReader::get_reference(self : ZeroCopyReader, key : String) -> DataReference? {
+pub fn ZeroCopyReader::get_reference(
+  self : ZeroCopyReader,
+  key : String,
+) -> DataReference? {
   match self.db {
     None => None
-    Some(db) => {
+    Some(db) =>
       match db.get(key) {
         Some(_) => {
           self.ref_count = self.ref_count + 1
@@ -124,7 +123,6 @@ pub fn ZeroCopyReader::get_reference(self : ZeroCopyReader, key : String) -> Dat
         }
         None => None
       }
-    }
   }
 }
 
@@ -132,9 +130,13 @@ pub fn ZeroCopyReader::get_reference(self : ZeroCopyReader, key : String) -> Dat
 /// 释放数据引用
 ///
 // 释放引用，验证生命周期。
-pub fn ZeroCopyReader::release_reference(self : ZeroCopyReader, ref : DataReference) -> Unit {
-  if ref.is_valid() {
-    ref.invalidate()
+pub fn ZeroCopyReader::release_reference(
+  self : ZeroCopyReader,
+  refer : DataReference,
+) -> Unit {
+  let _ = self
+  if refer.is_valid() {
+    refer.invalidate()
   }
 }
 
@@ -142,8 +144,12 @@ pub fn ZeroCopyReader::release_reference(self : ZeroCopyReader, ref : DataRefere
 /// 检查引用有效性
 ///
 // 过期引用返回错误。
-pub fn ZeroCopyReader::check_valid(self : ZeroCopyReader, ref : DataReference) -> Bool {
-  ref.is_valid()
+pub fn ZeroCopyReader::check_valid(
+  self : ZeroCopyReader,
+  refer : DataReference,
+) -> Bool {
+  let _ = self
+  refer.is_valid()
 }
 
 ///|
@@ -154,12 +160,18 @@ pub fn ZeroCopyReader::ref_count(self : ZeroCopyReader) -> Int {
 
 ///|
 /// 设置数据库
-pub fn ZeroCopyReader::set_db(self : ZeroCopyReader, db : @realtime_db.DB?) -> Unit {
+pub fn ZeroCopyReader::set_db(
+  self : ZeroCopyReader,
+  db : @realtime_db.DB?,
+) -> Unit {
   self.db = db
 }
 
 ///|
 /// 设置内存池
-pub fn ZeroCopyReader::set_mempool(self : ZeroCopyReader, mempool : MemoryPool?) -> Unit {
+pub fn ZeroCopyReader::set_mempool(
+  self : ZeroCopyReader,
+  mempool : MemoryPool?,
+) -> Unit {
   self.mempool = mempool
 }

@@ -4,7 +4,7 @@
 
 ///|
 /// 压缩格式枚举
-pub enum CompressionFormat {
+pub(all) enum CompressionFormat {
   /// Gzip 格式
   Gzip
   /// Zstd 格式
@@ -43,7 +43,9 @@ pub fn CompressionConfig::default() -> CompressionConfig {
 /// 验证配置
 ///
 /// 返回 Ok(()) 如果配置有效。
-pub fn CompressionConfig::validate(self : CompressionConfig) -> Result[Unit, String] {
+pub fn CompressionConfig::validate(
+  self : CompressionConfig,
+) -> Result[Unit, String] {
   if self.level < 1 || self.level > 9 {
     return Err("Compression level must be between 1 and 9")
   }
@@ -58,25 +60,37 @@ pub fn CompressionConfig::validate(self : CompressionConfig) -> Result[Unit, Str
 
 ///|
 /// 设置压缩格式
-pub fn CompressionConfig::set_format(self : CompressionConfig, format : CompressionFormat) -> Unit {
+pub fn CompressionConfig::set_format(
+  self : CompressionConfig,
+  format : CompressionFormat,
+) -> Unit {
   self.format = format
 }
 
 ///|
 /// 设置压缩级别
-pub fn CompressionConfig::set_level(self : CompressionConfig, level : Int) -> Unit {
+pub fn CompressionConfig::set_level(
+  self : CompressionConfig,
+  level : Int,
+) -> Unit {
   self.level = level
 }
 
 ///|
 /// 设置解压超时时间
-pub fn CompressionConfig::set_decompress_timeout(self : CompressionConfig, timeout : Int) -> Unit {
+pub fn CompressionConfig::set_decompress_timeout(
+  self : CompressionConfig,
+  timeout : Int,
+) -> Unit {
   self.decompress_timeout = timeout
 }
 
 ///|
 /// 设置最大压缩比
-pub fn CompressionConfig::set_max_compression_ratio(self : CompressionConfig, ratio : Double) -> Unit {
+pub fn CompressionConfig::set_max_compression_ratio(
+  self : CompressionConfig,
+  ratio : Double,
+) -> Unit {
   self.max_compression_ratio = ratio
 }
 

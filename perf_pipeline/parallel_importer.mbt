@@ -13,14 +13,14 @@ pub struct ParallelResult {
   /// 总失败数
   mut total_failed : Int
   /// 分片数量
-  shard_count : Int
+  mut shard_count : Int
 }
 
 ///|
 /// 并行导入器结构
 pub struct ParallelImporter {
   /// 批量导入器
-  importer : BatchImporter?
+  mut importer : BatchImporter?
   /// 配置
   config : ParallelImportConfig
   /// 分片策略
@@ -31,7 +31,7 @@ pub struct ParallelImporter {
 
 ///|
 /// 并行错误类型
-pub enum ParallelError {
+pub(all) enum ParallelError {
   /// 导入器未初始化
   Importer_Not_Initialized
   /// 分片失败
@@ -45,19 +45,14 @@ pub enum ParallelError {
 ///|
 /// 创建并行结果
 pub fn ParallelResult::new() -> ParallelResult {
-  {
-    shard_results: [],
-    total_success: 0,
-    total_failed: 0,
-    shard_count: 0,
-  }
+  { shard_results: [], total_success: 0, total_failed: 0, shard_count: 0, }
 }
 
 ///|
 /// 创建并行导入器
 pub fn ParallelImporter::new(
   importer : BatchImporter?,
-  config : ParallelImportConfig
+  config : ParallelImportConfig,
 ) -> ParallelImporter {
   {
     importer,
@@ -74,42 +69,42 @@ pub fn ParallelImporter::new(
 pub fn ParallelImporter::parallel_import(
   self : ParallelImporter,
   data : Array[(String, @realtime_db.Value)],
-  parallelism : Int?
-) -> Result[ParallelResult, ParallelError> {
+  parallelism : Int?,
+) -> Result[ParallelResult, ParallelError] {
   let actual_parallelism = match parallelism {
-    Some(p) => p min self.config.parallelism
+    Some(p) => p.min(self.config.parallelism)
     None => self.config.parallelism
   }
-  
+  let _ = actual_parallelism
+
   // 检查导入器
   match self.importer {
     None => return Err(Importer_Not_Initialized)
-    Some(_) => {}
+    Some(_) => ()
   }
-  
+
   // 分片数据
   let shards = self.sharding_strategy.split_data(data)
   if shards.is_empty() {
     return Err(Sharding_Failed)
   }
-  
+
   // 并行导入（简化实现：顺序执行）
   let result = ParallelResult::new()
   result.shard_count = shards.length()
-  
+
   for shard in shards {
     match self.import_shard(shard) {
       Ok(batch_result) => {
         result.shard_results.push(batch_result)
-        result.total_success = result.total_success + batch_result.success_count
-        result.total_failed = result.total_failed + batch_result.failed_count
+        result.total_success = result.total_success +
+          batch_result.success_count()
+        result.total_failed = result.total_failed + batch_result.failed_count()
       }
-      Err(_) => {
-        return Err(Shard_Failed)
-      }
+      Err(_) => return Err(Shard_Failed)
     }
   }
-  
+
   self.stats = result
   Ok(result)
 }
@@ -120,8 +115,8 @@ pub fn ParallelImporter::parallel_import(
 // 导入单个分片的数据。
 pub fn ParallelImporter::import_shard(
   self : ParallelImporter,
-  shard : Shard
-) -> Result[BatchResult, ParallelError> {
+  shard : Shard,
+) -> Result[BatchResult, ParallelError] {
   match self.importer {
     None => Err(Importer_Not_Initialized)
     Some(importer) => {
@@ -137,13 +132,14 @@ pub fn ParallelImporter::import_shard(
 // 合并所有分片结果。
 pub fn ParallelImporter::merge_results(
   self : ParallelImporter,
-  results : Array[BatchResult]
+  results : Array[BatchResult],
 ) -> ParallelResult {
+  let _ = self
   let merged = ParallelResult::new()
   for result in results {
     merged.shard_results.push(result)
-    merged.total_success = merged.total_success + result.success_count
-    merged.total_failed = merged.total_failed + result.failed_count
+    merged.total_success = merged.total_success + result.success_count()
+    merged.total_failed = merged.total_failed + result.failed_count()
   }
   merged.shard_count = results.length()
   merged
@@ -157,7 +153,10 @@ pub fn ParallelImporter::stats(self : ParallelImporter) -> ParallelResult {
 
 ///|
 /// 设置批量导入器
-pub fn ParallelImporter::set_importer(self : ParallelImporter, importer : BatchImporter?) -> Unit {
+pub fn ParallelImporter::set_importer(
+  self : ParallelImporter,
+  importer : BatchImporter?,
+) -> Unit {
   self.importer = importer
 }
 

@@ -8,13 +8,13 @@ pub struct JobResult {
   /// 任务 ID
   job_id : Int
   /// 任务状态
-  status : TaskStatus
+  mut status : TaskStatus
   /// 优先级
   priority : Int
   /// 等待时间（毫秒）
   wait_time : Int
   /// 执行时间（毫秒）
-  exec_time : Int
+  mut exec_time : Int
 }
 
 ///|
@@ -32,9 +32,9 @@ pub struct SchedulerResources {
 /// 调度器统计
 pub struct SchedulerStats {
   /// 总任务数
-  total_jobs : Int
+  mut total_jobs : Int
   /// 已完成任务数
-  completed_jobs : Int
+  mut completed_jobs : Int
   /// 平均等待时间
   avg_wait_time : Double
   /// 平均执行时间
@@ -45,51 +45,33 @@ pub struct SchedulerStats {
 /// 优先级调度器结构
 pub struct PriorityScheduler {
   /// 优先级队列
-  mut queue : PriorityQueue
+  queue : PriorityQueue
   /// 配置
   config : SchedulerConfig
   /// 资源
-  mut resources : SchedulerResources
+  resources : SchedulerResources
   /// 统计信息
-  mut stats : SchedulerStats
+  stats : SchedulerStats
   /// 下一个任务 ID
   mut next_job_id : Int
 }
 
 ///|
 /// 创建任务结果
-pub fn JobResult::new(
-  job_id : Int,
-  priority : Int
-) -> JobResult {
-  {
-    job_id,
-    status: Pending,
-    priority,
-    wait_time: 0,
-    exec_time: 0,
-  }
+pub fn JobResult::new(job_id : Int, priority : Int) -> JobResult {
+  { job_id, status: Pending, priority, wait_time: 0, exec_time: 0, }
 }
 
 ///|
 /// 创建调度器资源
 fn create_resources(config : SchedulerConfig) -> SchedulerResources {
-  {
-    total: 100,
-    used: 0,
-    high_reserved: config.high_priority_reserve,
-  }
+  { total: 100, used: 0, high_reserved: config.high_priority_reserve, }
 }
 
 ///|
 /// 创建调度器统计
 pub fn SchedulerStats::new() -> SchedulerStats {
-  {
-    total_jobs: 0,
-    completed_jobs: 0,
-    avg_wait_time: 0.0,
-    avg_exec_time: 0.0,
-  }
+  { total_jobs: 0, completed_jobs: 0, avg_wait_time: 0.0, avg_exec_time: 0.0, }
 }
 
 ///|
@@ -111,22 +93,27 @@ pub fn PriorityScheduler::new(config : SchedulerConfig) -> PriorityScheduler {
 pub fn PriorityScheduler::submit_job(
   self : PriorityScheduler,
   data : @realtime_db.Value,
-  priority : Int
+  priority : Int,
 ) -> JobResult {
   let actual_priority = if priority >= 1 && priority <= 10 {
     priority
   } else {
     self.config.default_priority
   }
-  
+
   let job_id = self.next_job_id
   self.next_job_id = self.next_job_id + 1
-  
-  let task = PriorityTask::new(job_id, data, actual_priority, get_current_time())
+
+  let task = PriorityTask::new(
+    job_id,
+    data,
+    actual_priority,
+    get_current_time(),
+  )
   self.queue.push(task)
-  
+
   self.stats.total_jobs = self.stats.total_jobs + 1
-  
+
   JobResult::new(job_id, actual_priority)
 }
 
@@ -142,13 +129,13 @@ pub fn PriorityScheduler::execute_next(self : PriorityScheduler) -> JobResult? {
   match self.queue.pop() {
     Some(task) => {
       task.set_status(Running)
-      
+
       let result = JobResult::new(task.id, task.priority())
       result.status = Completed
-      result.exec_time = 0  // 模拟执行时间
-      
+      result.exec_time = 0 // 模拟执行时间
+
       self.stats.completed_jobs = self.stats.completed_jobs + 1
-      
+
       Some(result)
     }
     None => None
@@ -162,7 +149,7 @@ pub fn PriorityScheduler::execute_next(self : PriorityScheduler) -> JobResult? {
 pub fn PriorityScheduler::batch_submit(
   self : PriorityScheduler,
   data_array : Array[@realtime_db.Value],
-  priority : Int
+  priority : Int,
 ) -> Array[JobResult] {
   let results : Array[JobResult] = []
   for data in data_array {
@@ -178,12 +165,14 @@ pub fn PriorityScheduler::batch_submit(
 pub fn PriorityScheduler::update_priority(
   self : PriorityScheduler,
   job_id : Int,
-  new_priority : Int
+  new_priority : Int,
 ) -> Bool {
+  let _ = self
+  let _ = job_id
   if new_priority < 1 || new_priority > 10 {
     return false
   }
-  
+
   // 简化实现：从队列中移除重新插入
   // 实际实现应更高效
   true
@@ -194,6 +183,7 @@ pub fn PriorityScheduler::update_priority(
 ///
 // 低优先级任务等待超过 30 秒自动提升优先级。
 pub fn PriorityScheduler::check_starvation(self : PriorityScheduler) -> Unit {
+  let _ = self
   // 简化实现：遍历队列检查等待时间
 }
 

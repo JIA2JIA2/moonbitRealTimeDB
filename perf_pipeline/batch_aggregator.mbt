@@ -249,4 +249,3 @@ fn BatchAggregator::internal_flush(
     None => ()
   }
 }
-

@@ -9,10 +9,62 @@ import {
 }
 
 // Values
+pub fn parse_aggregate_function(String) -> AggregateFunction?
+
+pub fn parse_compression_format(String) -> CompressionFormat?
+
+pub fn parse_transform_action(String) -> TransformAction?
 
 // Errors
 
 // Types and methods
+pub struct AdaptiveConfig {
+  mut min_batch_size : Int
+  mut max_batch_size : Int
+  mut initial_batch_size : Int
+  monitor_window : Int
+  mut adjust_interval : Int
+}
+pub fn AdaptiveConfig::default() -> Self
+pub fn AdaptiveConfig::set_adjust_interval(Self, Int) -> Unit
+pub fn AdaptiveConfig::set_initial_batch_size(Self, Int) -> Unit
+pub fn AdaptiveConfig::set_max_batch_size(Self, Int) -> Unit
+pub fn AdaptiveConfig::set_min_batch_size(Self, Int) -> Unit
+pub fn AdaptiveConfig::validate(Self) -> Result[Unit, String]
+
+pub struct AdaptiveController {
+  config : AdaptiveConfig
+  mut current_batch_size : Int
+  load_history : Array[LoadInfo]
+  mut stats : AdaptiveStats
+  mut oscillation_count : Int
+}
+pub fn AdaptiveController::adjust_batch_size(Self) -> Int
+pub fn AdaptiveController::calculate_avg_throughput(Self) -> Double
+pub fn AdaptiveController::current_batch_size(Self) -> Int
+pub fn AdaptiveController::monitor_load(Self, Double, Int, Double) -> Unit
+pub fn AdaptiveController::new(AdaptiveConfig) -> Self
+pub fn AdaptiveController::oscillation_count(Self) -> Int
+pub fn AdaptiveController::reset(Self) -> Unit
+pub fn AdaptiveController::stats(Self) -> AdaptiveStats
+
+pub struct AdaptiveStats {
+  mut current_batch_size : Int
+  mut adjust_count : Int
+  last_adjust_time : Int
+  mut avg_throughput : Double
+}
+pub fn AdaptiveStats::new(Int) -> Self
+
+pub(all) enum AggregateFunction {
+  Count
+  Sum
+  Avg
+  Max
+  Min
+}
+pub fn AggregateFunction::to_string(Self) -> String
+
 pub struct BackpressureController {
   threshold : Int
   mut triggered : Bool
@@ -87,12 +139,95 @@ pub struct BatchWatcher {
 }
 pub fn BatchWatcher::new(Int, (BatchNotification) -> Unit, Int, Bool) -> Self
 
+pub struct CompressionConfig {
+  mut format : CompressionFormat
+  mut level : Int
+  mut decompress_timeout : Int
+  mut max_compression_ratio : Double
+}
+pub fn CompressionConfig::default() -> Self
+pub fn CompressionConfig::set_decompress_timeout(Self, Int) -> Unit
+pub fn CompressionConfig::set_format(Self, CompressionFormat) -> Unit
+pub fn CompressionConfig::set_level(Self, Int) -> Unit
+pub fn CompressionConfig::set_max_compression_ratio(Self, Double) -> Unit
+pub fn CompressionConfig::validate(Self) -> Result[Unit, String]
+
+pub(all) enum CompressionError {
+  Unsupported_Format
+  Data_Corrupted
+  Compression_Bomb
+  Timeout
+  Out_Of_Memory
+}
+
+pub(all) enum CompressionFormat {
+  Gzip
+  Zstd
+  Lz4
+}
+pub fn CompressionFormat::to_string(Self) -> String
+
+pub struct CompressionProcessor {
+  config : CompressionConfig
+  mempool : MemoryPool?
+  stats : CompressionStats
+}
+pub fn CompressionProcessor::compress(Self, Array[Byte], CompressionFormat, Int?) -> Result[Array[Byte], CompressionError]
+pub fn CompressionProcessor::compress_gzip(Self, Array[Byte], Int) -> Result[Array[Byte], CompressionError]
+pub fn CompressionProcessor::compress_lz4(Self, Array[Byte], Int) -> Result[Array[Byte], CompressionError]
+pub fn CompressionProcessor::compress_zstd(Self, Array[Byte], Int) -> Result[Array[Byte], CompressionError]
+pub fn CompressionProcessor::decompress(Self, Array[Byte], CompressionFormat) -> Result[Array[Byte], CompressionError]
+pub fn CompressionProcessor::decompress_stream(Self, Array[Byte], CompressionFormat) -> Result[Array[Byte], CompressionError]
+pub fn CompressionProcessor::detect_format(Array[Byte]) -> CompressionFormat
+pub fn CompressionProcessor::new(CompressionConfig, MemoryPool?) -> Self
+pub fn CompressionProcessor::stats(Self) -> CompressionStats
+
+pub struct CompressionStats {
+  mut compressed_size : Int
+  mut original_size : Int
+  mut compression_ratio : Double
+}
+pub fn CompressionStats::compressed_size(Self) -> Int
+pub fn CompressionStats::compression_ratio(Self) -> Double
+pub fn CompressionStats::new() -> Self
+pub fn CompressionStats::original_size(Self) -> Int
+
 pub(all) enum ConfigError {
   Invalid_Batch_Size
   Invalid_Concurrency
   Invalid_Backpressure_Threshold
   Invalid_Buffer_Size
 }
+
+pub struct DataReference {
+  ptr : Int
+  len : Int
+  version : Int
+  mut valid : Bool
+}
+pub fn DataReference::invalidate(Self) -> Unit
+pub fn DataReference::is_valid(Self) -> Bool
+pub fn DataReference::len(Self) -> Int
+pub fn DataReference::new(Int, Int, Int) -> Self
+pub fn DataReference::ptr(Self) -> Int
+pub fn DataReference::version(Self) -> Int
+
+pub struct JobResult {
+  job_id : Int
+  mut status : TaskStatus
+  priority : Int
+  wait_time : Int
+  mut exec_time : Int
+}
+pub fn JobResult::new(Int, Int) -> Self
+
+pub struct LoadInfo {
+  throughput : Double
+  latency_us : Int
+  error_rate : Double
+  timestamp : Int
+}
+pub fn LoadInfo::new(Double, Int, Double, Int) -> Self
 
 pub struct MemoryPool {
   free_buffers : Array[Array[Int]]
@@ -112,29 +247,83 @@ pub fn MemoryPool::miss_count(Self) -> Int
 pub fn MemoryPool::new(Int, Int, Double) -> Self
 pub fn MemoryPool::release_buffer(Self, Array[Int]) -> Unit
 
+pub(all) enum ParallelError {
+  Importer_Not_Initialized
+  Sharding_Failed
+  Parallel_Timeout
+  Shard_Failed
+}
+
+pub struct ParallelImportConfig {
+  mut parallelism : Int
+  mut shard_size : Int
+  mut shard_timeout : Int
+}
+pub fn ParallelImportConfig::default() -> Self
+pub fn ParallelImportConfig::set_parallelism(Self, Int) -> Unit
+pub fn ParallelImportConfig::set_shard_size(Self, Int) -> Unit
+pub fn ParallelImportConfig::set_shard_timeout(Self, Int) -> Unit
+pub fn ParallelImportConfig::validate(Self) -> Result[Unit, String]
+
+pub struct ParallelImporter {
+  mut importer : BatchImporter?
+  config : ParallelImportConfig
+  sharding_strategy : ShardingStrategy
+  mut stats : ParallelResult
+}
+pub fn ParallelImporter::import_shard(Self, Shard) -> Result[BatchResult, ParallelError]
+pub fn ParallelImporter::merge_results(Self, Array[BatchResult]) -> ParallelResult
+pub fn ParallelImporter::new(BatchImporter?, ParallelImportConfig) -> Self
+pub fn ParallelImporter::parallel_import(Self, Array[(String, @realtime_db.Value)], Int?) -> Result[ParallelResult, ParallelError]
+pub fn ParallelImporter::set_importer(Self, BatchImporter?) -> Unit
+pub fn ParallelImporter::stats(Self) -> ParallelResult
+
+pub struct ParallelResult {
+  shard_results : Array[BatchResult]
+  mut total_success : Int
+  mut total_failed : Int
+  mut shard_count : Int
+}
+pub fn ParallelResult::new() -> Self
+pub fn ParallelResult::shard_count(Self) -> Int
+pub fn ParallelResult::total_failed(Self) -> Int
+pub fn ParallelResult::total_success(Self) -> Int
+
 pub struct Pipeline {
   config : PipelineConfig
   mut importer : BatchImporter?
   mut streamer : StreamingProcessor?
   mut aggregator : BatchAggregator?
   mut monitor : PipelineMonitor?
+  mut compressor : CompressionProcessor?
+  mut transformer : TransformEngine?
+  mut scheduler : PriorityScheduler?
+  mut parallel_importer : ParallelImporter?
+  mut adaptive_controller : AdaptiveController?
+  mut zero_copy_reader : ZeroCopyReader?
   mut status : PipelineStatus
   mut mempool : MemoryPool?
 }
+pub fn Pipeline::adaptive_controller(Self) -> AdaptiveController?
 pub fn Pipeline::aggregator(Self) -> BatchAggregator?
+pub fn Pipeline::compressor(Self) -> CompressionProcessor?
 pub fn Pipeline::importer(Self) -> BatchImporter?
 pub fn Pipeline::is_running(Self) -> Bool
 pub fn Pipeline::mempool(Self) -> MemoryPool?
 pub fn Pipeline::monitor(Self) -> PipelineMonitor?
 pub fn Pipeline::new(PipelineConfig) -> Self
+pub fn Pipeline::parallel_importer(Self) -> ParallelImporter?
 pub fn Pipeline::pause(Self) -> Unit
+pub fn Pipeline::scheduler(Self) -> PriorityScheduler?
 pub fn Pipeline::set_db(Self, @realtime_db.DB?) -> Unit
 pub fn Pipeline::set_wal(Self, @persistence.WAL?) -> Unit
 pub fn Pipeline::start(Self) -> Result[Unit, String]
 pub fn Pipeline::status(Self) -> PipelineStatus
 pub fn Pipeline::stop(Self) -> Unit
 pub fn Pipeline::streamer(Self) -> StreamingProcessor?
+pub fn Pipeline::transformer(Self) -> TransformEngine?
 pub fn Pipeline::unpause(Self) -> Unit
+pub fn Pipeline::zero_copy_reader(Self) -> ZeroCopyReader?
 
 pub struct PipelineConfig {
   mut batch_size : Int
@@ -208,6 +397,100 @@ pub fn PipelineStatus::to_repr(Self) -> @debug.Repr
 pub impl Eq for PipelineStatus
 pub impl @debug.Debug for PipelineStatus
 
+pub struct PriorityQueue {
+  tasks : Array[PriorityTask]
+  priorities : Array[Int]
+  timestamps : Array[Int]
+  mut size : Int
+  max_size : Int
+}
+pub fn PriorityQueue::clear(Self) -> Unit
+pub fn PriorityQueue::is_empty(Self) -> Bool
+pub fn PriorityQueue::is_full(Self) -> Bool
+pub fn PriorityQueue::new(Int) -> Self
+pub fn PriorityQueue::peek(Self) -> PriorityTask?
+pub fn PriorityQueue::pop(Self) -> PriorityTask?
+pub fn PriorityQueue::push(Self, PriorityTask) -> Unit
+pub fn PriorityQueue::remove(Self, Int) -> Bool
+pub fn PriorityQueue::size(Self) -> Int
+
+pub struct PriorityScheduler {
+  queue : PriorityQueue
+  config : SchedulerConfig
+  resources : SchedulerResources
+  stats : SchedulerStats
+  mut next_job_id : Int
+}
+pub fn PriorityScheduler::batch_submit(Self, Array[@realtime_db.Value], Int) -> Array[JobResult]
+pub fn PriorityScheduler::check_starvation(Self) -> Unit
+pub fn PriorityScheduler::execute_next(Self) -> JobResult?
+pub fn PriorityScheduler::new(SchedulerConfig) -> Self
+pub fn PriorityScheduler::queue_size(Self) -> Int
+pub fn PriorityScheduler::stats(Self) -> SchedulerStats
+pub fn PriorityScheduler::submit_job(Self, @realtime_db.Value, Int) -> JobResult
+pub fn PriorityScheduler::update_priority(Self, Int, Int) -> Bool
+
+pub struct PriorityTask {
+  id : Int
+  data : @realtime_db.Value
+  priority : Int
+  submit_time : Int
+  mut status : TaskStatus
+}
+pub fn PriorityTask::new(Int, @realtime_db.Value, Int, Int) -> Self
+pub fn PriorityTask::priority(Self) -> Int
+pub fn PriorityTask::set_status(Self, TaskStatus) -> Unit
+pub fn PriorityTask::status(Self) -> TaskStatus
+
+pub struct SchedulerConfig {
+  mut default_priority : Int
+  mut high_priority_reserve : Int
+  mut starvation_timeout : Int
+  mut max_queue_size : Int
+}
+pub fn SchedulerConfig::default() -> Self
+pub fn SchedulerConfig::set_default_priority(Self, Int) -> Unit
+pub fn SchedulerConfig::set_high_priority_reserve(Self, Int) -> Unit
+pub fn SchedulerConfig::set_max_queue_size(Self, Int) -> Unit
+pub fn SchedulerConfig::set_starvation_timeout(Self, Int) -> Unit
+pub fn SchedulerConfig::validate(Self) -> Result[Unit, String]
+
+pub struct SchedulerResources {
+  total : Int
+  used : Int
+  high_reserved : Int
+}
+
+pub struct SchedulerStats {
+  mut total_jobs : Int
+  mut completed_jobs : Int
+  avg_wait_time : Double
+  avg_exec_time : Double
+}
+pub fn SchedulerStats::completed_jobs(Self) -> Int
+pub fn SchedulerStats::new() -> Self
+pub fn SchedulerStats::total_jobs(Self) -> Int
+
+pub struct Shard {
+  id : Int
+  data : Array[(String, @realtime_db.Value)]
+  offset : Int
+  size : Int
+}
+pub fn Shard::data(Self) -> Array[(String, @realtime_db.Value)]
+pub fn Shard::new(Int, Array[(String, @realtime_db.Value)], Int, Int) -> Self
+pub fn Shard::size(Self) -> Int
+
+pub struct ShardingStrategy {
+  mut shard_size : Int
+  mut shard_count : Int
+}
+pub fn ShardingStrategy::calculate_shard_count(Self, Int) -> Int
+pub fn ShardingStrategy::new(Int) -> Self
+pub fn ShardingStrategy::set_shard_size(Self, Int) -> Unit
+pub fn ShardingStrategy::shard_count(Self) -> Int
+pub fn ShardingStrategy::split_data(Self, Array[(String, @realtime_db.Value)]) -> Array[Shard]
+
 pub struct StreamResult {
   mut completed : Bool
   mut total_records : Int
@@ -240,6 +523,92 @@ pub fn StreamingProcessor::in_flight(Self) -> Int
 pub fn StreamingProcessor::new(@realtime_db.DB?, @persistence.WAL?, MemoryPool?, PipelineConfig) -> Self
 pub fn StreamingProcessor::set_db(Self, @realtime_db.DB?) -> Unit
 pub fn StreamingProcessor::stream_write(Self, Array[(@realtime_db.Value, Int)]) -> StreamResult
+
+pub(all) enum TaskStatus {
+  Pending
+  Running
+  Paused
+  Completed
+  Failed
+}
+
+pub(all) enum TransformAction {
+  Rename
+  Cast
+  Filter
+  Aggregate
+}
+pub fn TransformAction::to_string(Self) -> String
+
+pub struct TransformConfig {
+  rules : Array[TransformRule]
+  mut max_transforms : Int
+  mut transform_timeout : Int
+}
+pub fn TransformConfig::add_rule(Self, TransformRule) -> Unit
+pub fn TransformConfig::default() -> Self
+pub fn TransformConfig::rules(Self) -> Array[TransformRule]
+pub fn TransformConfig::set_max_transforms(Self, Int) -> Unit
+pub fn TransformConfig::set_transform_timeout(Self, Int) -> Unit
+pub fn TransformConfig::validate(Self) -> Result[Unit, String]
+
+pub struct TransformEngine {
+  config : TransformConfig
+  rules : Array[TransformRule]
+  mut stats : TransformResult
+}
+pub fn TransformEngine::apply_rules(Self, @realtime_db.Value) -> Result[@realtime_db.Value, TransformError]
+pub fn TransformEngine::apply_transform_chain(Self, @realtime_db.Value) -> Result[@realtime_db.Value, TransformError]
+pub fn TransformEngine::new(TransformConfig) -> Self
+pub fn TransformEngine::reset_stats(Self) -> Unit
+pub fn TransformEngine::stats(Self) -> TransformResult
+pub fn TransformEngine::transform_batch(Self, Array[@realtime_db.Value]) -> TransformResult
+pub fn TransformEngine::transform_field(Self, @realtime_db.Value, TransformRule) -> Result[@realtime_db.Value, TransformError]
+pub fn TransformEngine::validate_output(Self, @realtime_db.Value) -> Result[Unit, TransformError]
+
+pub(all) enum TransformError {
+  Rule_Syntax_Error
+  Cast_Failed
+  Output_Field_Conflict
+  Primary_Key_Modified
+  Timeout
+}
+
+pub struct TransformResult {
+  mut success_count : Int
+  mut failed_count : Int
+  transformed_records : Array[@realtime_db.Value]
+}
+pub fn TransformResult::failed_count(Self) -> Int
+pub fn TransformResult::new() -> Self
+pub fn TransformResult::success_count(Self) -> Int
+pub fn TransformResult::transformed_records(Self) -> Array[@realtime_db.Value]
+
+pub struct TransformRule {
+  field : String
+  mut target_type : String?
+  mut target : String?
+  mut condition : String?
+  action : TransformAction
+}
+pub fn TransformRule::new(String, TransformAction) -> Self
+pub fn TransformRule::set_condition(Self, String) -> Unit
+pub fn TransformRule::set_target(Self, String) -> Unit
+pub fn TransformRule::set_target_type(Self, String) -> Unit
+
+pub struct ZeroCopyReader {
+  mut db : @realtime_db.DB?
+  mut mempool : MemoryPool?
+  mut ref_count : Int
+}
+pub fn ZeroCopyReader::check_valid(Self, DataReference) -> Bool
+pub fn ZeroCopyReader::get_batch(Self, Array[String]) -> Array[DataReference]
+pub fn ZeroCopyReader::get_reference(Self, String) -> DataReference?
+pub fn ZeroCopyReader::new(@realtime_db.DB?, MemoryPool?) -> Self
+pub fn ZeroCopyReader::ref_count(Self) -> Int
+pub fn ZeroCopyReader::release_reference(Self, DataReference) -> Unit
+pub fn ZeroCopyReader::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn ZeroCopyReader::set_mempool(Self, MemoryPool?) -> Unit
 
 // Type aliases
 

@@ -32,7 +32,9 @@ pub fn SchedulerConfig::default() -> SchedulerConfig {
 /// 验证配置
 ///
 // 返回 Ok(()) 如果配置有效。
-pub fn SchedulerConfig::validate(self : SchedulerConfig) -> Result[Unit, String] {
+pub fn SchedulerConfig::validate(
+  self : SchedulerConfig,
+) -> Result[Unit, String] {
   if self.default_priority < 1 || self.default_priority > 10 {
     return Err("Default priority must be between 1 and 10")
   }
@@ -50,24 +52,36 @@ pub fn SchedulerConfig::validate(self : SchedulerConfig) -> Result[Unit, String]
 
 ///|
 /// 设置默认优先级
-pub fn SchedulerConfig::set_default_priority(self : SchedulerConfig, priority : Int) -> Unit {
+pub fn SchedulerConfig::set_default_priority(
+  self : SchedulerConfig,
+  priority : Int,
+) -> Unit {
   self.default_priority = priority
 }
 
 ///|
 /// 设置高优先级资源预留
-pub fn SchedulerConfig::set_high_priority_reserve(self : SchedulerConfig, reserve : Int) -> Unit {
+pub fn SchedulerConfig::set_high_priority_reserve(
+  self : SchedulerConfig,
+  reserve : Int,
+) -> Unit {
   self.high_priority_reserve = reserve
 }
 
 ///|
 /// 设置饥饿超时时间
-pub fn SchedulerConfig::set_starvation_timeout(self : SchedulerConfig, timeout : Int) -> Unit {
+pub fn SchedulerConfig::set_starvation_timeout(
+  self : SchedulerConfig,
+  timeout : Int,
+) -> Unit {
   self.starvation_timeout = timeout
 }
 
 ///|
 /// 设置最大队列大小
-pub fn SchedulerConfig::set_max_queue_size(self : SchedulerConfig, size : Int) -> Unit {
+pub fn SchedulerConfig::set_max_queue_size(
+  self : SchedulerConfig,
+  size : Int,
+) -> Unit {
   self.max_queue_size = size
 }
