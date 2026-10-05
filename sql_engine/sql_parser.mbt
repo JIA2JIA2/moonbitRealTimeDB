@@ -27,7 +27,13 @@ pub(all) enum TokenType {
   Dot
   /// 文件结束
   EndOfFile
-}
+} derive(Eq, Debug)
+
+///|
+pub extend TokenType with Eq::{equal, not_equal}
+
+///|
+pub extend TokenType with Debug::{to_repr}
 
 ///|
 /// 词法标记
@@ -60,29 +66,19 @@ pub(all) struct Lexer {
 ///|
 /// 关键字列表
 pub let keywords : Array[String] = [
-  "SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "IN",
-  "BETWEEN", "LIKE", "IS", "NULL", "TRUE", "FALSE",
-  "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE",
-  "CREATE", "TABLE", "DROP", "INDEX", "PRIMARY", "KEY",
-  "UNIQUE", "CONSTRAINT", "FOREIGN", "REFERENCES",
-  "DEFAULT", "CHECK", "CASCADE", "RESTRICT",
-  "GROUP", "BY", "HAVING", "ORDER", "ASC", "DESC",
-  "LIMIT", "OFFSET", "JOIN", "LEFT", "RIGHT", "INNER",
-  "ON", "AS", "ALL", "DISTINCT", "CASE", "WHEN", "THEN",
-  "ELSE", "END", "BEGIN", "COMMIT", "ROLLBACK", "EXPLAIN",
-  "IF", "EXISTS", "NULLS", "FIRST", "LAST",
+  "SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "IN", "BETWEEN", "LIKE", "IS", "NULL",
+  "TRUE", "FALSE", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "CREATE",
+  "TABLE", "DROP", "INDEX", "PRIMARY", "KEY", "UNIQUE", "CONSTRAINT", "FOREIGN",
+  "REFERENCES", "DEFAULT", "CHECK", "CASCADE", "RESTRICT", "GROUP", "BY", "HAVING",
+  "ORDER", "ASC", "DESC", "LIMIT", "OFFSET", "JOIN", "LEFT", "RIGHT", "INNER", "ON",
+  "AS", "ALL", "DISTINCT", "CASE", "WHEN", "THEN", "ELSE", "END", "BEGIN", "COMMIT",
+  "ROLLBACK", "EXPLAIN", "IF", "EXISTS", "NULLS", "FIRST", "LAST",
 ]
 
 ///|
 /// 创建词法分析器
 pub fn Lexer::new(text : String) -> Lexer {
-  {
-    text,
-    position: 0,
-    line: 1,
-    column: 1,
-    current_token: None,
-  }
+  { text, position: 0, line: 1, column: 1, current_token: None, }
 }
 
 ///|
@@ -93,7 +89,7 @@ pub fn Lexer::next_token(self : Lexer) -> Result[Token, SqlError] {
 
   // 检查是否结束
   if self.position >= self.text.length() {
-    return Ok(Token {
+    return Ok(Token::{
       token_type: EndOfFile,
       value: "",
       line: self.line,
@@ -101,20 +97,20 @@ pub fn Lexer::next_token(self : Lexer) -> Result[Token, SqlError] {
     })
   }
 
-  let ch = self.text[self.position]
+  let ch = self.text.get_char(self.position).unwrap()
 
   // 检查标识符或关键字
-  if ch.is_alpha() or ch == '_' {
+  if ch.is_ascii_alphabetic() || ch == '_' {
     return self.read_identifier()
   }
 
   // 检查数字
-  if ch.is_digit() {
+  if ch.is_ascii_digit() {
     return self.read_number()
   }
 
   // 检查字符串
-  if ch == '\'' or ch == '"' {
+  if ch == '\'' || ch == '"' {
     return self.read_string()
   }
 
@@ -123,154 +119,239 @@ pub fn Lexer::next_token(self : Lexer) -> Result[Token, SqlError] {
     '+' => {
       self.position = self.position + 1
       self.column = self.column + 1
-      Ok(Token { token_type: Operator, value: "+", line: self.line, column: self.column - 1 })
+      Ok(Token::{
+        token_type: Operator,
+        value: "+",
+        line: self.line,
+        column: self.column - 1,
+      })
     }
     '-' => {
       // 检查注释
-      if self.position + 1 < self.text.length() and self.text[self.position + 1] == '-' {
+      if self.position + 1 < self.text.length() &&
+        self.text.get_char(self.position + 1).unwrap() == '-' {
         self.skip_comment()
         return self.next_token()
       }
       self.position = self.position + 1
       self.column = self.column + 1
-      Ok(Token { token_type: Operator, value: "-", line: self.line, column: self.column - 1 })
+      Ok(Token::{
+        token_type: Operator,
+        value: "-",
+        line: self.line,
+        column: self.column - 1,
+      })
     }
     '*' => {
       self.position = self.position + 1
       self.column = self.column + 1
-      Ok(Token { token_type: Operator, value: "*", line: self.line, column: self.column - 1 })
+      Ok(Token::{
+        token_type: Operator,
+        value: "*",
+        line: self.line,
+        column: self.column - 1,
+      })
     }
     '/' => {
       self.position = self.position + 1
       self.column = self.column + 1
-      Ok(Token { token_type: Operator, value: "/", line: self.line, column: self.column - 1 })
+      Ok(Token::{
+        token_type: Operator,
+        value: "/",
+        line: self.line,
+        column: self.column - 1,
+      })
     }
     '=' => {
       self.position = self.position + 1
       self.column = self.column + 1
-      Ok(Token { token_type: Operator, value: "=", line: self.line, column: self.column - 1 })
+      Ok(Token::{
+        token_type: Operator,
+        value: "=",
+        line: self.line,
+        column: self.column - 1,
+      })
     }
     '<' => {
       self.position = self.position + 1
-      if self.position < self.text.length() and self.text[self.position] == '=' {
+      if self.position < self.text.length() &&
+        self.text.get_char(self.position).unwrap() == '=' {
         self.position = self.position + 1
         self.column = self.column + 2
-        Ok(Token { token_type: Operator, value: "<=", line: self.line, column: self.column - 2 })
-      } else if self.position < self.text.length() and self.text[self.position] == '>' {
+        Ok(Token::{
+          token_type: Operator,
+          value: "<=",
+          line: self.line,
+          column: self.column - 2,
+        })
+      } else if self.position < self.text.length() &&
+        self.text.get_char(self.position).unwrap() == '>' {
         self.position = self.position + 1
         self.column = self.column + 2
-        Ok(Token { token_type: Operator, value: "<>", line: self.line, column: self.column - 2 })
+        Ok(Token::{
+          token_type: Operator,
+          value: "<>",
+          line: self.line,
+          column: self.column - 2,
+        })
       } else {
         self.column = self.column + 1
-        Ok(Token { token_type: Operator, value: "<", line: self.line, column: self.column - 1 })
+        Ok(Token::{
+          token_type: Operator,
+          value: "<",
+          line: self.line,
+          column: self.column - 1,
+        })
       }
     }
     '>' => {
       self.position = self.position + 1
-      if self.position < self.text.length() and self.text[self.position] == '=' {
+      if self.position < self.text.length() &&
+        self.text.get_char(self.position).unwrap() == '=' {
         self.position = self.position + 1
         self.column = self.column + 2
-        Ok(Token { token_type: Operator, value: ">=", line: self.line, column: self.column - 2 })
+        Ok(Token::{
+          token_type: Operator,
+          value: ">=",
+          line: self.line,
+          column: self.column - 2,
+        })
       } else {
         self.column = self.column + 1
-        Ok(Token { token_type: Operator, value: ">", line: self.line, column: self.column - 1 })
+        Ok(Token::{
+          token_type: Operator,
+          value: ">",
+          line: self.line,
+          column: self.column - 1,
+        })
       }
     }
     '!' => {
       self.position = self.position + 1
-      if self.position < self.text.length() and self.text[self.position] == '=' {
+      if self.position < self.text.length() &&
+        self.text.get_char(self.position).unwrap() == '=' {
         self.position = self.position + 1
         self.column = self.column + 2
-        Ok(Token { token_type: Operator, value: "!=", line: self.line, column: self.column - 2 })
+        Ok(Token::{
+          token_type: Operator,
+          value: "!=",
+          line: self.line,
+          column: self.column - 2,
+        })
       } else {
         self.column = self.column + 1
-        Ok(Token { token_type: Operator, value: "!", line: self.line, column: self.column - 1 })
+        Ok(Token::{
+          token_type: Operator,
+          value: "!",
+          line: self.line,
+          column: self.column - 1,
+        })
       }
     }
     ',' => {
       self.position = self.position + 1
       self.column = self.column + 1
-      Ok(Token { token_type: Comma, value: ",", line: self.line, column: self.column - 1 })
+      Ok(Token::{
+        token_type: Comma,
+        value: ",",
+        line: self.line,
+        column: self.column - 1,
+      })
     }
     '(' => {
       self.position = self.position + 1
       self.column = self.column + 1
-      Ok(Token { token_type: LeftParen, value: "(", line: self.line, column: self.column - 1 })
+      Ok(Token::{
+        token_type: LeftParen,
+        value: "(",
+        line: self.line,
+        column: self.column - 1,
+      })
     }
     ')' => {
       self.position = self.position + 1
       self.column = self.column + 1
-      Ok(Token { token_type: RightParen, value: ")", line: self.line, column: self.column - 1 })
+      Ok(Token::{
+        token_type: RightParen,
+        value: ")",
+        line: self.line,
+        column: self.column - 1,
+      })
     }
     ';' => {
       self.position = self.position + 1
       self.column = self.column + 1
-      Ok(Token { token_type: Semicolon, value: ";", line: self.line, column: self.column - 1 })
+      Ok(Token::{
+        token_type: Semicolon,
+        value: ";",
+        line: self.line,
+        column: self.column - 1,
+      })
     }
     '.' => {
       self.position = self.position + 1
       self.column = self.column + 1
-      Ok(Token { token_type: Dot, value: ".", line: self.line, column: self.column - 1 })
+      Ok(Token::{
+        token_type: Dot,
+        value: ".",
+        line: self.line,
+        column: self.column - 1,
+      })
     }
-    _ => Err(SqlError::Syntax_Error)
+    _ => Err(Syntax_Error)
   }
 }
 
 ///|
 /// 读取标识符
-fn Lexer::read_identifier(self : Lexer) -> Result[Token, SqlError> {
+fn Lexer::read_identifier(self : Lexer) -> Result[Token, SqlError] {
   let start = self.position
   while self.position < self.text.length() {
-    let ch = self.text[self.position]
-    if not (ch.is_alpha() or ch.is_digit() or ch == '_') {
+    let ch = self.text.get_char(self.position).unwrap()
+    if !(ch.is_ascii_alphabetic() || ch.is_ascii_digit() || ch == '_') {
       break
     }
     self.position = self.position + 1
   }
 
-  let value = self.text.slice(start, self.position)
+  let value = self.text[start:self.position].to_owned()
   self.column = self.column + (self.position - start)
 
   // 检查是否是关键字
-  let token_type = if keywords.contains(value.to_uppercase()) {
+  let token_type = if keywords.contains(value.to_upper()) {
     Keyword
   } else {
     Identifier
   }
 
-  Ok(Token {
-    token_type,
-    value,
-    line: self.line,
-    column: start + 1,
-  })
+  Ok(Token::{ token_type, value, line: self.line, column: start + 1, })
 }
 
 ///|
 /// 读取数字
-fn Lexer::read_number(self : Lexer) -> Result[Token, SqlError> {
+fn Lexer::read_number(self : Lexer) -> Result[Token, SqlError] {
   let start = self.position
-  var has_dot = false
+  let mut has_dot = false
 
   while self.position < self.text.length() {
-    let ch = self.text[self.position]
+    let ch = self.text.get_char(self.position).unwrap()
     if ch == '.' {
       if has_dot {
         break
       }
       has_dot = true
       self.position = self.position + 1
-    } else if ch.is_digit() {
+    } else if ch.is_ascii_digit() {
       self.position = self.position + 1
     } else {
       break
     }
   }
 
-  let value = self.text.slice(start, self.position)
+  let value = self.text[start:self.position].to_owned()
   self.column = self.column + (self.position - start)
 
-  Ok(Token {
+  Ok(Token::{
     token_type: NumberLiteral,
     value,
     line: self.line,
@@ -280,24 +361,25 @@ fn Lexer::read_number(self : Lexer) -> Result[Token, SqlError> {
 
 ///|
 /// 读取字符串
-fn Lexer::read_string(self : Lexer) -> Result[Token, SqlError> {
-  let quote = self.text[self.position]
+fn Lexer::read_string(self : Lexer) -> Result[Token, SqlError] {
+  let quote = self.text.get_char(self.position).unwrap()
   self.position = self.position + 1
   let start = self.position
 
-  while self.position < self.text.length() and self.text[self.position] != quote {
+  while self.position < self.text.length() &&
+        self.text.get_char(self.position).unwrap() != quote {
     self.position = self.position + 1
   }
 
   if self.position >= self.text.length() {
-    return Err(SqlError::Syntax_Error)
+    return Err(Syntax_Error)
   }
 
-  let value = self.text.slice(start, self.position)
+  let value = self.text[start:self.position].to_owned()
   self.position = self.position + 1 // 跳过结束引号
   self.column = self.column + (self.position - start) + 2
 
-  Ok(Token {
+  Ok(Token::{
     token_type: StringLiteral,
     value,
     line: self.line,
@@ -309,7 +391,7 @@ fn Lexer::read_string(self : Lexer) -> Result[Token, SqlError> {
 /// 跳过空白字符
 fn Lexer::skip_whitespace(self : Lexer) -> Unit {
   while self.position < self.text.length() {
-    let ch = self.text[self.position]
+    let ch = self.text.get_char(self.position).unwrap()
     match ch {
       ' ' | '\t' | '\r' => {
         self.position = self.position + 1
@@ -332,14 +414,15 @@ fn Lexer::skip_comment(self : Lexer) -> Unit {
   self.position = self.position + 2
 
   // 跳过直到行尾
-  while self.position < self.text.length() and self.text[self.position] != '\n' {
+  while self.position < self.text.length() &&
+        self.text.get_char(self.position).unwrap() != '\n' {
     self.position = self.position + 1
   }
 }
 
 ///|
 /// 查看下一个标记
-pub fn Lexer::peek(self : Lexer) -> Result[Token, SqlError> {
+pub fn Lexer::peek(self : Lexer) -> Result[Token, SqlError] {
   let saved_position = self.position
   let saved_line = self.line
   let saved_column = self.column
@@ -355,16 +438,23 @@ pub fn Lexer::peek(self : Lexer) -> Result[Token, SqlError> {
 
 ///|
 /// 匹配标记
-pub fn Lexer::match_token(self : Lexer, expected_type : TokenType, expected_value : String?) -> Result[Token, SqlError> {
-  let token = self.next_token()
-
-  if token is Err {
-    return Err(SqlError::Syntax_Error)
+pub fn Lexer::match_token(
+  self : Lexer,
+  expected_type : TokenType,
+  expected_value : String?,
+) -> Result[Token, SqlError] {
+  let t = match self.next_token() {
+    Ok(t) => t
+    Err(_) => return Err(Syntax_Error)
   }
 
-  let t = token?
-  if t.token_type != expected_type or (expected_value is Some and t.value != expected_value) {
-    return Err(SqlError::Syntax_Error)
+  let value_matches = match expected_value {
+    Some(value) => t.value == value
+    None => true
+  }
+
+  if t.token_type != expected_type || !value_matches {
+    return Err(Syntax_Error)
   }
 
   Ok(t)
@@ -382,273 +472,405 @@ pub(all) struct Parser {
 ///|
 /// 创建解析器
 pub fn Parser::new(lexer : Lexer) -> Parser {
-  {
-    lexer,
-    current_token: None,
+  { lexer, current_token: None, }
+}
+
+///|
+/// 前进到下一个标记
+fn Parser::advance(self : Parser) -> Result[Unit, SqlError] {
+  match self.lexer.next_token() {
+    Ok(token) => {
+      self.current_token = Some(token)
+      Ok(())
+    }
+    Err(error) => Err(error)
+  }
+}
+
+///|
+/// 当前标记是否为指定关键字（大小写不敏感）
+fn Parser::is_keyword(self : Parser, keyword : String) -> Bool {
+  match self.current_token {
+    Some(token) => token.value.to_upper() == keyword
+    None => false
+  }
+}
+
+///|
+/// 当前标记是否为指定值
+fn Parser::is_value(self : Parser, value : String) -> Bool {
+  match self.current_token {
+    Some(token) => token.value == value
+    None => false
   }
 }
 
 ///|
 /// 解析 SQL
-pub fn Parser::parse(self : Parser) -> Result[SqlStatement, SqlError> {
+pub fn Parser::parse(self : Parser) -> Result[SqlStatement, SqlError] {
   // 获取第一个标记
-  self.current_token = self.lexer.next_token()
+  match self.advance() {
+    Ok(_) => ()
+    Err(e) => return Err(e)
+  }
 
-  // 解析语句
-  let token = self.current_token?
+  let token = match self.current_token {
+    Some(t) => t
+    None => return Err(Syntax_Error)
+  }
 
-  match token.value.to_uppercase() {
+  match token.value.to_upper() {
     "SELECT" => self.parse_select()
-    "INSERT" => self.parse_insert()
-    "UPDATE" => self.parse_update()
-    "DELETE" => self.parse_delete()
-    "CREATE" => self.parse_create()
-    "DROP" => self.parse_drop()
-    "BEGIN" => self.parse_begin()
-    "COMMIT" => self.parse_commit()
-    "ROLLBACK" => self.parse_rollback()
-    "EXPLAIN" => self.parse_explain()
-    _ => Err(SqlError::Syntax_Error)
+    "INSERT" => Ok(self.parse_insert())
+    "UPDATE" => Ok(self.parse_update())
+    "DELETE" => Ok(self.parse_delete())
+    "CREATE" => Ok(self.parse_create())
+    "DROP" => Ok(self.parse_drop())
+    "BEGIN" => Ok(self.parse_begin())
+    "COMMIT" => Ok(self.parse_commit())
+    "ROLLBACK" => Ok(self.parse_rollback())
+    "EXPLAIN" => Ok(self.parse_explain())
+    _ => Err(Syntax_Error)
   }
 }
 
 ///|
 /// 解析 SELECT 语句
-fn Parser::parse_select(self : Parser) -> Result[SqlStatement, SqlError> {
+fn Parser::parse_select(self : Parser) -> Result[SqlStatement, SqlError] {
   // 跳过 SELECT
-  self.current_token = self.lexer.next_token()
+  match self.advance() {
+    Ok(_) => ()
+    Err(e) => return Err(e)
+  }
 
   // 解析选择列
-  let select_items = self.parse_select_items()
+  let select_items = match self.parse_select_items() {
+    Ok(items) => items
+    Err(e) => return Err(e)
+  }
 
   // 解析 FROM 子句
-  var from : String? = None
-  if self.current_token is Some and self.current_token?.value.to_uppercase() == "FROM" {
-    self.current_token = self.lexer.next_token()
-    from = self.parse_identifier()
+  let mut from : String? = None
+  if self.is_keyword("FROM") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    from = Some(
+      match self.parse_identifier() {
+        Ok(name) => name
+        Err(e) => return Err(e)
+      },
+    )
   }
 
   // 解析 WHERE 子句
-  var where_condition : Expression? = None
-  if self.current_token is Some and self.current_token?.value.to_uppercase() == "WHERE" {
-    self.current_token = self.lexer.next_token()
-    where_condition = self.parse_expression()
+  let mut where_condition : Expression? = None
+  if self.is_keyword("WHERE") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    where_condition = Some(
+      match self.parse_expression() {
+        Ok(expr) => expr
+        Err(e) => return Err(e)
+      },
+    )
   }
 
   // 解析 ORDER BY 子句
-  var order_by : Array[OrderByItem]? = None
-  if self.current_token is Some and self.current_token?.value.to_uppercase() == "ORDER" {
-    self.current_token = self.lexer.next_token()
-    if self.current_token is Some and self.current_token?.value.to_uppercase() == "BY" {
-      self.current_token = self.lexer.next_token()
-      order_by = self.parse_order_by()
+  let mut order_by : Array[OrderByItem]? = None
+  if self.is_keyword("ORDER") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    if self.is_keyword("BY") {
+      match self.advance() {
+        Ok(_) => ()
+        Err(e) => return Err(e)
+      }
+      order_by = Some(
+        match self.parse_order_by() {
+          Ok(items) => items
+          Err(e) => return Err(e)
+        },
+      )
     }
   }
 
   // 解析 LIMIT 子句
-  var limit : Int? = None
-  if self.current_token is Some and self.current_token?.value.to_uppercase() == "LIMIT" {
-    self.current_token = self.lexer.next_token()
-    limit = self.parse_number()
+  let mut limit : Int? = None
+  if self.is_keyword("LIMIT") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    limit = Some(
+      match self.parse_number() {
+        Ok(n) => n
+        Err(e) => return Err(e)
+      },
+    )
   }
 
-  Ok(Select(SelectStatement {
-    select_items,
-    from,
-    where_condition,
-    group_by: None,
-    having: None,
-    order_by,
-    limit,
-    offset: None,
-  }))
+  Ok(
+    Select(SelectStatement::{
+      select_items,
+      from,
+      where_condition,
+      group_by: None,
+      having: None,
+      order_by,
+      limit,
+      offset: None,
+    }),
+  )
 }
 
 ///|
 /// 解析选择项
-fn Parser::parse_select_items(self : Parser) -> Array[SelectItem> {
+fn Parser::parse_select_items(
+  self : Parser,
+) -> Result[Array[SelectItem], SqlError] {
   let items : Array[SelectItem] = []
+  let mut has_more = true
 
-  loop {
-    let expr = self.parse_expression()
-    var alias : String? = None
+  while has_more {
+    let expr = match self.parse_expression() {
+      Ok(e) => e
+      Err(e) => return Err(e)
+    }
+    let mut alias_name : String? = None
 
     // 检查别名
-    if self.current_token is Some and self.current_token?.value.to_uppercase() == "AS" {
-      self.current_token = self.lexer.next_token()
-      alias = self.parse_identifier()
+    if self.is_keyword("AS") {
+      match self.advance() {
+        Ok(_) => ()
+        Err(e) => return Err(e)
+      }
+      alias_name = Some(
+        match self.parse_identifier() {
+          Ok(name) => name
+          Err(e) => return Err(e)
+        },
+      )
     }
 
-    items.push(SelectItem { expression: expr, alias })
+    items.push(SelectItem::{ expression: expr, alias_name, })
 
     // 检查逗号
-    if self.current_token is Some and self.current_token?.value == "," {
-      self.current_token = self.lexer.next_token()
+    if self.is_value(",") {
+      match self.advance() {
+        Ok(_) => ()
+        Err(e) => return Err(e)
+      }
     } else {
-      break
+      has_more = false
     }
   }
 
-  items
+  Ok(items)
 }
 
 ///|
 /// 解析表达式
-fn Parser::parse_expression(self : Parser) -> Expression {
+fn Parser::parse_expression(self : Parser) -> Result[Expression, SqlError] {
   // 简化实现：解析列引用或字面量
-  let token = self.current_token?
+  let token = match self.current_token {
+    Some(t) => t
+    None => return Err(Syntax_Error)
+  }
 
   if token.token_type == Identifier {
-    self.current_token = self.lexer.next_token()
-    ColumnRef(token.value)
-  } else if token.token_type == StringLiteral or token.token_type == NumberLiteral {
-    self.current_token = self.lexer.next_token()
-    Literal(SqlValue {
-      value_type: String,
-      value: @realtime_db.Str(token.value),
-      is_null: false,
-    })
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    Ok(ColumnRef(token.value.to_string()))
+  } else if token.token_type == StringLiteral ||
+    token.token_type == NumberLiteral {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    Ok(
+      Literal(SqlValue::{
+        value_type: String,
+        value: @realtime_db.Str(token.value.to_string()),
+        is_null: false,
+      }),
+    )
   } else {
-    Wildcard
+    Ok(Wildcard)
   }
 }
 
 ///|
 /// 解析标识符
-fn Parser::parse_identifier(self : Parser) -> String {
-  let token = self.current_token?
-  if token.token_type == Identifier {
-    self.current_token = self.lexer.next_token()
-    token.value
-  } else {
-    ""
+fn Parser::parse_identifier(self : Parser) -> Result[String, SqlError] {
+  match self.current_token {
+    Some(token) =>
+      if token.token_type == Identifier {
+        match self.advance() {
+          Ok(_) => ()
+          Err(e) => return Err(e)
+        }
+        Ok(token.value.to_string())
+      } else {
+        Ok("")
+      }
+    None => Ok("")
   }
 }
 
 ///|
 /// 解析数字
-fn Parser::parse_number(self : Parser) -> Int {
-  let token = self.current_token?
-  if token.token_type == NumberLiteral {
-    self.current_token = self.lexer.next_token()
-    token.value.parse_int()?
-  } else {
-    0
+fn Parser::parse_number(self : Parser) -> Result[Int, SqlError] {
+  match self.current_token {
+    Some(token) =>
+      if token.token_type == NumberLiteral {
+        match self.advance() {
+          Ok(_) => ()
+          Err(e) => return Err(e)
+        }
+        // 数字无法解析时返回 0
+        Ok(@string.parse_int(token.value) catch { _ => 0 })
+      } else {
+        Ok(0)
+      }
+    None => Ok(0)
   }
 }
 
 ///|
 /// 解析 ORDER BY 子句
-fn Parser::parse_order_by(self : Parser) -> Array[OrderByItem> {
+fn Parser::parse_order_by(
+  self : Parser,
+) -> Result[Array[OrderByItem], SqlError] {
   let items : Array[OrderByItem] = []
+  let mut has_more = true
 
-  loop {
-    let expr = self.parse_expression()
-    var ascending = true
+  while has_more {
+    let expr = match self.parse_expression() {
+      Ok(e) => e
+      Err(e) => return Err(e)
+    }
+    let mut ascending = true
 
     // 检查排序方向
-    if self.current_token is Some {
-      let direction = self.current_token?.value.to_uppercase()
-      if direction == "ASC" {
-        ascending = true
-        self.current_token = self.lexer.next_token()
-      } else if direction == "DESC" {
-        ascending = false
-        self.current_token = self.lexer.next_token()
+    if self.is_keyword("ASC") {
+      ascending = true
+      match self.advance() {
+        Ok(_) => ()
+        Err(e) => return Err(e)
+      }
+    } else if self.is_keyword("DESC") {
+      ascending = false
+      match self.advance() {
+        Ok(_) => ()
+        Err(e) => return Err(e)
       }
     }
 
-    items.push(OrderByItem { expression: expr, ascending })
+    items.push(OrderByItem::{ expression: expr, ascending, })
 
     // 检查逗号
-    if self.current_token is Some and self.current_token?.value == "," {
-      self.current_token = self.lexer.next_token()
+    if self.is_value(",") {
+      match self.advance() {
+        Ok(_) => ()
+        Err(e) => return Err(e)
+      }
     } else {
-      break
+      has_more = false
     }
   }
 
-  items
+  Ok(items)
 }
 
 ///|
 /// 解析 INSERT 语句
-fn Parser::parse_insert(self : Parser) -> Result[SqlStatement, SqlError> {
+fn Parser::parse_insert(self : Parser) -> SqlStatement {
+  let _ = self
   // 简化实现
-  Ok(Insert(InsertStatement {
+  Insert(InsertStatement::{
     table: "".to_string(),
     columns: None,
     values: None,
     select: None,
-  }))
+  })
 }
 
 ///|
 /// 解析 UPDATE 语句
-fn Parser::parse_update(self : Parser) -> Result[SqlStatement, SqlError> {
+fn Parser::parse_update(self : Parser) -> SqlStatement {
+  let _ = self
   // 简化实现
-  Ok(Update(UpdateStatement {
+  Update(UpdateStatement::{
     table: "".to_string(),
     set: [],
     where_condition: None,
-  }))
+  })
 }
 
 ///|
 /// 解析 DELETE 语句
-fn Parser::parse_delete(self : Parser) -> Result[SqlStatement, SqlError> {
+fn Parser::parse_delete(self : Parser) -> SqlStatement {
+  let _ = self
   // 简化实现
-  Ok(Delete(DeleteStatement {
-    table: "".to_string(),
-    where_condition: None,
-  }))
+  Delete(DeleteStatement::{ table: "".to_string(), where_condition: None, })
 }
 
 ///|
 /// 解析 CREATE 语句
-fn Parser::parse_create(self : Parser) -> Result[SqlStatement, SqlError> {
+fn Parser::parse_create(self : Parser) -> SqlStatement {
+  let _ = self
   // 简化实现
-  Ok(CreateTable(CreateTableStatement {
+  CreateTable(CreateTableStatement::{
     table: "".to_string(),
     columns: [],
     constraints: None,
-  }))
+  })
 }
 
 ///|
 /// 解析 DROP 语句
-fn Parser::parse_drop(self : Parser) -> Result[SqlStatement, SqlError> {
+fn Parser::parse_drop(self : Parser) -> SqlStatement {
+  let _ = self
   // 简化实现
-  Ok(DropTable(DropTableStatement {
-    table: "".to_string(),
-    if_exists: false,
-  }))
+  DropTable(DropTableStatement::{ table: "".to_string(), if_exists: false, })
 }
 
 ///|
 /// 解析 BEGIN 语句
-fn Parser::parse_begin(self : Parser) -> Result[SqlStatement, SqlError> {
-  Ok(Begin(BeginStatement { isolation_level: None }))
+fn Parser::parse_begin(self : Parser) -> SqlStatement {
+  let _ = self
+  Begin(BeginStatement::{ isolation_level: None, })
 }
 
 ///|
 /// 解析 COMMIT 语句
-fn Parser::parse_commit(self : Parser) -> Result[SqlStatement, SqlError> {
-  Ok(Commit(CommitStatement {}))
+fn Parser::parse_commit(self : Parser) -> SqlStatement {
+  let _ = self
+  Commit(CommitStatement::{ })
 }
 
 ///|
 /// 解析 ROLLBACK 语句
-fn Parser::parse_rollback(self : Parser) -> Result[SqlStatement, SqlError> {
-  Ok(Rollback(RollbackStatement {}))
+fn Parser::parse_rollback(self : Parser) -> SqlStatement {
+  let _ = self
+  Rollback(RollbackStatement::{ })
 }
 
 ///|
 /// 解析 EXPLAIN 语句
-fn Parser::parse_explain(self : Parser) -> Result[SqlStatement, SqlError> {
+fn Parser::parse_explain(self : Parser) -> SqlStatement {
+  let _ = self
   // 简化实现
-  Ok(Explain(ExplainStatement {
-    statement: Select(SelectStatement {
+  Explain(ExplainStatement::{
+    statement: Select(SelectStatement::{
       select_items: [],
       from: None,
       where_condition: None,
@@ -658,7 +880,7 @@ fn Parser::parse_explain(self : Parser) -> Result[SqlStatement, SqlError> {
       limit: None,
       offset: None,
     }),
-  }))
+  })
 }
 
 ///|
@@ -669,7 +891,7 @@ pub fn create_parser(lexer : Lexer) -> Parser {
 
 ///|
 /// 解析 SQL 语句
-pub fn parse_sql(sql : String) -> Result[SqlStatement, SqlError> {
+pub fn parse_sql(sql : String) -> Result[SqlStatement, SqlError] {
   let lexer = Lexer::new(sql)
   let parser = Parser::new(lexer)
   parser.parse()

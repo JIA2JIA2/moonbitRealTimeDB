@@ -66,28 +66,30 @@ pub fn BillingRates::default() -> BillingRates {
 ///|
 /// 创建计费计量器
 pub fn BillingMeter::new(tenant_manager : TenantManager) -> BillingMeter {
-  {
-    tenant_manager,
-    rates: BillingRates::default(),
-    billing_data: Map([]),
-  }
+  { tenant_manager, rates: BillingRates::default(), billing_data: Map([]), }
 }
 
 ///|
 /// 计算计费金额
-pub fn BillingMeter::calculate_billing(self : BillingMeter, tenant_id : String) -> Result[BillingData, TenantError> {
+pub fn BillingMeter::calculate_billing(
+  self : BillingMeter,
+  tenant_id : String,
+) -> Result[BillingData, TenantError] {
   // 获取租户
-  let tenant = match self.tenant_manager.get_tenant(tenant_id) {
+  let tenant = match self.tenant_manager.get_tenant(tenant_id.to_string()) {
     Some(t) => t
     None => return Err(Tenant_Not_Found)
   }
 
   // 计算资源使用量
   let cpu_hours = tenant.resource_usage.cpu_used
-  let memory_gb_hours = tenant.resource_usage.memory_used.to_double() / 1073741824.0
-  let storage_gb_hours = tenant.resource_usage.storage_used.to_double() / 1073741824.0
+  let memory_gb_hours = tenant.resource_usage.memory_used.to_double() /
+    1073741824.0
+  let storage_gb_hours = tenant.resource_usage.storage_used.to_double() /
+    1073741824.0
   let connection_hours = tenant.resource_usage.connections_used
-  let throughput_gb = tenant.resource_usage.throughput_used.to_double() / 1073741824.0
+  let throughput_gb = tenant.resource_usage.throughput_used.to_double() /
+    1073741824.0
 
   // 计算金额
   let amount = cpu_hours * self.rates.cpu_rate +
@@ -96,8 +98,8 @@ pub fn BillingMeter::calculate_billing(self : BillingMeter, tenant_id : String) 
     connection_hours.to_double() * self.rates.connection_rate +
     throughput_gb * self.rates.throughput_rate
 
-  let billing_data = BillingData {
-    tenant_id,
+  let billing_data = BillingData::{
+    tenant_id: tenant_id.to_string(),
     billing_period: "current".to_string(),
     cpu_hours,
     memory_gb_hours,
@@ -109,30 +111,49 @@ pub fn BillingMeter::calculate_billing(self : BillingMeter, tenant_id : String) 
   }
 
   // 保存计费数据
-  self.billing_data.set(tenant_id, billing_data)
+  self.billing_data.set(tenant_id, { ..billing_data, })
 
   Ok(billing_data)
 }
 
 ///|
 /// 生成计费报表
-pub fn BillingMeter::generate_report(self : BillingMeter, tenant_id : String) -> Result[String, TenantError> {
-  let billing_data = match self.billing_data.get(tenant_id) {
+pub fn BillingMeter::generate_report(
+  self : BillingMeter,
+  tenant_id : String,
+) -> Result[String, TenantError] {
+  let billing_data = match self.billing_data.get(tenant_id.to_string()) {
     Some(data) => data
-    None => match self.calculate_billing(tenant_id) {
-      Ok(data) => data
-      Err(e) => return Err(e)
-    }
+    None =>
+      match self.calculate_billing(tenant_id) {
+        Ok(data) => data
+        Err(e) => return Err(e)
+      }
   }
 
   // 生成报表字符串
-  let report = "Billing Report for Tenant: " + billing_data.tenant_id + "\n" +
-    "CPU Hours: " + billing_data.cpu_hours.to_string() + "\n" +
-    "Memory GB-Hours: " + billing_data.memory_gb_hours.to_string() + "\n" +
-    "Storage GB-Hours: " + billing_data.storage_gb_hours.to_string() + "\n" +
-    "Connection Hours: " + billing_data.connection_hours.to_string() + "\n" +
-    "Throughput GB: " + billing_data.throughput_gb.to_string() + "\n" +
-    "Amount: " + billing_data.amount.to_string() + " " + billing_data.currency
+  let report = "Billing Report for Tenant: " +
+    billing_data.tenant_id.to_string() +
+    "\n" +
+    "CPU Hours: " +
+    billing_data.cpu_hours.to_string() +
+    "\n" +
+    "Memory GB-Hours: " +
+    billing_data.memory_gb_hours.to_string() +
+    "\n" +
+    "Storage GB-Hours: " +
+    billing_data.storage_gb_hours.to_string() +
+    "\n" +
+    "Connection Hours: " +
+    billing_data.connection_hours.to_string() +
+    "\n" +
+    "Throughput GB: " +
+    billing_data.throughput_gb.to_string() +
+    "\n" +
+    "Amount: " +
+    billing_data.amount.to_string() +
+    " " +
+    billing_data.currency.to_string()
 
   Ok(report)
 }
@@ -149,10 +170,7 @@ pub(all) struct TenantMonitor {
 ///|
 /// 创建监控指标收集器
 pub fn TenantMonitor::new(tenant_manager : TenantManager) -> TenantMonitor {
-  {
-    tenant_manager,
-    metrics: Map([]),
-  }
+  { tenant_manager, metrics: Map([]), }
 }
 
 ///|
@@ -166,23 +184,50 @@ pub fn TenantMonitor::expose_metrics(self : TenantMonitor) -> String {
   // 租户数量
   metrics_str = metrics_str + "# HELP db_tenant_count Total number of tenants\n"
   metrics_str = metrics_str + "# TYPE db_tenant_count gauge\n"
-  metrics_str = metrics_str + "db_tenant_count " + tenants.length().to_string() + "\n"
+  metrics_str = metrics_str +
+    "db_tenant_count " +
+    tenants.length().to_string() +
+    "\n"
 
   // 每个租户的资源使用量
   for tenant in tenants {
-    let tenant_id = tenant.tenant_id
+    let tenant_id = tenant.tenant_id.to_string()
 
-    metrics_str = metrics_str + "# HELP db_tenant_cpu_usage CPU usage for tenant " + tenant_id + "\n"
+    metrics_str = metrics_str +
+      "# HELP db_tenant_cpu_usage CPU usage for tenant " +
+      tenant_id.to_string() +
+      "\n"
     metrics_str = metrics_str + "# TYPE db_tenant_cpu_usage gauge\n"
-    metrics_str = metrics_str + "db_tenant_cpu_usage{tenant_id=\"" + tenant_id + "\"} " + tenant.resource_usage.cpu_used.to_string() + "\n"
+    metrics_str = metrics_str +
+      "db_tenant_cpu_usage{tenant_id=\"" +
+      tenant_id.to_string() +
+      "\"} " +
+      tenant.resource_usage.cpu_used.to_string() +
+      "\n"
 
-    metrics_str = metrics_str + "# HELP db_tenant_memory_usage Memory usage for tenant " + tenant_id + "\n"
+    metrics_str = metrics_str +
+      "# HELP db_tenant_memory_usage Memory usage for tenant " +
+      tenant_id.to_string() +
+      "\n"
     metrics_str = metrics_str + "# TYPE db_tenant_memory_usage gauge\n"
-    metrics_str = metrics_str + "db_tenant_memory_usage{tenant_id=\"" + tenant_id + "\"} " + tenant.resource_usage.memory_used.to_string() + "\n"
+    metrics_str = metrics_str +
+      "db_tenant_memory_usage{tenant_id=\"" +
+      tenant_id.to_string() +
+      "\"} " +
+      tenant.resource_usage.memory_used.to_string() +
+      "\n"
 
-    metrics_str = metrics_str + "# HELP db_tenant_storage_usage Storage usage for tenant " + tenant_id + "\n"
+    metrics_str = metrics_str +
+      "# HELP db_tenant_storage_usage Storage usage for tenant " +
+      tenant_id.to_string() +
+      "\n"
     metrics_str = metrics_str + "# TYPE db_tenant_storage_usage gauge\n"
-    metrics_str = metrics_str + "db_tenant_storage_usage{tenant_id=\"" + tenant_id + "\"} " + tenant.resource_usage.storage_used.to_string() + "\n"
+    metrics_str = metrics_str +
+      "db_tenant_storage_usage{tenant_id=\"" +
+      tenant_id.to_string() +
+      "\"} " +
+      tenant.resource_usage.storage_used.to_string() +
+      "\n"
   }
 
   metrics_str
@@ -190,13 +235,20 @@ pub fn TenantMonitor::expose_metrics(self : TenantMonitor) -> String {
 
 ///|
 /// 更新指标
-pub fn TenantMonitor::update_metric(self : TenantMonitor, name : String, value : Double) -> Unit {
+pub fn TenantMonitor::update_metric(
+  self : TenantMonitor,
+  name : String,
+  value : Double,
+) -> Unit {
   self.metrics.set(name, value)
 }
 
 ///|
 /// 获取指标
-pub fn TenantMonitor::get_metric(self : TenantMonitor, name : String) -> Double? {
+pub fn TenantMonitor::get_metric(
+  self : TenantMonitor,
+  name : String,
+) -> Double? {
   self.metrics.get(name)
 }
 

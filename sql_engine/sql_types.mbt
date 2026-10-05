@@ -28,7 +28,7 @@ pub(all) enum ColumnType {
 }
 
 ///|
-impl Eq for ColumnType with fn equal(self, other) -> Bool {
+pub impl Eq for ColumnType with fn equal(self, other) -> Bool {
   match (self, other) {
     (Int, Int) => true
     (BigInt, BigInt) => true
@@ -48,7 +48,7 @@ impl Eq for ColumnType with fn equal(self, other) -> Bool {
 pub extend ColumnType with Eq::{equal, not_equal}
 
 ///|
-impl Debug for ColumnType with fn to_repr(self) -> Repr {
+pub impl Debug for ColumnType with fn to_repr(self) -> Repr {
   match self {
     Int => Repr::ctor("Int", [])
     BigInt => Repr::ctor("BigInt", [])
@@ -106,7 +106,7 @@ pub(all) struct Column {
   /// 长度
   length : Int?
   /// 别名
-  alias : String?
+  alias_name : String?
 }
 
 ///|
@@ -142,7 +142,7 @@ pub(all) enum ConstraintType {
 }
 
 ///|
-impl Eq for ConstraintType with fn equal(self, other) -> Bool {
+pub impl Eq for ConstraintType with fn equal(self, other) -> Bool {
   match (self, other) {
     (PrimaryKey, PrimaryKey) => true
     (ForeignKey, ForeignKey) => true
@@ -156,6 +156,21 @@ impl Eq for ConstraintType with fn equal(self, other) -> Bool {
 
 ///|
 pub extend ConstraintType with Eq::{equal, not_equal}
+
+///|
+pub impl Debug for ConstraintType with fn to_repr(self) -> Repr {
+  match self {
+    PrimaryKey => Repr::ctor("PrimaryKey", [])
+    ForeignKey => Repr::ctor("ForeignKey", [])
+    Unique => Repr::ctor("Unique", [])
+    NotNull => Repr::ctor("NotNull", [])
+    Check => Repr::ctor("Check", [])
+    Default => Repr::ctor("Default", [])
+  }
+}
+
+///|
+pub extend ConstraintType with Debug::{to_repr}
 
 ///|
 /// SQL 值
@@ -200,7 +215,7 @@ pub(all) enum SqlError {
 }
 
 ///|
-impl Eq for SqlError with fn equal(self, other) -> Bool {
+pub impl Eq for SqlError with fn equal(self, other) -> Bool {
   match (self, other) {
     (Syntax_Error, Syntax_Error) => true
     (Parse_Error, Parse_Error) => true
@@ -223,7 +238,7 @@ impl Eq for SqlError with fn equal(self, other) -> Bool {
 pub extend SqlError with Eq::{equal, not_equal}
 
 ///|
-impl Debug for SqlError with fn to_repr(self) -> Repr {
+pub impl Debug for SqlError with fn to_repr(self) -> Repr {
   match self {
     Syntax_Error => Repr::ctor("Syntax_Error", [])
     Parse_Error => Repr::ctor("Parse_Error", [])
@@ -323,7 +338,7 @@ pub(all) enum SqlStatement {
 /// SELECT 语句
 pub(all) struct SelectStatement {
   /// 选择列
-  select_items : Array[SelectItem>
+  select_items : Array[SelectItem]
   /// 表名
   from : String?
   /// WHERE 条件
@@ -333,7 +348,7 @@ pub(all) struct SelectStatement {
   /// HAVING 子句
   having : Expression?
   /// ORDER BY 子句
-  order_by : Array[OrderByItem>?
+  order_by : Array[OrderByItem]?
   /// LIMIT 子句
   limit : Int?
   /// OFFSET 子句
@@ -346,7 +361,7 @@ pub(all) struct SelectItem {
   /// 表达式
   expression : Expression
   /// 别名
-  alias : String?
+  alias_name : String?
 }
 
 ///|
@@ -366,7 +381,7 @@ pub(all) struct InsertStatement {
   /// 列名
   columns : Array[String]?
   /// 值
-  values : Array[Array[Expression]>?
+  values : Array[Array[Expression]]?
   /// SELECT 子句
   select : SelectStatement?
 }
@@ -397,9 +412,9 @@ pub(all) struct CreateTableStatement {
   /// 表名
   table : String
   /// 列定义
-  columns : Array[ColumnDef>
+  columns : Array[ColumnDef]
   /// 约束
-  constraints : Array[TableConstraint>?
+  constraints : Array[TableConstraint]?
 }
 
 ///|
@@ -414,7 +429,7 @@ pub(all) struct ColumnDef {
   /// 默认值
   default : Expression?
   /// 约束
-  constraints : Array[ColumnConstraint>?
+  constraints : Array[ColumnConstraint]?
 }
 
 ///|
@@ -458,7 +473,7 @@ pub(all) struct CreateIndexStatement {
   /// 表名
   table : String
   /// 列名
-  columns : Array[IndexColumn>?
+  columns : Array[IndexColumn]?
   /// 是否唯一
   unique : Bool
 }

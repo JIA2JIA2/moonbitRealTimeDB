@@ -20,7 +20,7 @@ pub(all) enum TenantStatus {
 }
 
 ///|
-impl Eq for TenantStatus with fn equal(self, other) -> Bool {
+pub impl Eq for TenantStatus with fn equal(self, other) -> Bool {
   match (self, other) {
     (Creating, Creating) => true
     (Active, Active) => true
@@ -36,7 +36,7 @@ impl Eq for TenantStatus with fn equal(self, other) -> Bool {
 pub extend TenantStatus with Eq::{equal, not_equal}
 
 ///|
-impl Debug for TenantStatus with fn to_repr(self) -> Repr {
+pub impl Debug for TenantStatus with fn to_repr(self) -> Repr {
   match self {
     Creating => Repr::ctor("Creating", [])
     Active => Repr::ctor("Active", [])
@@ -66,7 +66,7 @@ pub(all) enum ResourceType {
 }
 
 ///|
-impl Eq for ResourceType with fn equal(self, other) -> Bool {
+pub impl Eq for ResourceType with fn equal(self, other) -> Bool {
   match (self, other) {
     (Cpu, Cpu) => true
     (Memory, Memory) => true
@@ -81,7 +81,7 @@ impl Eq for ResourceType with fn equal(self, other) -> Bool {
 pub extend ResourceType with Eq::{equal, not_equal}
 
 ///|
-impl Debug for ResourceType with fn to_repr(self) -> Repr {
+pub impl Debug for ResourceType with fn to_repr(self) -> Repr {
   match self {
     Cpu => Repr::ctor("Cpu", [])
     Memory => Repr::ctor("Memory", [])
@@ -98,23 +98,23 @@ pub extend ResourceType with Debug::{to_repr}
 /// 资源使用量
 pub(all) struct ResourceUsage {
   /// CPU 使用量（核数）
-  cpu_used : Double
+  mut cpu_used : Double
   /// CPU 限制
   cpu_limit : Double
   /// 内存使用量（字节）
-  memory_used : Int
+  mut memory_used : Int
   /// 内存限制（字节）
   memory_limit : Int
   /// 存储使用量（字节）
-  storage_used : Int
+  mut storage_used : Int64
   /// 存储限制（字节）
-  storage_limit : Int
+  storage_limit : Int64
   /// 连接数
-  connections_used : Int
+  mut connections_used : Int
   /// 连接数限制
   connections_limit : Int
   /// 吞吐量（字节/秒）
-  throughput_used : Int
+  mut throughput_used : Int
   /// 吞吐量限制
   throughput_limit : Int
 }
@@ -127,8 +127,8 @@ pub fn ResourceUsage::default() -> ResourceUsage {
     cpu_limit: 4.0,
     memory_used: 0,
     memory_limit: 1073741824, // 1GB
-    storage_used: 0,
-    storage_limit: 107374182400, // 100GB
+    storage_used: 0L,
+    storage_limit: 107374182400L, // 100GB
     connections_used: 0,
     connections_limit: 1000,
     throughput_used: 0,
@@ -144,7 +144,7 @@ pub(all) struct TenantConfig {
   /// 内存配额（字节）
   memory_quota : Int
   /// 存储配额（字节）
-  storage_quota : Int
+  storage_quota : Int64
   /// 连接数配额
   connection_quota : Int
   /// 吞吐量配额（字节/秒）
@@ -165,7 +165,7 @@ pub fn TenantConfig::default() -> TenantConfig {
   {
     cpu_quota: 4.0,
     memory_quota: 1073741824,
-    storage_quota: 107374182400,
+    storage_quota: 107374182400L,
     connection_quota: 1000,
     throughput_quota: 104857600,
     max_namespaces: 100,
@@ -187,7 +187,7 @@ pub(all) enum IsolationLevel {
 }
 
 ///|
-impl Eq for IsolationLevel with fn equal(self, other) -> Bool {
+pub impl Eq for IsolationLevel with fn equal(self, other) -> Bool {
   match (self, other) {
     (Namespace, Namespace) => true
     (Table, Table) => true
@@ -234,6 +234,21 @@ pub(all) struct Table {
 }
 
 ///|
+/// 特征表
+pub(all) struct FeatureTable {
+  /// 特征表 ID
+  feature_table_id : String
+  /// 特征表名
+  name : String
+  /// 来源表
+  source_table : String
+  /// 表结构
+  schema : TableSchema
+  /// 创建时间
+  created_at : Int
+}
+
+///|
 /// 表结构
 pub(all) struct TableSchema {
   /// 列定义
@@ -274,7 +289,7 @@ pub(all) enum ColumnType {
 }
 
 ///|
-impl Eq for ColumnType with fn equal(self, other) -> Bool {
+pub impl Eq for ColumnType with fn equal(self, other) -> Bool {
   match (self, other) {
     (Int, Int) => true
     (BigInt, BigInt) => true
@@ -293,7 +308,7 @@ impl Eq for ColumnType with fn equal(self, other) -> Bool {
 pub extend ColumnType with Eq::{equal, not_equal}
 
 ///|
-impl Debug for ColumnType with fn to_repr(self) -> Repr {
+pub impl Debug for ColumnType with fn to_repr(self) -> Repr {
   match self {
     Int => Repr::ctor("Int", [])
     BigInt => Repr::ctor("BigInt", [])
@@ -337,7 +352,7 @@ pub(all) enum ConstraintType {
 }
 
 ///|
-impl Eq for ConstraintType with fn equal(self, other) -> Bool {
+pub impl Eq for ConstraintType with fn equal(self, other) -> Bool {
   match (self, other) {
     (PrimaryKey, PrimaryKey) => true
     (ForeignKey, ForeignKey) => true
@@ -361,7 +376,7 @@ pub(all) struct Tenant {
   /// 租户状态
   status : TenantStatus
   /// 租户配置
-  config : TenantConfig
+  mut config : TenantConfig
   /// 命名空间映射
   namespaces : Map[String, Namespace]
   /// 资源使用量
@@ -369,7 +384,7 @@ pub(all) struct Tenant {
   /// 创建时间
   created_at : Int
   /// 更新时间
-  updated_at : Int
+  mut updated_at : Int
   /// 删除时间
   deleted_at : Int?
 }
@@ -402,7 +417,7 @@ pub(all) enum TenantError {
 }
 
 ///|
-impl Eq for TenantError with fn equal(self, other) -> Bool {
+pub impl Eq for TenantError with fn equal(self, other) -> Bool {
   match (self, other) {
     (Tenant_Already_Exists, Tenant_Already_Exists) => true
     (Tenant_Not_Found, Tenant_Not_Found) => true
@@ -423,7 +438,7 @@ impl Eq for TenantError with fn equal(self, other) -> Bool {
 pub extend TenantError with Eq::{equal, not_equal}
 
 ///|
-impl Debug for TenantError with fn to_repr(self) -> Repr {
+pub impl Debug for TenantError with fn to_repr(self) -> Repr {
   match self {
     Tenant_Already_Exists => Repr::ctor("Tenant_Already_Exists", [])
     Tenant_Not_Found => Repr::ctor("Tenant_Not_Found", [])

@@ -150,7 +150,7 @@ pub(all) enum RuleType {
 /// 创建查询优化器
 pub fn QueryOptimizer::new() -> QueryOptimizer {
   {
-    stats: QueryStats {
+    stats: QueryStats::{
       row_count: 0,
       table_size: 0,
       index_count: 0,
@@ -165,13 +165,16 @@ pub fn QueryOptimizer::new() -> QueryOptimizer {
 
 ///|
 /// 优化查询
-pub fn QueryOptimizer::optimize(self : QueryOptimizer, statement : SqlStatement) -> Result[QueryPlan, SqlError> {
+pub fn QueryOptimizer::optimize(
+  self : QueryOptimizer,
+  statement : SqlStatement,
+) -> Result[QueryPlan, SqlError] {
   // 生成初始计划
-  var plan = self.generate_initial_plan(statement)
+  let mut plan = self.generate_initial_plan(statement)
 
   // 应用优化规则
   for rule in self.rules {
-    plan = rule.apply_fn(plan)
+    plan = (rule.apply_fn)(plan)
   }
 
   // 应用 CBO
@@ -184,75 +187,96 @@ pub fn QueryOptimizer::optimize(self : QueryOptimizer, statement : SqlStatement)
 
 ///|
 /// 生成初始计划
-fn QueryOptimizer::generate_initial_plan(self : QueryOptimizer, statement : SqlStatement) -> QueryPlan {
+fn QueryOptimizer::generate_initial_plan(
+  self : QueryOptimizer,
+  statement : SqlStatement,
+) -> QueryPlan {
   match statement {
     Select(select) => self.generate_select_plan(select)
-    _ => QueryPlan {
-      root: PlanNode { node_type: Scan, children: [], properties: Map([]) },
-      estimated_cost: 0.0,
-      estimated_rows: 0,
-      execution_plan: None,
-    }
+    _ =>
+      QueryPlan::{
+        root: PlanNode::{ node_type: Scan, children: [], properties: Map([]), },
+        estimated_cost: 0.0,
+        estimated_rows: 0,
+        execution_plan: None,
+      }
   }
 }
 
 ///|
 /// 生成 SELECT 计划
-fn QueryOptimizer::generate_select_plan(self : QueryOptimizer, select : SelectStatement) -> QueryPlan {
+fn QueryOptimizer::generate_select_plan(
+  self : QueryOptimizer,
+  select : SelectStatement,
+) -> QueryPlan {
   // 创建扫描节点
-  let scan_node = PlanNode {
+  let table_name = match select.from {
+    Some(name) => name
+    None => ""
+  }
+  let scan_node = PlanNode::{
     node_type: Scan,
     children: [],
-    properties: Map([("table", @realtime_db.Str(select.from?.to_string() ?? ""))]),
+    properties: Map([("table", @realtime_db.Str(table_name))]),
   }
 
   // 创建过滤节点
-  var filter_node : PlanNode? = None
-  if select.where_condition is Some {
-    filter_node = Some(PlanNode {
+  let mut filter_node : PlanNode? = None
+  if select.where_condition is Some(_) {
+    filter_node = Some(PlanNode::{
       node_type: Filter,
-      children: [scan_node],
+      children: [{ ..scan_node, }],
       properties: Map([("condition", @realtime_db.Str("where"))]),
     })
   }
 
   // 创建投影节点
-  let project_node = PlanNode {
+  let project_node = PlanNode::{
     node_type: Project,
-    children: if filter_node is Some { [filter_node?] } else { [scan_node] },
+    children: match filter_node {
+      Some(node) => [{ ..node, }]
+      None => [{ ..scan_node, }]
+    },
     properties: Map([("columns", @realtime_db.Str("select_items"))]),
   }
 
   // 创建排序节点
-  var sort_node : PlanNode? = None
-  if select.order_by is Some {
-    sort_node = Some(PlanNode {
+  let mut sort_node : PlanNode? = None
+  if select.order_by is Some(_) {
+    sort_node = Some(PlanNode::{
       node_type: Sort,
-      children: [project_node],
+      children: [{ ..project_node, }],
       properties: Map([("order_by", @realtime_db.Str("order_by"))]),
     })
   }
 
   // 创建限制节点
-  var limit_node : PlanNode? = None
-  if select.limit is Some {
-    limit_node = Some(PlanNode {
+  let mut limit_node : PlanNode? = None
+  if select.limit is Some(_) {
+    limit_node = Some(PlanNode::{
       node_type: Limit,
-      children: if sort_node is Some { [sort_node?] } else { [project_node] },
-      properties: Map([("limit", @realtime_db.Int(select.limit?))]),
+      children: match sort_node {
+        Some(node) => [{ ..node, }]
+        None => [{ ..project_node, }]
+      },
+      properties: match select.limit {
+        Some(limit) => Map([("limit", @realtime_db.Int(limit))])
+        None => Map([])
+      },
     })
   }
 
   // 确定根节点
-  let root = if limit_node is Some {
-    limit_node?
-  } else if sort_node is Some {
-    sort_node?
-  } else {
-    project_node
+  let root = match limit_node {
+    Some(node) => node
+    None =>
+      match sort_node {
+        Some(node) => node
+        None => { ..project_node, }
+      }
   }
 
-  QueryPlan {
+  QueryPlan::{
     root,
     estimated_cost: 0.0,
     estimated_rows: self.stats.row_count,
@@ -262,11 +286,14 @@ fn QueryOptimizer::generate_select_plan(self : QueryOptimizer, select : SelectSt
 
 ///|
 /// 应用 CBO
-fn QueryOptimizer::apply_cbo(self : QueryOptimizer, plan : QueryPlan) -> QueryPlan {
+fn QueryOptimizer::apply_cbo(
+  self : QueryOptimizer,
+  plan : QueryPlan,
+) -> QueryPlan {
   // 简化实现：计算成本
   let cost = self.calculate_cost(plan)
 
-  QueryPlan {
+  QueryPlan::{
     root: plan.root,
     estimated_cost: cost,
     estimated_rows: plan.estimated_rows,
@@ -276,7 +303,11 @@ fn QueryOptimizer::apply_cbo(self : QueryOptimizer, plan : QueryPlan) -> QueryPl
 
 ///|
 /// 计算成本
-fn QueryOptimizer::calculate_cost(self : QueryOptimizer, plan : QueryPlan) -> Double {
+fn QueryOptimizer::calculate_cost(
+  self : QueryOptimizer,
+  plan : QueryPlan,
+) -> Double {
+  let _ = self
   // 简化实现：基于行数估算
   let row_cost = plan.estimated_rows.to_double() * 0.1
   row_cost + 1.0
@@ -286,38 +317,44 @@ fn QueryOptimizer::calculate_cost(self : QueryOptimizer, plan : QueryPlan) -> Do
 /// 执行器
 pub(all) struct QueryExecutor {
   /// 数据库引用
-  db : @realtime_db.DB?
+  mut db : @realtime_db.DB?
   /// 租户 ID
-  tenant_id : String?
+  mut tenant_id : String?
 }
 
 ///|
 /// 创建执行器
 pub fn QueryExecutor::new() -> QueryExecutor {
-  {
-    db: None,
-    tenant_id: None,
-  }
+  { db: None, tenant_id: None, }
 }
 
 ///|
 /// 设置数据库
-pub fn QueryExecutor::set_db(self : QueryExecutor, db : @realtime_db.DB?) -> Unit {
+pub fn QueryExecutor::set_db(
+  self : QueryExecutor,
+  db : @realtime_db.DB?,
+) -> Unit {
   self.db = db
 }
 
 ///|
 /// 设置租户
-pub fn QueryExecutor::set_tenant(self : QueryExecutor, tenant_id : String?) -> Unit {
+pub fn QueryExecutor::set_tenant(
+  self : QueryExecutor,
+  tenant_id : String?,
+) -> Unit {
   self.tenant_id = tenant_id
 }
 
 ///|
 /// 执行查询
-pub fn QueryExecutor::execute(self : QueryExecutor, plan : QueryPlan) -> Result[Array[@realtime_db.Value], SqlError> {
+pub fn QueryExecutor::execute(
+  self : QueryExecutor,
+  plan : QueryPlan,
+) -> Result[Array[@realtime_db.Value], SqlError] {
   let db = match self.db {
     Some(d) => d
-    None => return Err(Internal_Error("Database not set")),
+    None => return Err(Internal_Error("Database not set"))
   }
 
   // 执行查询计划
@@ -328,15 +365,13 @@ pub fn QueryExecutor::execute(self : QueryExecutor, plan : QueryPlan) -> Result[
 
 ///|
 /// 执行节点
-fn QueryExecutor::execute_node(self : QueryExecutor, node : PlanNode, db : @realtime_db.DB) -> Array[@realtime_db.Value] {
+fn QueryExecutor::execute_node(
+  self : QueryExecutor,
+  node : PlanNode,
+  db : @realtime_db.DB,
+) -> Array[@realtime_db.Value] {
   match node.node_type {
     Scan => {
-      // 扫描表
-      let table_name = match node.properties.get("table") {
-        Some(@realtime_db.Str(name)) => name
-        _ => "",
-      }
-
       // 简化实现：返回所有键
       let keys = db.keys()
       let result : Array[@realtime_db.Value] = []
@@ -349,7 +384,7 @@ fn QueryExecutor::execute_node(self : QueryExecutor, node : PlanNode, db : @real
       // 过滤
       let children = node.children
       if children.length() > 0 {
-        let input = self.execute_node(children[0], db)
+        let input = self.execute_node({ ..children[0], }, db)
         // 简化实现：返回输入
         input
       } else {
@@ -360,7 +395,7 @@ fn QueryExecutor::execute_node(self : QueryExecutor, node : PlanNode, db : @real
       // 投影
       let children = node.children
       if children.length() > 0 {
-        self.execute_node(children[0], db)
+        self.execute_node({ ..children[0], }, db)
       } else {
         []
       }
@@ -369,16 +404,15 @@ fn QueryExecutor::execute_node(self : QueryExecutor, node : PlanNode, db : @real
       // 限制
       let children = node.children
       if children.length() > 0 {
-        let input = self.execute_node(children[0], db)
+        let input = self.execute_node({ ..children[0], }, db)
         let limit = match node.properties.get("limit") {
           Some(@realtime_db.Int(l)) => l
-          _ => input.length(),
+          _ => input.length()
         }
         if limit < input.length() {
-          input.slice(0, limit)
-        } else {
-          input
+          input.truncate(limit)
         }
+        input
       } else {
         []
       }
@@ -387,7 +421,7 @@ fn QueryExecutor::execute_node(self : QueryExecutor, node : PlanNode, db : @real
       // 其他节点：执行子节点
       let children = node.children
       if children.length() > 0 {
-        self.execute_node(children[0], db)
+        self.execute_node({ ..children[0], }, db)
       } else {
         []
       }

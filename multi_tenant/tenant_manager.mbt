@@ -14,16 +14,16 @@ pub(all) struct TenantStateMachine {
 ///|
 /// 创建租户状态机
 pub fn TenantStateMachine::new() -> TenantStateMachine {
-  {
-    status: Creating,
-    state_history: [],
-  }
+  { status: Creating, state_history: [], }
 }
 
 ///|
 /// 转换状态
-pub fn TenantStateMachine::transition_to(self : TenantStateMachine, new_status : TenantStatus) -> Result[Unit, TenantError] {
-  if not self.can_transition_to(new_status) {
+pub fn TenantStateMachine::transition_to(
+  self : TenantStateMachine,
+  new_status : TenantStatus,
+) -> Result[Unit, TenantError] {
+  if !self.can_transition_to(new_status) {
     return Err(Tenant_Invalid_State)
   }
 
@@ -35,13 +35,18 @@ pub fn TenantStateMachine::transition_to(self : TenantStateMachine, new_status :
 
 ///|
 /// 获取当前状态
-pub fn TenantStateMachine::get_status(self : TenantStateMachine) -> TenantStatus {
+pub fn TenantStateMachine::get_status(
+  self : TenantStateMachine,
+) -> TenantStatus {
   self.status
 }
 
 ///|
 /// 检查是否可以转换到目标状态
-pub fn TenantStateMachine::can_transition_to(self : TenantStateMachine, new_status : TenantStatus) -> Bool {
+pub fn TenantStateMachine::can_transition_to(
+  self : TenantStateMachine,
+  new_status : TenantStatus,
+) -> Bool {
   match (self.status, new_status) {
     (Creating, Active) => true
     (Creating, Deleting) => true
@@ -107,18 +112,18 @@ pub fn TenantManager::create_tenant(
   self.next_id = self.next_id + 1
 
   // 检查租户是否已存在
-  if self.tenants.contains_key(tenant_id) {
+  if self.tenants.contains(tenant_id.to_string()) {
     return Err(Tenant_Already_Exists)
   }
 
   // 使用配置或默认配置
   let tenant_config = match config {
     Some(c) => c
-    None => self.default_config
+    None => { ..self.default_config, }
   }
 
   // 验证配置
-  if not self.validate_config(tenant_config) {
+  if !self.validate_config(tenant_config) {
     return Err(Invalid_Config)
   }
 
@@ -126,8 +131,8 @@ pub fn TenantManager::create_tenant(
   let namespaces : Map[String, Namespace] = Map([])
 
   // 创建租户
-  let tenant = Tenant {
-    tenant_id,
+  let tenant = Tenant::{
+    tenant_id: tenant_id.to_string(),
     tenant_name,
     status: Creating,
     config: tenant_config,
@@ -138,35 +143,37 @@ pub fn TenantManager::create_tenant(
     deleted_at: None,
   }
 
-  // 创建状态机
+  // 创建状态机，并转换到 Active 状态
   let state_machine = TenantStateMachine::new()
+  let _ = state_machine.transition_to(Active)
 
   // 保存租户
-  self.tenants.set(tenant_id, tenant)
+  self.tenants.set(tenant_id.to_string(), tenant)
   self.tenant_state_machines.set(tenant_id, state_machine)
-
-  // 转换到 Active 状态
-  let _ = state_machine.transition_to(Active)
 
   Ok(tenant_id)
 }
 
 ///|
 /// 删除租户
-pub fn TenantManager::delete_tenant(self : TenantManager, tenant_id : String) -> Result[Unit, TenantError] {
+pub fn TenantManager::delete_tenant(
+  self : TenantManager,
+  tenant_id : String,
+) -> Result[Unit, TenantError] {
   // 检查租户是否存在
-  if not self.tenants.contains_key(tenant_id) {
+  if !self.tenants.contains(tenant_id.to_string()) {
     return Err(Tenant_Not_Found)
   }
 
   // 获取状态机
-  let state_machine = match self.tenant_state_machines.get(tenant_id) {
+  let state_machine = match
+    self.tenant_state_machines.get(tenant_id.to_string()) {
     Some(sm) => sm
     None => return Err(Tenant_Invalid_State)
   }
 
   // 检查是否可以删除
-  if not state_machine.can_transition_to(Deleting) {
+  if !state_machine.can_transition_to(Deleting) {
     return Err(Tenant_Invalid_State)
   }
 
@@ -174,7 +181,7 @@ pub fn TenantManager::delete_tenant(self : TenantManager, tenant_id : String) ->
   let _ = state_machine.transition_to(Deleting)
 
   // 清理租户资源
-  self.tenants.remove(tenant_id)
+  self.tenants.remove(tenant_id.to_string())
   self.tenant_state_machines.remove(tenant_id)
 
   Ok(())
@@ -182,7 +189,10 @@ pub fn TenantManager::delete_tenant(self : TenantManager, tenant_id : String) ->
 
 ///|
 /// 获取租户信息
-pub fn TenantManager::get_tenant(self : TenantManager, tenant_id : String) -> Tenant? {
+pub fn TenantManager::get_tenant(
+  self : TenantManager,
+  tenant_id : String,
+) -> Tenant? {
   self.tenants.get(tenant_id)
 }
 
@@ -210,7 +220,7 @@ pub fn TenantManager::update_tenant_config(
   }
 
   // 验证配置
-  if not self.validate_config(config) {
+  if !self.validate_config(config) {
     return Err(Invalid_Config)
   }
 
@@ -223,7 +233,11 @@ pub fn TenantManager::update_tenant_config(
 
 ///|
 /// 验证配置
-fn TenantManager::validate_config(self : TenantManager, config : TenantConfig) -> Bool {
+fn TenantManager::validate_config(
+  self : TenantManager,
+  config : TenantConfig,
+) -> Bool {
+  let _ = self
   if config.cpu_quota <= 0.0 {
     return false
   }
@@ -254,13 +268,19 @@ pub(all) struct NamespaceResolver {
 
 ///|
 /// 创建命名空间解析器
-pub fn NamespaceResolver::new(tenant_manager : TenantManager) -> NamespaceResolver {
-  { tenant_manager }
+pub fn NamespaceResolver::new(
+  tenant_manager : TenantManager,
+) -> NamespaceResolver {
+  { tenant_manager, }
 }
 
 ///|
 /// 解析命名空间
-pub fn NamespaceResolver::resolve(self : NamespaceResolver, tenant_id : String, namespace_id : String) -> Result[Namespace, TenantError] {
+pub fn NamespaceResolver::resolve(
+  self : NamespaceResolver,
+  tenant_id : String,
+  namespace_id : String,
+) -> Result[Namespace, TenantError] {
   // 获取租户
   let tenant = match self.tenant_manager.get_tenant(tenant_id) {
     Some(t) => t
@@ -269,7 +289,7 @@ pub fn NamespaceResolver::resolve(self : NamespaceResolver, tenant_id : String, 
 
   // 获取命名空间
   match tenant.namespaces.get(namespace_id) {
-    Some(ns) => Ok(ns)
+    Some(ns) => Ok({ ..ns, })
     None => Err(Namespace_Not_Found)
   }
 }
@@ -282,13 +302,13 @@ pub fn NamespaceResolver::create_namespace(
   namespace_id : String,
 ) -> Result[Unit, TenantError] {
   // 获取租户
-  let tenant = match self.tenant_manager.get_tenant(tenant_id) {
+  let tenant = match self.tenant_manager.get_tenant(tenant_id.to_string()) {
     Some(t) => t
     None => return Err(Tenant_Not_Found)
   }
 
   // 检查命名空间是否已存在
-  if tenant.namespaces.contains_key(namespace_id) {
+  if tenant.namespaces.contains(namespace_id.to_string()) {
     return Err(Namespace_Already_Exists)
   }
 
@@ -298,9 +318,9 @@ pub fn NamespaceResolver::create_namespace(
   }
 
   // 创建命名空间
-  let namespace = Namespace {
-    namespace_id,
-    tenant_id,
+  let ns = Namespace::{
+    namespace_id: namespace_id.to_string(),
+    tenant_id: tenant_id.to_string(),
     tables: Map([]),
     feature_tables: Map([]),
     created_at: 0,
@@ -308,7 +328,7 @@ pub fn NamespaceResolver::create_namespace(
   }
 
   // 添加命名空间
-  tenant.namespaces.set(namespace_id, namespace)
+  tenant.namespaces.set(namespace_id, ns)
   tenant.updated_at = 0
 
   Ok(())
@@ -316,7 +336,10 @@ pub fn NamespaceResolver::create_namespace(
 
 ///|
 /// 获取租户的命名空间列表
-pub fn NamespaceResolver::list_namespaces(self : NamespaceResolver, tenant_id : String) -> Result[Array[Namespace], TenantError] {
+pub fn NamespaceResolver::list_namespaces(
+  self : NamespaceResolver,
+  tenant_id : String,
+) -> Result[Array[Namespace], TenantError] {
   // 获取租户
   let tenant = match self.tenant_manager.get_tenant(tenant_id) {
     Some(t) => t
@@ -339,6 +362,8 @@ pub fn create_tenant_manager() -> TenantManager {
 
 ///|
 /// 创建命名空间解析器
-pub fn create_namespace_resolver(tenant_manager : TenantManager) -> NamespaceResolver {
+pub fn create_namespace_resolver(
+  tenant_manager : TenantManager,
+) -> NamespaceResolver {
   NamespaceResolver::new(tenant_manager)
 }

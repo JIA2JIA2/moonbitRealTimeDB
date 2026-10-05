@@ -8,11 +8,11 @@ pub(all) struct QuotaCheckResult {
   /// 是否通过
   passed : Bool
   /// 已使用量
-  used : Int
+  used : Int64
   /// 限制量
-  limit : Int
+  limit : Int64
   /// 剩余量
-  remaining : Int
+  remaining : Int64
   /// 错误信息
   error : String?
 }
@@ -28,11 +28,10 @@ pub(all) struct ResourceQuotaManager {
 
 ///|
 /// 创建资源配额管理器
-pub fn ResourceQuotaManager::new(tenant_manager : TenantManager) -> ResourceQuotaManager {
-  {
-    tenant_manager,
-    alert_threshold: 0.8,
-  }
+pub fn ResourceQuotaManager::new(
+  tenant_manager : TenantManager,
+) -> ResourceQuotaManager {
+  { tenant_manager, alert_threshold: 0.8, }
 }
 
 ///|
@@ -44,18 +43,18 @@ pub fn ResourceQuotaManager::check_quota(
   requested : Int,
 ) -> Result[QuotaCheckResult, TenantError] {
   // 获取租户
-  let tenant = match self.tenant_manager.get_tenant(tenant_id) {
+  let tenant = match self.tenant_manager.get_tenant(tenant_id.to_string()) {
     Some(t) => t
     None => return Err(Tenant_Not_Found)
   }
 
   // 获取资源使用量和限制
   let (used, limit) = self.get_resource_usage(tenant, resource_type)
-  let remaining = if limit > used { limit - used } else { 0 }
+  let remaining = if limit > used { limit - used } else { 0L }
 
   // 检查配额
-  if requested > remaining {
-    return Ok(QuotaCheckResult {
+  if requested.to_int64() > remaining {
+    return Ok(QuotaCheckResult::{
       passed: false,
       used,
       limit,
@@ -71,13 +70,7 @@ pub fn ResourceQuotaManager::check_quota(
     self.trigger_alert(tenant_id, resource_type, usage_ratio)
   }
 
-  Ok(QuotaCheckResult {
-    passed: true,
-    used,
-    limit,
-    remaining,
-    error: None,
-  })
+  Ok(QuotaCheckResult::{ passed: true, used, limit, remaining, error: None, })
 }
 
 ///|
@@ -87,7 +80,7 @@ pub fn ResourceQuotaManager::record_usage(
   tenant_id : String,
   resource_type : ResourceType,
   amount : Int,
-) -> Result[Unit, TenantError> {
+) -> Result[Unit, TenantError] {
   // 获取租户
   let tenant = match self.tenant_manager.get_tenant(tenant_id) {
     Some(t) => t
@@ -96,21 +89,21 @@ pub fn ResourceQuotaManager::record_usage(
 
   // 更新资源使用量
   match resource_type {
-    ResourceType::Cpu => {
-      tenant.resource_usage.cpu_used = tenant.resource_usage.cpu_used + amount.to_double()
-    }
-    ResourceType::Memory => {
-      tenant.resource_usage.memory_used = tenant.resource_usage.memory_used + amount
-    }
-    ResourceType::Storage => {
-      tenant.resource_usage.storage_used = tenant.resource_usage.storage_used + amount
-    }
-    ResourceType::Connections => {
-      tenant.resource_usage.connections_used = tenant.resource_usage.connections_used + amount
-    }
-    ResourceType::Throughput => {
-      tenant.resource_usage.throughput_used = tenant.resource_usage.throughput_used + amount
-    }
+    Cpu =>
+      tenant.resource_usage.cpu_used = tenant.resource_usage.cpu_used +
+        amount.to_double()
+    Memory =>
+      tenant.resource_usage.memory_used = tenant.resource_usage.memory_used +
+        amount
+    Storage =>
+      tenant.resource_usage.storage_used = tenant.resource_usage.storage_used +
+        amount.to_int64()
+    Connections =>
+      tenant.resource_usage.connections_used = tenant.resource_usage.connections_used +
+        amount
+    Throughput =>
+      tenant.resource_usage.throughput_used = tenant.resource_usage.throughput_used +
+        amount
   }
 
   tenant.updated_at = 0
@@ -125,7 +118,7 @@ pub fn ResourceQuotaManager::release_usage(
   tenant_id : String,
   resource_type : ResourceType,
   amount : Int,
-) -> Result[Unit, TenantError> {
+) -> Result[Unit, TenantError] {
   // 获取租户
   let tenant = match self.tenant_manager.get_tenant(tenant_id) {
     Some(t) => t
@@ -134,32 +127,37 @@ pub fn ResourceQuotaManager::release_usage(
 
   // 更新资源使用量
   match resource_type {
-    ResourceType::Cpu => {
-      tenant.resource_usage.cpu_used = tenant.resource_usage.cpu_used - amount.to_double()
+    Cpu => {
+      tenant.resource_usage.cpu_used = tenant.resource_usage.cpu_used -
+        amount.to_double()
       if tenant.resource_usage.cpu_used < 0.0 {
         tenant.resource_usage.cpu_used = 0.0
       }
     }
-    ResourceType::Memory => {
-      tenant.resource_usage.memory_used = tenant.resource_usage.memory_used - amount
+    Memory => {
+      tenant.resource_usage.memory_used = tenant.resource_usage.memory_used -
+        amount
       if tenant.resource_usage.memory_used < 0 {
         tenant.resource_usage.memory_used = 0
       }
     }
-    ResourceType::Storage => {
-      tenant.resource_usage.storage_used = tenant.resource_usage.storage_used - amount
-      if tenant.resource_usage.storage_used < 0 {
-        tenant.resource_usage.storage_used = 0
+    Storage => {
+      tenant.resource_usage.storage_used = tenant.resource_usage.storage_used -
+        amount.to_int64()
+      if tenant.resource_usage.storage_used < 0L {
+        tenant.resource_usage.storage_used = 0L
       }
     }
-    ResourceType::Connections => {
-      tenant.resource_usage.connections_used = tenant.resource_usage.connections_used - amount
+    Connections => {
+      tenant.resource_usage.connections_used = tenant.resource_usage.connections_used -
+        amount
       if tenant.resource_usage.connections_used < 0 {
         tenant.resource_usage.connections_used = 0
       }
     }
-    ResourceType::Throughput => {
-      tenant.resource_usage.throughput_used = tenant.resource_usage.throughput_used - amount
+    Throughput => {
+      tenant.resource_usage.throughput_used = tenant.resource_usage.throughput_used -
+        amount
       if tenant.resource_usage.throughput_used < 0 {
         tenant.resource_usage.throughput_used = 0
       }
@@ -177,28 +175,31 @@ fn ResourceQuotaManager::get_resource_usage(
   self : ResourceQuotaManager,
   tenant : Tenant,
   resource_type : ResourceType,
-) -> (Int, Int) {
+) -> (Int64, Int64) {
+  let _ = self
   match resource_type {
-    ResourceType::Cpu => (
-      (tenant.resource_usage.cpu_used * 1000.0).to_int(),
-      (tenant.resource_usage.cpu_limit * 1000.0).to_int()
-    )
-    ResourceType::Memory => (
-      tenant.resource_usage.memory_used,
-      tenant.resource_usage.memory_limit
-    )
-    ResourceType::Storage => (
-      tenant.resource_usage.storage_used,
-      tenant.resource_usage.storage_limit
-    )
-    ResourceType::Connections => (
-      tenant.resource_usage.connections_used,
-      tenant.resource_usage.connections_limit
-    )
-    ResourceType::Throughput => (
-      tenant.resource_usage.throughput_used,
-      tenant.resource_usage.throughput_limit
-    )
+    Cpu =>
+      (
+        (tenant.resource_usage.cpu_used * 1000.0).to_int().to_int64(),
+        (tenant.resource_usage.cpu_limit * 1000.0).to_int().to_int64(),
+      )
+    Memory =>
+      (
+        tenant.resource_usage.memory_used.to_int64(),
+        tenant.resource_usage.memory_limit.to_int64(),
+      )
+    Storage =>
+      (tenant.resource_usage.storage_used, tenant.resource_usage.storage_limit)
+    Connections =>
+      (
+        tenant.resource_usage.connections_used.to_int64(),
+        tenant.resource_usage.connections_limit.to_int64(),
+      )
+    Throughput =>
+      (
+        tenant.resource_usage.throughput_used.to_int64(),
+        tenant.resource_usage.throughput_limit.to_int64(),
+      )
   }
 }
 
@@ -210,6 +211,7 @@ fn ResourceQuotaManager::trigger_alert(
   resource_type : ResourceType,
   usage_ratio : Double,
 ) -> Unit {
+  let _ = self
   let _ = tenant_id
   let _ = resource_type
   let _ = usage_ratio
@@ -249,10 +251,7 @@ pub(all) struct AuditLog {
 ///|
 /// 创建隔离守卫
 pub fn IsolationGuard::new(tenant_manager : TenantManager) -> IsolationGuard {
-  {
-    tenant_manager,
-    audit_logs: [],
-  }
+  { tenant_manager, audit_logs: [], }
 }
 
 ///|
@@ -261,14 +260,14 @@ pub fn IsolationGuard::check_cross_tenant_access(
   self : IsolationGuard,
   source_tenant_id : String,
   target_tenant_id : String,
-) -> Result[Unit, TenantError> {
+) -> Result[Unit, TenantError] {
   // 如果租户相同，允许访问
-  if source_tenant_id == target_tenant_id {
+  if source_tenant_id.to_string() == target_tenant_id.to_string() {
     return Ok(())
   }
 
   // 记录审计日志
-  self.audit_logs.push(AuditLog {
+  self.audit_logs.push(AuditLog::{
     log_id: "audit_" + self.audit_logs.length().to_string(),
     tenant_id: source_tenant_id,
     operation: "cross_tenant_access",
@@ -288,17 +287,17 @@ pub fn IsolationGuard::validate_namespace_access(
   self : IsolationGuard,
   tenant_id : String,
   namespace_id : String,
-) -> Result[Unit, TenantError> {
+) -> Result[Unit, TenantError] {
   // 获取租户
-  let tenant = match self.tenant_manager.get_tenant(tenant_id) {
+  let tenant = match self.tenant_manager.get_tenant(tenant_id.to_string()) {
     Some(t) => t
     None => return Err(Tenant_Not_Found)
   }
 
   // 检查命名空间是否属于该租户
-  if not tenant.namespaces.contains_key(namespace_id) {
+  if !tenant.namespaces.contains(namespace_id.to_string()) {
     // 记录审计日志
-    self.audit_logs.push(AuditLog {
+    self.audit_logs.push(AuditLog::{
       log_id: "audit_" + self.audit_logs.length().to_string(),
       tenant_id,
       operation: "namespace_access",
@@ -313,7 +312,7 @@ pub fn IsolationGuard::validate_namespace_access(
   }
 
   // 记录审计日志
-  self.audit_logs.push(AuditLog {
+  self.audit_logs.push(AuditLog::{
     log_id: "audit_" + self.audit_logs.length().to_string(),
     tenant_id,
     operation: "namespace_access",
@@ -329,11 +328,14 @@ pub fn IsolationGuard::validate_namespace_access(
 
 ///|
 /// 获取审计日志
-pub fn IsolationGuard::get_audit_logs(self : IsolationGuard, tenant_id : String) -> Array[AuditLog] {
+pub fn IsolationGuard::get_audit_logs(
+  self : IsolationGuard,
+  tenant_id : String,
+) -> Array[AuditLog] {
   let result : Array[AuditLog] = []
   for log in self.audit_logs {
-    if log.tenant_id == tenant_id {
-      result.push(log)
+    if log.tenant_id == tenant_id.to_string() {
+      result.push({ ..log, })
     }
   }
   result
@@ -341,7 +343,9 @@ pub fn IsolationGuard::get_audit_logs(self : IsolationGuard, tenant_id : String)
 
 ///|
 /// 创建资源配额管理器
-pub fn create_resource_quota_manager(tenant_manager : TenantManager) -> ResourceQuotaManager {
+pub fn create_resource_quota_manager(
+  tenant_manager : TenantManager,
+) -> ResourceQuotaManager {
   ResourceQuotaManager::new(tenant_manager)
 }
 
