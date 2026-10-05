@@ -19,6 +19,37 @@ RealTimeDB 是一个高可用实时数据库，基于 MoonBit 语言实现的内
 - **监控指标**：QPS、延迟、内存使用、Prometheus 集成
 - **连接池**：连接复用、健康检查、空闲超时
 
+### 高性能数据管道
+- **零拷贝批量导入**：≥500,000 条/秒
+- **流式处理**：P99 延迟 ≤100μs
+- **内存池复用**：复用率 ≥80%
+- **批量订阅聚合**：100ms 窗口
+- **数据压缩**：gzip/zstd/lz4
+- **转换管道**：Map/Filter/FlatMap/KeyBy/Reduce
+- **优先级调度**：1~10 级优先级
+- **并行导入**：1~16 并行度
+- **自适应批处理**：动态调整批次大小
+- **零拷贝读取**：内存映射、引用返回
+
+### 二级索引
+- **Hash 索引**：等值查询 O(1)
+- **B+树索引**：范围查询 O(log n)
+- **前缀树索引**：前缀匹配 O(m)
+- **复合索引**：最左前缀原则
+- **索引选择器**：智能选择最优索引
+- **查询引擎**：等值/范围/前缀查询
+- **统计收集**：基数、碎片率、命中率
+- **碎片整理**：定期优化索引存储
+
+### 实时数据流引擎
+- **窗口聚合**：滚动/滑动/会话窗口
+- **聚合函数**：Count/Sum/Avg/Max/Min
+- **过滤订阅**：等值/范围/前缀/正则
+- **状态存储**：内存优先、TTL 过期
+- **检查点服务**：Exactly-Once 语义
+- **水位线服务**：乱序容忍、迟到数据处理
+- **背压控制**：流量整形、优先级调度
+
 ## 安装
 
 在 `moon.mod` 中添加依赖：
@@ -149,6 +180,28 @@ let _ = db.advance(10)
 | `ConnectionPool::return_connection(conn)` | 归还连接 |
 | `ConnectionPool::reclaim(timeout, time)` | 回收超时连接 |
 
+### 二级索引 API
+
+| 方法 | 说明 |
+|------|------|
+| `IndexManager::new()` | 创建索引管理器 |
+| `IndexManager::create_index(name, paths, type, unique)` | 创建索引 |
+| `IndexManager::drop_index(name)` | 删除索引 |
+| `IndexManager::rebuild_index(name, mode)` | 重建索引 |
+| `QueryEngine::index_query(name, field, value)` | 等值查询 |
+| `QueryEngine::index_range(name, field, start, end)` | 范围查询 |
+| `QueryEngine::index_prefix(name, field, prefix)` | 前缀查询 |
+
+### 流引擎 API
+
+| 方法 | 说明 |
+|------|------|
+| `PipelineManager::new()` | 创建管道管理器 |
+| `PipelineManager::create_pipeline(name, config)` | 创建管道 |
+| `PipelineManager::start_pipeline(name)` | 启动管道 |
+| `PipelineManager::stop_pipeline(name)` | 停止管道 |
+| `PipelineManager::process_event(name, event)` | 处理事件 |
+
 ## 测试
 
 运行测试：
@@ -165,6 +218,9 @@ moon test
 - 快照测试（`snapshot_wbtest.mbt`）：快照模块测试
 - 监控测试（`monitor_wbtest.mbt`）：监控模块测试
 - 连接池测试（`connection_pool_wbtest.mbt`）：连接池模块测试
+- 数据管道测试（`perf_pipeline_test.mbt`）：性能管道测试
+- 索引测试（`index_test.mbt`）：二级索引测试
+- 流引擎测试（`stream_engine_test.mbt`）：流引擎测试
 
 ## 架构设计
 
@@ -172,13 +228,17 @@ moon test
 
 ```
 realtime_db/
-├── realtime_db.mbt      # 核心数据库引擎
-├── transaction.mbt      # 事务支持模块
-├── wal.mbt              # WAL 预写日志模块
-├── snapshot.mbt         # 快照持久化模块
-├── monitor.mbt          # 监控指标模块
-├── connection_pool.mbt  # 连接池模块
-└── realtime_db_test.mbt # 黑盒测试
+├── realtime_db.mbt          # 核心数据库引擎
+├── transaction.mbt          # 事务支持模块
+├── wal.mbt                  # WAL 预写日志模块
+├── snapshot.mbt             # 快照持久化模块
+├── monitor.mbt              # 监控指标模块
+├── connection_pool.mbt      # 连接池模块
+├── perf_pipeline/           # 高性能数据管道
+├── index/                   # 二级索引
+├── stream_engine/           # 实时数据流引擎
+├── cmd/main/                # CLI 入口
+└── realtime_db_test.mbt     # 黑盒测试
 ```
 
 ### 设计原则
@@ -195,6 +255,9 @@ realtime_db/
 | 读写延迟 | ≤ 1ms（P99） |
 | 事务提交延迟 | ≤ 5ms（P99） |
 | 吞吐量 | ≥ 100,000 QPS |
+| 批量导入 | ≥ 500,000 条/秒 |
+| 流式处理延迟 | ≤ 100μs（P99） |
+| 索引查询延迟 | ≤ 100μs（P99） |
 | 可用性 | ≥ 99.99% |
 | RPO | ≤ 1s |
 | RTO | ≤ 30s |
