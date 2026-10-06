@@ -22,7 +22,7 @@ pub(all) enum FeatureType {
 }
 
 ///|
-impl Eq for FeatureType with fn equal(self, other) -> Bool {
+pub impl Eq for FeatureType with fn equal(self, other) -> Bool {
   match (self, other) {
     (Int, Int) => true
     (Float, Float) => true
@@ -39,7 +39,7 @@ impl Eq for FeatureType with fn equal(self, other) -> Bool {
 pub extend FeatureType with Eq::{equal, not_equal}
 
 ///|
-impl Debug for FeatureType with fn to_repr(self) -> Repr {
+pub impl Debug for FeatureType with fn to_repr(self) -> Repr {
   match self {
     Int => Repr::ctor("Int", [])
     Float => Repr::ctor("Float", [])
@@ -65,10 +65,13 @@ pub(all) enum FeatureStatus {
   Disabled
   /// 已删除
   Deleted
-}
+} derive(Debug)
 
 ///|
-impl Eq for FeatureStatus with fn equal(self, other) -> Bool {
+pub extend FeatureStatus with Debug::{to_repr}
+
+///|
+pub impl Eq for FeatureStatus with fn equal(self, other) -> Bool {
   match (self, other) {
     (Creating, Creating) => true
     (Active, Active) => true
@@ -92,10 +95,13 @@ pub(all) enum FeatureSource {
   Realtime
   /// 手动
   Manual
-}
+} derive(Debug)
 
 ///|
-impl Eq for FeatureSource with fn equal(self, other) -> Bool {
+pub extend FeatureSource with Debug::{to_repr}
+
+///|
+pub impl Eq for FeatureSource with fn equal(self, other) -> Bool {
   match (self, other) {
     (Batch, Batch) => true
     (Streaming, Streaming) => true
@@ -117,10 +123,13 @@ pub(all) enum FeatureViewType {
   StreamingView
   /// 实时视图
   RealtimeView
-}
+} derive(Debug)
 
 ///|
-impl Eq for FeatureViewType with fn equal(self, other) -> Bool {
+pub extend FeatureViewType with Debug::{to_repr}
+
+///|
+pub impl Eq for FeatureViewType with fn equal(self, other) -> Bool {
   match (self, other) {
     (BatchView, BatchView) => true
     (StreamingView, StreamingView) => true
@@ -140,13 +149,13 @@ pub(all) struct FeatureTable {
   /// 表名
   table_name : String
   /// 特征列表
-  features : Array[Feature]
+  mut features : Array[Feature]
   /// 主键
   primary_key : String
   /// 创建时间
   created_at : Int
   /// 更新时间
-  updated_at : Int
+  mut updated_at : Int
 }
 
 ///|
@@ -280,8 +289,8 @@ pub(all) struct FeatureStoreConfig {
 /// 默认特征存储配置
 pub fn FeatureStoreConfig::default() -> FeatureStoreConfig {
   {
-    online_storage_type: StorageType::Memory,
-    offline_storage_type: StorageType::DeltaLake,
+    online_storage_type: Memory,
+    offline_storage_type: DeltaLake,
     enable_cache: true,
     cache_size: 100000,
     cache_ttl: 300,
@@ -303,10 +312,13 @@ pub(all) enum StorageType {
   DeltaLake
   /// MySQL 存储
   Mysql
-}
+} derive(Debug)
 
 ///|
-impl Eq for StorageType with fn equal(self, other) -> Bool {
+pub extend StorageType with Debug::{to_repr}
+
+///|
+pub impl Eq for StorageType with fn equal(self, other) -> Bool {
   match (self, other) {
     (Memory, Memory) => true
     (Redis, Redis) => true
@@ -352,7 +364,7 @@ pub(all) enum FeatureError {
 }
 
 ///|
-impl Eq for FeatureError with fn equal(self, other) -> Bool {
+pub impl Eq for FeatureError with fn equal(self, other) -> Bool {
   match (self, other) {
     (Table_Already_Exists, Table_Already_Exists) => true
     (Table_Not_Found, Table_Not_Found) => true
@@ -375,7 +387,7 @@ impl Eq for FeatureError with fn equal(self, other) -> Bool {
 pub extend FeatureError with Eq::{equal, not_equal}
 
 ///|
-impl Debug for FeatureError with fn to_repr(self) -> Repr {
+pub impl Debug for FeatureError with fn to_repr(self) -> Repr {
   match self {
     Table_Already_Exists => Repr::ctor("Table_Already_Exists", [])
     Table_Not_Found => Repr::ctor("Table_Not_Found", [])

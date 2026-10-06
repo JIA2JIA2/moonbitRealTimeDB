@@ -3,33 +3,33 @@
 // 实现特征计算、滑动窗口聚合、特征版本管理
 
 ///|
+/// 聚合器种类（用于注册和分发）
+pub(all) enum AggregatorKind {
+  /// 计数
+  Count
+  /// 求和
+  Sum
+  /// 平均值
+  Avg
+  /// 最大值
+  Max
+  /// 最小值
+  Min
+}
+
+///|
 /// 特征计算引擎
 pub(all) struct FeatureComputeEngine {
-  /// 流引擎引用
-  stream_engine : @realtime_db.StreamEngine?
-  /// 批处理引擎
-  batch_engine : BatchComputeEngine?
-  /// 特征聚合器映射
-  mut aggregators : Map[String, FeatureAggregator>
-  /// 计算窗口配置
-  window_configs : Map[String, WindowConfig>
+  /// 特征聚合器映射：特征名 -> 聚合器种类
+  mut aggregators : Map[String, AggregatorKind]
+  /// 计算窗口配置：特征名 -> 窗口配置
+  mut window_configs : Map[String, WindowConfig]
 }
 
 ///|
 /// 创建特征计算引擎
 pub fn FeatureComputeEngine::new() -> FeatureComputeEngine {
-  {
-    stream_engine: None,
-    batch_engine: None,
-    aggregators: Map([]),
-    window_configs: Map([]),
-  }
-}
-
-///|
-/// 设置流引擎
-pub fn FeatureComputeEngine::set_stream_engine(self : FeatureComputeEngine, engine : @realtime_db.StreamEngine?) -> Unit {
-  self.stream_engine = engine
+  { aggregators: Map([]), window_configs: Map([]), }
 }
 
 ///|
@@ -37,9 +37,9 @@ pub fn FeatureComputeEngine::set_stream_engine(self : FeatureComputeEngine, engi
 pub fn FeatureComputeEngine::register_aggregator(
   self : FeatureComputeEngine,
   feature_name : String,
-  aggregator : FeatureAggregator,
-) -> Result[Unit, FeatureError> {
-  if self.aggregators.contains_key(feature_name) {
+  aggregator : AggregatorKind,
+) -> Result[Unit, FeatureError] {
+  if self.aggregators.contains(feature_name.to_string()) {
     return Err(Feature_Already_Exists)
   }
 
@@ -53,7 +53,7 @@ pub fn FeatureComputeEngine::register_window_config(
   self : FeatureComputeEngine,
   feature_name : String,
   config : WindowConfig,
-) -> Result[Unit, FeatureError> {
+) -> Result[Unit, FeatureError] {
   self.window_configs.set(feature_name, config)
   Ok(())
 }
@@ -64,13 +64,13 @@ pub fn FeatureComputeEngine::compute(
   self : FeatureComputeEngine,
   feature_name : String,
   data : Array[@realtime_db.Value],
-) -> Result[@realtime_db.Value, FeatureError> {
-  let aggregator = match self.aggregators.get(feature_name) {
+) -> Result[@realtime_db.Value, FeatureError] {
+  let kind = match self.aggregators.get(feature_name) {
     Some(a) => a
-    None => return Err(Feature_Not_Found),
+    None => return Err(Feature_Not_Found)
   }
 
-  aggregator.aggregate(data)
+  run_aggregate(kind, data)
 }
 
 ///|
@@ -78,26 +78,30 @@ pub fn FeatureComputeEngine::compute(
 pub fn FeatureComputeEngine::sliding_window_compute(
   self : FeatureComputeEngine,
   feature_name : String,
-  events : Array[@realtime_db.StreamEvent],
+  events : Array[@stream_engine.StreamEvent],
   window_size_ms : Int,
   slide_interval_ms : Int,
-) -> Result[Array[FeatureVector], FeatureError> {
-  let aggregator = match self.aggregators.get(feature_name) {
+) -> Result[Array[FeatureVector], FeatureError] {
+  let _ = window_size_ms
+  let kind = match self.aggregators.get(feature_name) {
     Some(a) => a
-    None => return Err(Feature_Not_Found),
+    None => return Err(Feature_Not_Found)
   }
 
   // 按窗口分组
-  let windowed_data : Map[Int, Array[@realtime_db.StreamEvent]] = Map([])
+  let windowed_data : Map[Int, Array[@stream_engine.StreamEvent]] = Map([])
 
   for event in events {
-    let window_start = event.timestamp - (event.timestamp % slide_interval_ms)
+    let window_start = event.timestamp - event.timestamp % slide_interval_ms
     let window_events = match windowed_data.get(window_start) {
       Some(w) => w
       None => {
-        let new_window = Array[@realtime_db.StreamEvent]
+        let new_window : Array[@stream_engine.StreamEvent] = []
         windowed_data.set(window_start, new_window)
-        new_window
+        match windowed_data.get(window_start) {
+          Some(w) => w
+          None => return Err(Internal_Error("Failed to create window"))
+        }
       }
     }
     window_events.push(event)
@@ -111,18 +115,17 @@ pub fn FeatureComputeEngine::sliding_window_compute(
       values.push(event.value)
     }
 
-    match aggregator.aggregate(values) {
-      Ok(result_value) => {
-        results.push(FeatureVector {
-          vector_id: feature_name + "_" + window_start.to_string(),
-          entity_id: feature_name,
-          table_id: "",
+    match run_aggregate(kind, values) {
+      Ok(result_value) =>
+        results.push(FeatureVector::{
+          vector_id: feature_name.to_string() + "_" + window_start.to_string(),
+          entity_id: feature_name.to_string(),
+          table_id: "".to_string(),
           values: Map([("value", result_value)]),
           version: 1,
           timestamp: window_start,
           is_valid: true,
         })
-      }
       Err(_) => ()
     }
   }
@@ -131,30 +134,64 @@ pub fn FeatureComputeEngine::sliding_window_compute(
 }
 
 ///|
+/// 执行聚合分发
+fn run_aggregate(
+  kind : AggregatorKind,
+  data : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, FeatureError] {
+  match kind {
+    Count => CountAggregator::new().aggregate(data)
+    Sum => SumAggregator::new().aggregate(data)
+    Avg => AvgAggregator::new().aggregate(data)
+    Max => MaxAggregator::new().aggregate(data)
+    Min => MinAggregator::new().aggregate(data)
+  }
+}
+
+///|
 /// 特征聚合器接口
-pub(all) trait FeatureAggregator {
+pub trait FeatureAggregator {
   /// 聚合数据
-  fn aggregate(self : Self, data : Array[@realtime_db.Value]) -> Result[@realtime_db.Value, FeatureError>
+  fn aggregate(self : Self, data : Array[@realtime_db.Value]) -> Result[
+    @realtime_db.Value,
+    FeatureError,
+  ]
   /// 合并状态
-  fn merge(self : Self, state1 : @realtime_db.Value, state2 : @realtime_db.Value) -> Result[@realtime_db.Value, FeatureError>
+  fn merge(
+    self : Self,
+    state1 : @realtime_db.Value,
+    state2 : @realtime_db.Value,
+  ) -> Result[@realtime_db.Value, FeatureError]
 }
 
 ///|
 /// 计数聚合器
-pub(all) struct CountAggregator {}
+pub(all) struct CountAggregator {
+  _placeholder : Unit
+}
 
 ///|
 /// 创建计数聚合器
 pub fn CountAggregator::new() -> CountAggregator {
-  {}
+  { _placeholder: (), }
 }
 
 ///|
-impl FeatureAggregator for CountAggregator with fn aggregate(self, data) -> Result[@realtime_db.Value, FeatureError] {
+pub impl FeatureAggregator for CountAggregator with fn aggregate(
+  self : CountAggregator,
+  data : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, FeatureError] {
+  let _ = self
   Ok(@realtime_db.Int(data.length()))
 }
 
-fn merge(self : CountAggregator, state1 : @realtime_db.Value, state2 : @realtime_db.Value) -> Result[@realtime_db.Value, FeatureError] {
+///|
+pub impl FeatureAggregator for CountAggregator with fn merge(
+  self : CountAggregator,
+  state1 : @realtime_db.Value,
+  state2 : @realtime_db.Value,
+) -> Result[@realtime_db.Value, FeatureError] {
+  let _ = self
   let count1 = match state1 {
     @realtime_db.Int(i) => i
     _ => 0
@@ -167,18 +204,27 @@ fn merge(self : CountAggregator, state1 : @realtime_db.Value, state2 : @realtime
 }
 
 ///|
+pub extend CountAggregator with FeatureAggregator::{aggregate, merge}
+
+///|
 /// 求和聚合器
-pub(all) struct SumAggregator {}
+pub(all) struct SumAggregator {
+  _placeholder : Unit
+}
 
 ///|
 /// 创建求和聚合器
 pub fn SumAggregator::new() -> SumAggregator {
-  {}
+  { _placeholder: (), }
 }
 
 ///|
-impl FeatureAggregator for SumAggregator with fn aggregate(self, data) -> Result[@realtime_db.Value, FeatureError] {
-  var total = 0
+pub impl FeatureAggregator for SumAggregator with fn aggregate(
+  self : SumAggregator,
+  data : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, FeatureError] {
+  let _ = self
+  let mut total = 0
   for value in data {
     match value {
       @realtime_db.Int(i) => total = total + i
@@ -189,7 +235,13 @@ impl FeatureAggregator for SumAggregator with fn aggregate(self, data) -> Result
   Ok(@realtime_db.Int(total))
 }
 
-fn merge(self : SumAggregator, state1 : @realtime_db.Value, state2 : @realtime_db.Value) -> Result[@realtime_db.Value, FeatureError] {
+///|
+pub impl FeatureAggregator for SumAggregator with fn merge(
+  self : SumAggregator,
+  state1 : @realtime_db.Value,
+  state2 : @realtime_db.Value,
+) -> Result[@realtime_db.Value, FeatureError] {
+  let _ = self
   let sum1 = match state1 {
     @realtime_db.Int(i) => i
     _ => 0
@@ -202,19 +254,28 @@ fn merge(self : SumAggregator, state1 : @realtime_db.Value, state2 : @realtime_d
 }
 
 ///|
+pub extend SumAggregator with FeatureAggregator::{aggregate, merge}
+
+///|
 /// 平均值聚合器
-pub(all) struct AvgAggregator {}
+pub(all) struct AvgAggregator {
+  _placeholder : Unit
+}
 
 ///|
 /// 创建平均值聚合器
 pub fn AvgAggregator::new() -> AvgAggregator {
-  {}
+  { _placeholder: (), }
 }
 
 ///|
-impl FeatureAggregator for AvgAggregator with fn aggregate(self, data) -> Result[@realtime_db.Value, FeatureError] {
-  var total = 0.0
-  var count = 0
+pub impl FeatureAggregator for AvgAggregator with fn aggregate(
+  self : AvgAggregator,
+  data : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, FeatureError] {
+  let _ = self
+  let mut total = 0.0
+  let mut count = 0
   for value in data {
     match value {
       @realtime_db.Int(i) => {
@@ -235,39 +296,63 @@ impl FeatureAggregator for AvgAggregator with fn aggregate(self, data) -> Result
   }
 }
 
-fn merge(self : AvgAggregator, state1 : @realtime_db.Value, state2 : @realtime_db.Value) -> Result[@realtime_db.Value, FeatureError] {
+///|
+pub impl FeatureAggregator for AvgAggregator with fn merge(
+  self : AvgAggregator,
+  state1 : @realtime_db.Value,
+  state2 : @realtime_db.Value,
+) -> Result[@realtime_db.Value, FeatureError] {
+  let _ = self
   let _ = state1
   let _ = state2
   Ok(@realtime_db.Float(0.0))
 }
 
 ///|
+pub extend AvgAggregator with FeatureAggregator::{aggregate, merge}
+
+///|
 /// 最大值聚合器
-pub(all) struct MaxAggregator {}
+pub(all) struct MaxAggregator {
+  _placeholder : Unit
+}
 
 ///|
 /// 创建最大值聚合器
 pub fn MaxAggregator::new() -> MaxAggregator {
-  {}
+  { _placeholder: (), }
 }
 
 ///|
-impl FeatureAggregator for MaxAggregator with fn aggregate(self, data) -> Result[@realtime_db.Value, FeatureError] {
-  var max : Int? = None
+pub impl FeatureAggregator for MaxAggregator with fn aggregate(
+  self : MaxAggregator,
+  data : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, FeatureError] {
+  let _ = self
+  let mut max_value : Int? = None
   for value in data {
     match value {
-      @realtime_db.Int(i) => {
-        if max is None or i > max? {
-          max = Some(i)
+      @realtime_db.Int(i) =>
+        match max_value {
+          None => max_value = Some(i)
+          Some(m) => if i > m { max_value = Some(i) }
         }
-      }
       _ => ()
     }
   }
-  Ok(@realtime_db.Int(max? ?? 0))
+  match max_value {
+    Some(m) => Ok(@realtime_db.Int(m))
+    None => Ok(@realtime_db.Int(0))
+  }
 }
 
-fn merge(self : MaxAggregator, state1 : @realtime_db.Value, state2 : @realtime_db.Value) -> Result[@realtime_db.Value, FeatureError] {
+///|
+pub impl FeatureAggregator for MaxAggregator with fn merge(
+  self : MaxAggregator,
+  state1 : @realtime_db.Value,
+  state2 : @realtime_db.Value,
+) -> Result[@realtime_db.Value, FeatureError] {
+  let _ = self
   let max1 = match state1 {
     @realtime_db.Int(i) => i
     _ => 0
@@ -280,32 +365,50 @@ fn merge(self : MaxAggregator, state1 : @realtime_db.Value, state2 : @realtime_d
 }
 
 ///|
+pub extend MaxAggregator with FeatureAggregator::{aggregate, merge}
+
+///|
 /// 最小值聚合器
-pub(all) struct MinAggregator {}
+pub(all) struct MinAggregator {
+  _placeholder : Unit
+}
 
 ///|
 /// 创建最小值聚合器
 pub fn MinAggregator::new() -> MinAggregator {
-  {}
+  { _placeholder: (), }
 }
 
 ///|
-impl FeatureAggregator for MinAggregator with fn aggregate(self, data) -> Result[@realtime_db.Value, FeatureError] {
-  var min : Int? = None
+pub impl FeatureAggregator for MinAggregator with fn aggregate(
+  self : MinAggregator,
+  data : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, FeatureError] {
+  let _ = self
+  let mut min_value : Int? = None
   for value in data {
     match value {
-      @realtime_db.Int(i) => {
-        if min is None or i < min? {
-          min = Some(i)
+      @realtime_db.Int(i) =>
+        match min_value {
+          None => min_value = Some(i)
+          Some(m) => if i < m { min_value = Some(i) }
         }
-      }
       _ => ()
     }
   }
-  Ok(@realtime_db.Int(min? ?? 0))
+  match min_value {
+    Some(m) => Ok(@realtime_db.Int(m))
+    None => Ok(@realtime_db.Int(0))
+  }
 }
 
-fn merge(self : MinAggregator, state1 : @realtime_db.Value, state2 : @realtime_db.Value) -> Result[@realtime_db.Value, FeatureError] {
+///|
+pub impl FeatureAggregator for MinAggregator with fn merge(
+  self : MinAggregator,
+  state1 : @realtime_db.Value,
+  state2 : @realtime_db.Value,
+) -> Result[@realtime_db.Value, FeatureError] {
+  let _ = self
   let min1 = match state1 {
     @realtime_db.Int(i) => i
     _ => 0
@@ -318,19 +421,24 @@ fn merge(self : MinAggregator, state1 : @realtime_db.Value, state2 : @realtime_d
 }
 
 ///|
+pub extend MinAggregator with FeatureAggregator::{aggregate, merge}
+
+///|
 /// 窗口配置
 pub(all) struct WindowConfig {
   /// 窗口大小（毫秒）
   window_size_ms : Int
   /// 滑动间隔（毫秒）
   slide_interval_ms : Int
-  /// 聚合函数
-  aggregator : FeatureAggregator
+  /// 聚合器种类
+  aggregator : AggregatorKind
 }
 
 ///|
 /// 批计算引擎（简化实现）
-pub(all) struct BatchComputeEngine {}
+pub(all) struct BatchComputeEngine {
+  _placeholder : Unit
+}
 
 ///|
 /// 创建特征计算引擎
@@ -339,31 +447,31 @@ pub fn create_feature_compute_engine() -> FeatureComputeEngine {
 }
 
 ///|
-/// 创建计数聚合器
-pub fn create_count_aggregator() -> FeatureAggregator {
-  CountAggregator::new() as FeatureAggregator
+/// 创建计数聚合器种类
+pub fn create_count_aggregator() -> AggregatorKind {
+  Count
 }
 
 ///|
-/// 创建求和聚合器
-pub fn create_sum_aggregator() -> FeatureAggregator {
-  SumAggregator::new() as FeatureAggregator
+/// 创建求和聚合器种类
+pub fn create_sum_aggregator() -> AggregatorKind {
+  Sum
 }
 
 ///|
-/// 创建平均值聚合器
-pub fn create_avg_aggregator() -> FeatureAggregator {
-  AvgAggregator::new() as FeatureAggregator
+/// 创建平均值聚合器种类
+pub fn create_avg_aggregator() -> AggregatorKind {
+  Avg
 }
 
 ///|
-/// 创建最大值聚合器
-pub fn create_max_aggregator() -> FeatureAggregator {
-  MaxAggregator::new() as FeatureAggregator
+/// 创建最大值聚合器种类
+pub fn create_max_aggregator() -> AggregatorKind {
+  Max
 }
 
 ///|
-/// 创建最小值聚合器
-pub fn create_min_aggregator() -> FeatureAggregator {
-  MinAggregator::new() as FeatureAggregator
+/// 创建最小值聚合器种类
+pub fn create_min_aggregator() -> AggregatorKind {
+  Min
 }
