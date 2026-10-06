@@ -11,10 +11,10 @@ pub(all) enum VersionStatus {
   Deleted
   /// 已合并
   Merged
-}
+} derive(Debug)
 
 ///|
-impl Eq for VersionStatus with fn equal(self, other) -> Bool {
+pub impl Eq for VersionStatus with fn equal(self, other) -> Bool {
   match (self, other) {
     (Active, Active) => true
     (Deleted, Deleted) => true
@@ -27,6 +27,9 @@ impl Eq for VersionStatus with fn equal(self, other) -> Bool {
 pub extend VersionStatus with Eq::{equal, not_equal}
 
 ///|
+pub extend VersionStatus with Debug::{to_repr}
+
+///|
 /// 快照类型枚举
 pub(all) enum SnapshotType {
   /// 自动快照
@@ -35,10 +38,10 @@ pub(all) enum SnapshotType {
   Manual
   /// 定时快照
   Scheduled
-}
+} derive(Debug)
 
 ///|
-impl Eq for SnapshotType with fn equal(self, other) -> Bool {
+pub impl Eq for SnapshotType with fn equal(self, other) -> Bool {
   match (self, other) {
     (Auto, Auto) => true
     (Manual, Manual) => true
@@ -49,6 +52,9 @@ impl Eq for SnapshotType with fn equal(self, other) -> Bool {
 
 ///|
 pub extend SnapshotType with Eq::{equal, not_equal}
+
+///|
+pub extend SnapshotType with Debug::{to_repr}
 
 ///|
 /// 分支类型枚举
@@ -63,10 +69,10 @@ pub(all) enum BranchType {
   Release
   /// 热修复分支
   Hotfix
-}
+} derive(Debug)
 
 ///|
-impl Eq for BranchType with fn equal(self, other) -> Bool {
+pub impl Eq for BranchType with fn equal(self, other) -> Bool {
   match (self, other) {
     (Main, Main) => true
     (Dev, Dev) => true
@@ -81,6 +87,9 @@ impl Eq for BranchType with fn equal(self, other) -> Bool {
 pub extend BranchType with Eq::{equal, not_equal}
 
 ///|
+pub extend BranchType with Debug::{to_repr}
+
+///|
 /// 合并策略枚举
 pub(all) enum MergeStrategy {
   /// 快进合并
@@ -91,10 +100,10 @@ pub(all) enum MergeStrategy {
   Squash
   /// 变基合并
   Rebase
-}
+} derive(Debug)
 
 ///|
-impl Eq for MergeStrategy with fn equal(self, other) -> Bool {
+pub impl Eq for MergeStrategy with fn equal(self, other) -> Bool {
   match (self, other) {
     (FastForward, FastForward) => true
     (ThreeWay, ThreeWay) => true
@@ -106,6 +115,9 @@ impl Eq for MergeStrategy with fn equal(self, other) -> Bool {
 
 ///|
 pub extend MergeStrategy with Eq::{equal, not_equal}
+
+///|
+pub extend MergeStrategy with Debug::{to_repr}
 
 ///|
 /// 版本快照
@@ -138,13 +150,13 @@ pub(all) struct Branch {
   /// 分支类型
   branch_type : BranchType
   /// 当前版本
-  current_version : String
+  mut current_version : String
   /// 父分支
   parent_branch : String?
   /// 创建时间
   created_at : Int
   /// 更新时间
-  updated_at : Int
+  mut updated_at : Int
 }
 
 ///|
@@ -153,11 +165,11 @@ pub(all) struct VersionHistory {
   /// 历史 ID
   history_id : String
   /// 版本列表
-  versions : Array[VersionEntry]
+  mut versions : Array[VersionEntry]
   /// 分支映射
-  branches : Map[String, Branch]
+  mut branches : Map[String, Branch]
   /// 当前分支
-  current_branch : String
+  mut current_branch : String
 }
 
 ///|
@@ -214,10 +226,10 @@ pub(all) enum ChangeType {
   Deleted
   /// 修改
   Modified
-}
+} derive(Debug)
 
 ///|
-impl Eq for ChangeType with fn equal(self, other) -> Bool {
+pub impl Eq for ChangeType with fn equal(self, other) -> Bool {
   match (self, other) {
     (Added, Added) => true
     (Deleted, Deleted) => true
@@ -228,6 +240,9 @@ impl Eq for ChangeType with fn equal(self, other) -> Bool {
 
 ///|
 pub extend ChangeType with Eq::{equal, not_equal}
+
+///|
+pub extend ChangeType with Debug::{to_repr}
 
 ///|
 /// 时间点查询请求
@@ -308,10 +323,13 @@ pub(all) enum VersioningError {
   Invalid_Operation
   /// 内部错误
   Internal_Error(String)
-}
+} derive(Debug)
 
 ///|
-impl Eq for VersioningError with fn equal(self, other) -> Bool {
+pub extend VersioningError with Debug::{to_repr}
+
+///|
+pub impl Eq for VersioningError with fn equal(self, other) -> Bool {
   match (self, other) {
     (Snapshot_Already_Exists, Snapshot_Already_Exists) => true
     (Snapshot_Not_Found, Snapshot_Not_Found) => true
@@ -331,27 +349,6 @@ impl Eq for VersioningError with fn equal(self, other) -> Bool {
 
 ///|
 pub extend VersioningError with Eq::{equal, not_equal}
-
-///|
-impl Debug for VersioningError with fn to_repr(self) -> Repr {
-  match self {
-    Snapshot_Already_Exists => Repr::ctor("Snapshot_Already_Exists", [])
-    Snapshot_Not_Found => Repr::ctor("Snapshot_Not_Found", [])
-    Branch_Already_Exists => Repr::ctor("Branch_Already_Exists", [])
-    Branch_Not_Found => Repr::ctor("Branch_Not_Found", [])
-    Version_Not_Found => Repr::ctor("Version_Not_Found", [])
-    Version_Conflict => Repr::ctor("Version_Conflict", [])
-    Merge_Conflict => Repr::ctor("Merge_Conflict", [])
-    Branch_Protected => Repr::ctor("Branch_Protected", [])
-    Branch_Limit_Exceeded => Repr::ctor("Branch_Limit_Exceeded", [])
-    Snapshot_Limit_Exceeded => Repr::ctor("Snapshot_Limit_Exceeded", [])
-    Invalid_Operation => Repr::ctor("Invalid_Operation", [])
-    Internal_Error(msg) => Repr::ctor("Internal_Error", [(None, Repr(msg))])
-  }
-}
-
-///|
-pub extend VersioningError with Debug::{to_repr}
 
 ///|
 /// 获取错误码
