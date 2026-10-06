@@ -18,7 +18,7 @@ pub(all) enum ReplicationTopology {
 }
 
 ///|
-impl Eq for ReplicationTopology with fn equal(self, other) -> Bool {
+pub impl Eq for ReplicationTopology with fn equal(self, other) -> Bool {
   match (self, other) {
     (Primary_Replica, Primary_Replica) => true
     (Multi_Master, Multi_Master) => true
@@ -33,7 +33,7 @@ impl Eq for ReplicationTopology with fn equal(self, other) -> Bool {
 pub extend ReplicationTopology with Eq::{equal, not_equal}
 
 ///|
-impl Debug for ReplicationTopology with fn to_repr(self) -> Repr {
+pub impl Debug for ReplicationTopology with fn to_repr(self) -> Repr {
   match self {
     Primary_Replica => Repr::ctor("Primary_Replica", [])
     Multi_Master => Repr::ctor("Multi_Master", [])
@@ -55,10 +55,13 @@ pub(all) enum ReplicationMode {
   Async
   /// 半同步复制
   Semi_Sync
-}
+} derive(Debug)
 
 ///|
-impl Eq for ReplicationMode with fn equal(self, other) -> Bool {
+pub extend ReplicationMode with Debug::{to_repr}
+
+///|
+pub impl Eq for ReplicationMode with fn equal(self, other) -> Bool {
   match (self, other) {
     (Sync, Sync) => true
     (Async, Async) => true
@@ -85,10 +88,13 @@ pub(all) enum ReplicationStatus {
   Error
   /// 断开连接
   Disconnected
-}
+} derive(Debug)
 
 ///|
-impl Eq for ReplicationStatus with fn equal(self, other) -> Bool {
+pub extend ReplicationStatus with Debug::{to_repr}
+
+///|
+pub impl Eq for ReplicationStatus with fn equal(self, other) -> Bool {
   match (self, other) {
     (Initializing, Initializing) => true
     (Running, Running) => true
@@ -116,10 +122,13 @@ pub(all) enum ConflictResolutionStrategy {
   Target_Priority
   /// 自定义
   Custom
-}
+} derive(Debug)
 
 ///|
-impl Eq for ConflictResolutionStrategy with fn equal(self, other) -> Bool {
+pub extend ConflictResolutionStrategy with Debug::{to_repr}
+
+///|
+pub impl Eq for ConflictResolutionStrategy with fn equal(self, other) -> Bool {
   match (self, other) {
     (Timestamp, Timestamp) => true
     (Version, Version) => true
@@ -143,7 +152,7 @@ pub(all) struct ClusterInfo {
   /// 集群地址
   cluster_addr : String
   /// 节点列表
-  nodes : Array[NodeInfo>
+  nodes : Array[NodeInfo]
   /// 创建时间
   created_at : Int
   /// 最后活跃时间
@@ -183,13 +192,13 @@ pub(all) struct ReplicationTask {
   /// 复制模式
   mode : ReplicationMode
   /// 复制状态
-  status : ReplicationStatus
+  mut status : ReplicationStatus
   /// 冲突解决策略
   conflict_strategy : ConflictResolutionStrategy
   /// 创建时间
   created_at : Int
   /// 更新时间
-  updated_at : Int
+  mut updated_at : Int
   /// 已复制记录数
   replicated_records : Int
   /// 总记录数
@@ -309,7 +318,7 @@ pub(all) enum ReplicationError {
 }
 
 ///|
-impl Eq for ReplicationError with fn equal(self, other) -> Bool {
+pub impl Eq for ReplicationError with fn equal(self, other) -> Bool {
   match (self, other) {
     (Task_Already_Exists, Task_Already_Exists) => true
     (Task_Not_Found, Task_Not_Found) => true
@@ -330,7 +339,7 @@ impl Eq for ReplicationError with fn equal(self, other) -> Bool {
 pub extend ReplicationError with Eq::{equal, not_equal}
 
 ///|
-impl Debug for ReplicationError with fn to_repr(self) -> Repr {
+pub impl Debug for ReplicationError with fn to_repr(self) -> Repr {
   match self {
     Task_Already_Exists => Repr::ctor("Task_Already_Exists", [])
     Task_Not_Found => Repr::ctor("Task_Not_Found", [])

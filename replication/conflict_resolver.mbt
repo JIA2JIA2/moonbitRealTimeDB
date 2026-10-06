@@ -6,18 +6,22 @@
 /// 向量时钟
 pub(all) struct VectorClock {
   /// 时钟映射：节点ID -> 时间戳
-  clocks : Map[String, Int]
+  mut clocks : Map[String, Int]
 }
 
 ///|
 /// 创建向量时钟
 pub fn VectorClock::new() -> VectorClock {
-  { clocks: Map([]) }
+  { clocks: Map([]), }
 }
 
 ///|
 /// 更新时钟
-pub fn VectorClock::update(self : VectorClock, node_id : String, timestamp : Int) -> Unit {
+pub fn VectorClock::update(
+  self : VectorClock,
+  node_id : String,
+  timestamp : Int,
+) -> Unit {
   self.clocks.set(node_id, timestamp)
 }
 
@@ -32,13 +36,16 @@ pub fn VectorClock::get(self : VectorClock, node_id : String) -> Int {
 
 ///|
 /// 比较向量时钟
-pub fn VectorClock::compare(self : VectorClock, other : VectorClock) -> ClockOrder {
-  var all_less = true
-  var all_greater = true
+pub fn VectorClock::compare(
+  self : VectorClock,
+  other : VectorClock,
+) -> ClockOrder {
+  let mut all_less = true
+  let mut all_greater = true
 
   // 检查所有节点
   for (node_id, time) in self.clocks {
-    let other_time = other.get(node_id)
+    let other_time = other.get(node_id.to_string())
     if time > other_time {
       all_less = false
     } else if time < other_time {
@@ -47,19 +54,19 @@ pub fn VectorClock::compare(self : VectorClock, other : VectorClock) -> ClockOrd
   }
 
   for (node_id, time) in other.clocks {
-    if not self.clocks.contains_key(node_id) {
+    if !self.clocks.contains(node_id.to_string()) {
       if time > 0 {
         all_less = false
       }
     }
   }
 
-  if all_less and not all_greater {
-    ClockOrder::Before
-  } else if all_greater and not all_less {
-    ClockOrder::After
+  if all_less && !all_greater {
+    Before
+  } else if all_greater && !all_less {
+    After
   } else {
-    ClockOrder::Concurrent
+    Concurrent
   }
 }
 
@@ -72,28 +79,47 @@ pub(all) enum ClockOrder {
   After
   /// 并发
   Concurrent
-}
+} derive(Eq, Debug)
+
+///|
+pub extend ClockOrder with Eq::{equal, not_equal}
+
+///|
+pub extend ClockOrder with Debug::{to_repr}
 
 ///|
 /// 版本向量
 pub(all) struct VersionVector {
   /// 版本映射：节点ID -> 版本号
-  versions : Map[String, Int]
+  mut versions : Map[String, Int]
 }
 
 ///|
 /// 创建版本向量
 pub fn VersionVector::new() -> VersionVector {
-  { versions: Map([]) }
+  { versions: Map([]), }
 }
 
 ///|
 /// 增加版本
 pub fn VersionVector::increment(self : VersionVector, node_id : String) -> Int {
-  let current = self.get(node_id)
+  let current = self.get(node_id.to_string())
   let new_version = current + 1
   self.versions.set(node_id, new_version)
   new_version
+}
+
+///|
+/// 直接设置版本号（不会低于已有版本）
+pub fn VersionVector::update(
+  self : VersionVector,
+  node_id : String,
+  version : Int,
+) -> Unit {
+  let current = self.get(node_id.to_string())
+  if version > current {
+    self.versions.set(node_id, version)
+  }
 }
 
 ///|
@@ -107,11 +133,14 @@ pub fn VersionVector::get(self : VersionVector, node_id : String) -> Int {
 
 ///|
 /// 合并版本向量
-pub fn VersionVector::merge(self : VersionVector, other : VersionVector) -> Unit {
+pub fn VersionVector::merge(
+  self : VersionVector,
+  other : VersionVector,
+) -> Unit {
   for (node_id, version) in other.versions {
-    let current = self.get(node_id)
+    let current = self.get(node_id.to_string())
     if version > current {
-      self.versions.set(node_id, version)
+      self.versions.set(node_id.to_string(), version)
     }
   }
 }
@@ -129,7 +158,9 @@ pub(all) struct ConflictDetector {
 
 ///|
 /// 创建冲突检测器
-pub fn ConflictDetector::new(strategy : ConflictResolutionStrategy) -> ConflictDetector {
+pub fn ConflictDetector::new(
+  strategy : ConflictResolutionStrategy,
+) -> ConflictDetector {
   {
     vector_clock: VectorClock::new(),
     version_vector: VersionVector::new(),
@@ -149,6 +180,7 @@ pub fn ConflictDetector::detect(
   target_timestamp : Int,
   target_node : String,
 ) -> Bool {
+  let _ = key
   // 检查值是否相同
   if source_value == target_value {
     return false
@@ -195,38 +227,33 @@ pub fn ConflictDetector::resolve(
   target_version : Int,
   target_node : String,
 ) -> ConflictResolutionResult {
+  let _ = source_node
+  let _ = target_node
   let resolved_value = match self.strategy {
-    ConflictResolutionStrategy::Timestamp => {
+    Timestamp =>
       if source_timestamp >= target_timestamp {
         source_value
       } else {
         target_value
       }
-    }
-    ConflictResolutionStrategy::Version => {
+    Version =>
       if source_version >= target_version {
         source_value
       } else {
         target_value
       }
-    }
-    ConflictResolutionStrategy::Source_Priority => {
-      source_value
-    }
-    ConflictResolutionStrategy::Target_Priority => {
-      target_value
-    }
-    ConflictResolutionStrategy::Custom => {
+    Source_Priority => source_value
+    Target_Priority => target_value
+    Custom =>
       // 自定义策略：选择最新值
       if source_timestamp >= target_timestamp {
         source_value
       } else {
         target_value
       }
-    }
   }
 
-  ConflictResolutionResult {
+  ConflictResolutionResult::{
     key,
     resolved_value,
     resolution_strategy: self.strategy,
@@ -251,18 +278,17 @@ pub(all) struct ConflictResolutionResult {
 /// 冲突解决器
 pub(all) struct ConflictResolver {
   /// 策略映射：表名 -> 策略
-  strategies : Map[String, ConflictResolutionStrategy]
+  mut strategies : Map[String, ConflictResolutionStrategy]
   /// 默认策略
   default_strategy : ConflictResolutionStrategy
 }
 
 ///|
 /// 创建冲突解决器
-pub fn ConflictResolver::new(default_strategy : ConflictResolutionStrategy) -> ConflictResolver {
-  {
-    strategies: Map([]),
-    default_strategy,
-  }
+pub fn ConflictResolver::new(
+  default_strategy : ConflictResolutionStrategy,
+) -> ConflictResolver {
+  { strategies: Map([]), default_strategy, }
 }
 
 ///|
@@ -277,7 +303,10 @@ pub fn ConflictResolver::set_strategy(
 
 ///|
 /// 获取策略
-pub fn ConflictResolver::get_strategy(self : ConflictResolver, table_name : String) -> ConflictResolutionStrategy {
+pub fn ConflictResolver::get_strategy(
+  self : ConflictResolver,
+  table_name : String,
+) -> ConflictResolutionStrategy {
   match self.strategies.get(table_name) {
     Some(s) => s
     None => self.default_strategy
@@ -303,26 +332,23 @@ pub fn ConflictResolver::resolve(
   let detector = ConflictDetector::new(strategy)
 
   detector.resolve(
-    key,
-    source_value,
-    source_timestamp,
-    source_version,
-    source_node,
-    target_value,
-    target_timestamp,
-    target_version,
-    target_node,
+    key, source_value, source_timestamp, source_version, source_node, target_value,
+    target_timestamp, target_version, target_node,
   )
 }
 
 ///|
 /// 创建冲突检测器
-pub fn create_conflict_detector(strategy : ConflictResolutionStrategy) -> ConflictDetector {
+pub fn create_conflict_detector(
+  strategy : ConflictResolutionStrategy,
+) -> ConflictDetector {
   ConflictDetector::new(strategy)
 }
 
 ///|
 /// 创建冲突解决器
-pub fn create_conflict_resolver(default_strategy : ConflictResolutionStrategy) -> ConflictResolver {
+pub fn create_conflict_resolver(
+  default_strategy : ConflictResolutionStrategy,
+) -> ConflictResolver {
   ConflictResolver::new(default_strategy)
 }

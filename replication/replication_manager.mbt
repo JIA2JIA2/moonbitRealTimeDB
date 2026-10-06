@@ -12,7 +12,7 @@ pub(all) struct ReplicationManager {
   /// 复制日志
   mut replication_logs : Array[ReplicationLog]
   /// 冲突记录
-  mut conflict_records : Array[ConflictRecord]
+  conflict_records : Array[ConflictRecord]
   /// 配置
   config : ReplicationConfig
   /// 下一个任务 ID
@@ -64,7 +64,9 @@ pub fn ReplicationManager::new() -> ReplicationManager {
 
 ///|
 /// 配置创建复制管理器
-pub fn ReplicationManager::with_config(config : ReplicationConfig) -> ReplicationManager {
+pub fn ReplicationManager::with_config(
+  config : ReplicationConfig,
+) -> ReplicationManager {
   {
     clusters: Map([]),
     tasks: Map([]),
@@ -80,14 +82,9 @@ pub fn ReplicationManager::with_config(config : ReplicationConfig) -> Replicatio
 pub fn ReplicationManager::register_cluster(
   self : ReplicationManager,
   cluster : ClusterInfo,
-) -> Result[Unit, ReplicationError> {
-  if self.clusters.contains_key(cluster.cluster_id) {
-    // 更新集群信息
-    self.clusters.set(cluster.cluster_id, cluster)
-  } else {
-    self.clusters.set(cluster.cluster_id, cluster)
-  }
-
+) -> Result[Unit, ReplicationError] {
+  // 注册或更新集群信息
+  self.clusters.set(cluster.cluster_id.to_string(), cluster)
   Ok(())
 }
 
@@ -96,8 +93,8 @@ pub fn ReplicationManager::register_cluster(
 pub fn ReplicationManager::unregister_cluster(
   self : ReplicationManager,
   cluster_id : String,
-) -> Result[Unit, ReplicationError> {
-  if not self.clusters.contains_key(cluster_id) {
+) -> Result[Unit, ReplicationError] {
+  if !self.clusters.contains(cluster_id.to_string()) {
     return Err(Cluster_Not_Found)
   }
 
@@ -108,13 +105,18 @@ pub fn ReplicationManager::unregister_cluster(
 
 ///|
 /// 获取集群信息
-pub fn ReplicationManager::get_cluster(self : ReplicationManager, cluster_id : String) -> ClusterInfo? {
+pub fn ReplicationManager::get_cluster(
+  self : ReplicationManager,
+  cluster_id : String,
+) -> ClusterInfo? {
   self.clusters.get(cluster_id)
 }
 
 ///|
 /// 列出所有集群
-pub fn ReplicationManager::list_clusters(self : ReplicationManager) -> Array[ClusterInfo] {
+pub fn ReplicationManager::list_clusters(
+  self : ReplicationManager,
+) -> Array[ClusterInfo] {
   let result : Array[ClusterInfo] = []
   for (_, cluster) in self.clusters {
     result.push(cluster)
@@ -127,14 +129,14 @@ pub fn ReplicationManager::list_clusters(self : ReplicationManager) -> Array[Clu
 pub fn ReplicationManager::create_replication_task(
   self : ReplicationManager,
   config : ReplicationTaskConfig,
-) -> Result[String, ReplicationError> {
+) -> Result[String, ReplicationError] {
   // 检查源集群是否存在
-  if not self.clusters.contains_key(config.source_cluster_id) {
+  if !self.clusters.contains(config.source_cluster_id.to_string()) {
     return Err(Cluster_Not_Found)
   }
 
   // 检查目标集群是否存在
-  if not self.clusters.contains_key(config.target_cluster_id) {
+  if !self.clusters.contains(config.target_cluster_id.to_string()) {
     return Err(Cluster_Not_Found)
   }
 
@@ -150,12 +152,18 @@ pub fn ReplicationManager::create_replication_task(
   self.next_task_id = self.next_task_id + 1
 
   // 获取集群信息
-  let source_cluster = self.clusters.get(config.source_cluster_id)?
-  let target_cluster = self.clusters.get(config.target_cluster_id)?
+  let source_cluster = match self.clusters.get(config.source_cluster_id) {
+    Some(c) => { ..c, }
+    None => return Err(Cluster_Not_Found)
+  }
+  let target_cluster = match self.clusters.get(config.target_cluster_id) {
+    Some(c) => { ..c, }
+    None => return Err(Cluster_Not_Found)
+  }
 
   // 创建任务
-  let task = ReplicationTask {
-    task_id,
+  let task = ReplicationTask::{
+    task_id: task_id.to_string(),
     task_name: config.task_name,
     source_cluster,
     target_cluster,
@@ -172,7 +180,7 @@ pub fn ReplicationManager::create_replication_task(
   }
 
   // 保存任务
-  self.tasks.set(task_id, task)
+  self.tasks.set(task_id.to_string(), task)
 
   Ok(task_id)
 }
@@ -182,10 +190,10 @@ pub fn ReplicationManager::create_replication_task(
 pub fn ReplicationManager::start_replication(
   self : ReplicationManager,
   task_id : String,
-) -> Result[Unit, ReplicationError> {
+) -> Result[Unit, ReplicationError] {
   let task = match self.tasks.get(task_id) {
     Some(t) => t
-    None => return Err(Task_Not_Found),
+    None => return Err(Task_Not_Found)
   }
 
   // 检查任务状态
@@ -198,24 +206,33 @@ pub fn ReplicationManager::start_replication(
   task.updated_at = 0
 
   // 执行复制
-  self.execute_replication(task)
+  self.execute_replication(
+    task.task_id.to_string(),
+    task.source_cluster.cluster_id.to_string(),
+    task.target_cluster.cluster_id.to_string(),
+  )
 }
 
 ///|
 /// 执行复制
-fn ReplicationManager::execute_replication(self : ReplicationManager, task : ReplicationTask) -> Result[Unit, ReplicationError> {
+fn ReplicationManager::execute_replication(
+  self : ReplicationManager,
+  task_id : String,
+  source_cluster_id : String,
+  target_cluster_id : String,
+) -> Result[Unit, ReplicationError] {
   // 简化实现：实际需要连接到源集群，获取数据，写入目标集群
   // 这里只记录日志
 
-  self.replication_logs.push(ReplicationLog {
+  self.replication_logs.push(ReplicationLog::{
     log_id: "log_" + self.replication_logs.length().to_string(),
-    task_id: task.task_id,
+    task_id,
     operation: "replicate".to_string(),
     key: "".to_string(),
     value: None,
     timestamp: 0,
-    source_cluster: task.source_cluster.cluster_id,
-    target_cluster: task.target_cluster.cluster_id,
+    source_cluster: source_cluster_id,
+    target_cluster: target_cluster_id,
     success: true,
     error_message: None,
   })
@@ -228,10 +245,10 @@ fn ReplicationManager::execute_replication(self : ReplicationManager, task : Rep
 pub fn ReplicationManager::pause_replication(
   self : ReplicationManager,
   task_id : String,
-) -> Result[Unit, ReplicationError> {
+) -> Result[Unit, ReplicationError] {
   let task = match self.tasks.get(task_id) {
     Some(t) => t
-    None => return Err(Task_Not_Found),
+    None => return Err(Task_Not_Found)
   }
 
   task.status = Paused
@@ -245,16 +262,20 @@ pub fn ReplicationManager::pause_replication(
 pub fn ReplicationManager::resume_replication(
   self : ReplicationManager,
   task_id : String,
-) -> Result[Unit, ReplicationError> {
+) -> Result[Unit, ReplicationError] {
   let task = match self.tasks.get(task_id) {
     Some(t) => t
-    None => return Err(Task_Not_Found),
+    None => return Err(Task_Not_Found)
   }
 
-  if task.status == Paused or task.status == Error {
+  if task.status == Paused || task.status == Error {
     task.status = Running
     task.updated_at = 0
-    self.execute_replication(task)
+    self.execute_replication(
+      task.task_id.to_string(),
+      task.source_cluster.cluster_id.to_string(),
+      task.target_cluster.cluster_id.to_string(),
+    )
   } else {
     Ok(())
   }
@@ -265,10 +286,10 @@ pub fn ReplicationManager::resume_replication(
 pub fn ReplicationManager::stop_replication(
   self : ReplicationManager,
   task_id : String,
-) -> Result[Unit, ReplicationError> {
+) -> Result[Unit, ReplicationError] {
   let task = match self.tasks.get(task_id) {
     Some(t) => t
-    None => return Err(Task_Not_Found),
+    None => return Err(Task_Not_Found)
   }
 
   task.status = Stopped
@@ -282,8 +303,8 @@ pub fn ReplicationManager::stop_replication(
 pub fn ReplicationManager::delete_replication_task(
   self : ReplicationManager,
   task_id : String,
-) -> Result[Unit, ReplicationError> {
-  if not self.tasks.contains_key(task_id) {
+) -> Result[Unit, ReplicationError] {
+  if !self.tasks.contains(task_id.to_string()) {
     return Err(Task_Not_Found)
   }
 
@@ -294,13 +315,18 @@ pub fn ReplicationManager::delete_replication_task(
 
 ///|
 /// 获取任务状态
-pub fn ReplicationManager::get_task_status(self : ReplicationManager, task_id : String) -> ReplicationTask? {
+pub fn ReplicationManager::get_task_status(
+  self : ReplicationManager,
+  task_id : String,
+) -> ReplicationTask? {
   self.tasks.get(task_id)
 }
 
 ///|
 /// 列出所有任务
-pub fn ReplicationManager::list_tasks(self : ReplicationManager) -> Array[ReplicationTask] {
+pub fn ReplicationManager::list_tasks(
+  self : ReplicationManager,
+) -> Array[ReplicationTask] {
   let result : Array[ReplicationTask] = []
   for (_, task) in self.tasks {
     result.push(task)
@@ -310,11 +336,17 @@ pub fn ReplicationManager::list_tasks(self : ReplicationManager) -> Array[Replic
 
 ///|
 /// 获取任务统计
-pub fn ReplicationManager::get_task_stats(self : ReplicationManager, task_id : String) -> ReplicationStats? {
-  let task = self.tasks.get(task_id)?
+pub fn ReplicationManager::get_task_stats(
+  self : ReplicationManager,
+  task_id : String,
+) -> ReplicationStats? {
+  let task = match self.tasks.get(task_id) {
+    Some(t) => t
+    None => return None
+  }
 
-  ReplicationStats {
-    task_id,
+  Some(ReplicationStats::{
+    task_id: task.task_id.to_string(),
     total_records: task.total_records,
     replicated_records: task.replicated_records,
     failed_records: 0,
@@ -323,7 +355,7 @@ pub fn ReplicationManager::get_task_stats(self : ReplicationManager, task_id : S
     p99_latency_ms: 0,
     throughput_qps: 0.0,
     replication_lag_ms: task.replication_lag_ms,
-  }
+  })
 }
 
 ///|
@@ -335,7 +367,7 @@ pub fn ReplicationManager::get_replication_logs(
   let result : Array[ReplicationLog] = []
   for log in self.replication_logs {
     if log.task_id == task_id {
-      result.push(log)
+      result.push({ ..log, })
     }
   }
   result
@@ -350,7 +382,7 @@ pub fn ReplicationManager::get_conflict_records(
   let result : Array[ConflictRecord] = []
   for record in self.conflict_records {
     if record.task_id == task_id {
-      result.push(record)
+      result.push({ ..record, })
     }
   }
   result
@@ -364,6 +396,8 @@ pub fn create_replication_manager() -> ReplicationManager {
 
 ///|
 /// 配置创建复制管理器
-pub fn create_replication_manager_with_config(config : ReplicationConfig) -> ReplicationManager {
+pub fn create_replication_manager_with_config(
+  config : ReplicationConfig,
+) -> ReplicationManager {
   ReplicationManager::with_config(config)
 }
