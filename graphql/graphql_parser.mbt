@@ -18,23 +18,20 @@ pub(all) struct GraphQLParser {
 ///|
 /// 创建解析器
 pub fn GraphQLParser::new(text : String) -> GraphQLParser {
-  {
-    text,
-    position: 0,
-    line: 1,
-    column: 1,
-  }
+  { text, position: 0, line: 1, column: 1, }
 }
 
 ///|
 /// 解析查询
-pub fn GraphQLParser::parse(self : GraphQLParser) -> Result[GraphQLParseResult, GraphQLErrorEnum> {
+pub fn GraphQLParser::parse(
+  self : GraphQLParser,
+) -> Result[GraphQLParseResult, GraphQLErrorEnum] {
   // 跳过空白字符
   self.skip_whitespace()
 
   // 检查是否结束
   if self.position >= self.text.length() {
-    return Ok(GraphQLParseResult {
+    return Ok(GraphQLParseResult::{
       success: false,
       value: None,
       errors: [SyntaxError("Empty query")],
@@ -45,49 +42,51 @@ pub fn GraphQLParser::parse(self : GraphQLParser) -> Result[GraphQLParseResult, 
   let operation = self.parse_operation()
 
   match operation {
-    Ok(value) => Ok(GraphQLParseResult {
-      success: true,
-      value: Some(value),
-      errors: [],
-    })
-    Err(e) => Ok(GraphQLParseResult {
-      success: false,
-      value: None,
-      errors: [e],
-    })
+    Ok(value) =>
+      Ok(GraphQLParseResult::{ success: true, value: Some(value), errors: [], })
+    Err(e) =>
+      Ok(GraphQLParseResult::{ success: false, value: None, errors: [e], })
   }
 }
 
 ///|
 /// 解析操作
-fn GraphQLParser::parse_operation(self : GraphQLParser) -> Result[GraphQLValue, GraphQLErrorEnum> {
+fn GraphQLParser::parse_operation(
+  self : GraphQLParser,
+) -> Result[GraphQLValue, GraphQLErrorEnum] {
   // 跳过空白字符
   self.skip_whitespace()
 
-  // 检查关键字
-  let keyword = self.read_keyword()
+  // 匿名查询：以 { 开头
+  match self.peek() {
+    Some('{') => self.parse_selection_set()
+    _ => {
+      // 检查关键字
+      let keyword = self.read_keyword()
 
-  match keyword {
-    "query" => self.parse_query()
-    "mutation" => self.parse_mutation()
-    "subscription" => self.parse_subscription()
-    "{" => {
-      // 匿名查询
-      self.position = self.position - 1
-      self.parse_selection_set()
+      match keyword {
+        "query" => self.parse_query()
+        "mutation" => self.parse_mutation()
+        "subscription" => self.parse_subscription()
+        _ =>
+          Err(
+            SyntaxError("Expected 'query', 'mutation', 'subscription' or '{'"),
+          )
+      }
     }
-    _ => Err(SyntaxError("Expected 'query', 'mutation', 'subscription' or '{'"))
   }
 }
 
 ///|
 /// 解析查询
-fn GraphQLParser::parse_query(self : GraphQLParser) -> Result[GraphQLValue, GraphQLErrorEnum> {
+fn GraphQLParser::parse_query(
+  self : GraphQLParser,
+) -> Result[GraphQLValue, GraphQLErrorEnum] {
   // 跳过空白字符
   self.skip_whitespace()
 
-  // 读取操作名
-  let name = self.read_identifier()
+  // 读取操作名（可选）
+  let _ = self.read_identifier()
 
   // 解析选择集
   self.parse_selection_set()
@@ -95,12 +94,14 @@ fn GraphQLParser::parse_query(self : GraphQLParser) -> Result[GraphQLValue, Grap
 
 ///|
 /// 解析变更
-fn GraphQLParser::parse_mutation(self : GraphQLParser) -> Result[GraphQLValue, GraphQLErrorEnum> {
+fn GraphQLParser::parse_mutation(
+  self : GraphQLParser,
+) -> Result[GraphQLValue, GraphQLErrorEnum] {
   // 跳过空白字符
   self.skip_whitespace()
 
-  // 读取操作名
-  let name = self.read_identifier()
+  // 读取操作名（可选）
+  let _ = self.read_identifier()
 
   // 解析选择集
   self.parse_selection_set()
@@ -108,12 +109,14 @@ fn GraphQLParser::parse_mutation(self : GraphQLParser) -> Result[GraphQLValue, G
 
 ///|
 /// 解析订阅
-fn GraphQLParser::parse_subscription(self : GraphQLParser) -> Result[GraphQLValue, GraphQLErrorEnum> {
+fn GraphQLParser::parse_subscription(
+  self : GraphQLParser,
+) -> Result[GraphQLValue, GraphQLErrorEnum] {
   // 跳过空白字符
   self.skip_whitespace()
 
-  // 读取操作名
-  let name = self.read_identifier()
+  // 读取操作名（可选）
+  let _ = self.read_identifier()
 
   // 解析选择集
   self.parse_selection_set()
@@ -121,12 +124,14 @@ fn GraphQLParser::parse_subscription(self : GraphQLParser) -> Result[GraphQLValu
 
 ///|
 /// 解析选择集
-fn GraphQLParser::parse_selection_set(self : GraphQLParser) -> Result[GraphQLValue, GraphQLErrorEnum> {
+fn GraphQLParser::parse_selection_set(
+  self : GraphQLParser,
+) -> Result[GraphQLValue, GraphQLErrorEnum] {
   // 跳过空白字符
   self.skip_whitespace()
 
   // 检查左花括号
-  if self.peek() != "{" {
+  if self.peek() != Some('{') {
     return Err(SyntaxError("Expected '{'"))
   }
 
@@ -136,21 +141,22 @@ fn GraphQLParser::parse_selection_set(self : GraphQLParser) -> Result[GraphQLVal
   // 解析字段
   let fields : Array[GraphQLValue] = []
 
-  loop {
+  let mut done = false
+  while !done {
     self.skip_whitespace()
 
     // 检查右花括号
-    if self.peek() == "}" {
+    if self.peek() == Some('}') {
       self.position = self.position + 1
       self.column = self.column + 1
-      break
-    }
-
-    // 解析字段
-    let field = self.parse_field()
-    match field {
-      Ok(f) => fields.push(f)
-      Err(e) => return Err(e)
+      done = true
+    } else {
+      // 解析字段
+      let field = self.parse_field()
+      match field {
+        Ok(f) => fields.push(f)
+        Err(e) => return Err(e)
+      }
     }
   }
 
@@ -159,27 +165,32 @@ fn GraphQLParser::parse_selection_set(self : GraphQLParser) -> Result[GraphQLVal
 
 ///|
 /// 解析字段
-fn GraphQLParser::parse_field(self : GraphQLParser) -> Result[GraphQLValue, GraphQLErrorEnum> {
+fn GraphQLParser::parse_field(
+  self : GraphQLParser,
+) -> Result[GraphQLValue, GraphQLErrorEnum] {
   // 读取字段名
   let name = self.read_identifier()
+  if name.is_empty() {
+    return Err(SyntaxError("Expected field name"))
+  }
 
   // 跳过空白字符
   self.skip_whitespace()
 
   // 检查参数
-  var args : Map[String, GraphQLValue] = Map([])
-  if self.peek() == "(" {
+  let mut args : Map[String, GraphQLValue] = Map([])
+  if self.peek() == Some('(') {
     self.position = self.position + 1
     self.column = self.column + 1
 
     let parsed_args = self.parse_arguments()
     match parsed_args {
-      Ok(a) => args = a,
+      Ok(a) => args = a
       Err(e) => return Err(e)
     }
 
     self.skip_whitespace()
-    if self.peek() != ")" {
+    if self.peek() != Some(')') {
       return Err(SyntaxError("Expected ')'"))
     }
     self.position = self.position + 1
@@ -187,9 +198,9 @@ fn GraphQLParser::parse_field(self : GraphQLParser) -> Result[GraphQLValue, Grap
   }
 
   // 检查选择集
-  var selection_set : GraphQLValue? = None
+  let mut selection_set : GraphQLValue? = None
   self.skip_whitespace()
-  if self.peek() == "{" {
+  if self.peek() == Some('{') {
     let ss = self.parse_selection_set()
     match ss {
       Ok(s) => selection_set = Some(s)
@@ -198,12 +209,13 @@ fn GraphQLParser::parse_field(self : GraphQLParser) -> Result[GraphQLValue, Grap
   }
 
   // 构建字段对象
-  let mut field_obj : Map[String, GraphQLValue] = Map([])
+  let field_obj : Map[String, GraphQLValue] = Map([])
   field_obj.set("name", StringValue(name))
   field_obj.set("args", ObjectValue(args))
 
-  if selection_set is Some(ss) {
-    field_obj.set("selection_set", ss)
+  match selection_set {
+    Some(ss) => field_obj.set("selection_set", ss)
+    None => ()
   }
 
   Ok(ObjectValue(field_obj))
@@ -211,46 +223,49 @@ fn GraphQLParser::parse_field(self : GraphQLParser) -> Result[GraphQLValue, Grap
 
 ///|
 /// 解析参数
-fn GraphQLParser::parse_arguments(self : GraphQLParser) -> Result[Map[String, GraphQLValue], GraphQLErrorEnum> {
+fn GraphQLParser::parse_arguments(
+  self : GraphQLParser,
+) -> Result[Map[String, GraphQLValue], GraphQLErrorEnum] {
   let args : Map[String, GraphQLValue] = Map([])
 
-  loop {
+  let mut done = false
+  while !done {
     self.skip_whitespace()
 
     // 检查右括号
-    if self.peek() == ")" {
-      break
-    }
+    if self.peek() == Some(')') {
+      done = true
+    } else {
+      // 读取参数名
+      let name = self.read_identifier()
 
-    // 读取参数名
-    let name = self.read_identifier()
+      self.skip_whitespace()
 
-    self.skip_whitespace()
-
-    // 检查冒号
-    if self.peek() != ":" {
-      return Err(SyntaxError("Expected ':'"))
-    }
-    self.position = self.position + 1
-    self.column = self.column + 1
-
-    self.skip_whitespace()
-
-    // 解析值
-    let value = self.parse_value()
-    match value {
-      Ok(v) => args.set(name, v)
-      Err(e) => return Err(e)
-    }
-
-    self.skip_whitespace()
-
-    // 检查逗号
-    if self.peek() == "," {
+      // 检查冒号
+      if self.peek() != Some(':') {
+        return Err(SyntaxError("Expected ':'"))
+      }
       self.position = self.position + 1
       self.column = self.column + 1
-    } else {
-      break
+
+      self.skip_whitespace()
+
+      // 解析值
+      let value = self.parse_value()
+      match value {
+        Ok(v) => args.set(name, v)
+        Err(e) => return Err(e)
+      }
+
+      self.skip_whitespace()
+
+      // 检查逗号
+      if self.peek() == Some(',') {
+        self.position = self.position + 1
+        self.column = self.column + 1
+      } else {
+        done = true
+      }
     }
   }
 
@@ -259,114 +274,125 @@ fn GraphQLParser::parse_arguments(self : GraphQLParser) -> Result[Map[String, Gr
 
 ///|
 /// 解析值
-fn GraphQLParser::parse_value(self : GraphQLParser) -> Result[GraphQLValue, GraphQLErrorEnum> {
+fn GraphQLParser::parse_value(
+  self : GraphQLParser,
+) -> Result[GraphQLValue, GraphQLErrorEnum] {
   self.skip_whitespace()
 
   let ch = self.peek()
 
   match ch {
-    '"' => {
+    Some('"') => {
       let str_val = self.read_string()
       Ok(StringValue(str_val))
     }
-    '[' => {
+    Some('[') => {
       self.position = self.position + 1
       self.column = self.column + 1
 
       let values : Array[GraphQLValue] = []
 
-      loop {
+      let mut done = false
+      while !done {
         self.skip_whitespace()
 
-        if self.peek() == "]" {
+        if self.peek() == Some(']') {
           self.position = self.position + 1
           self.column = self.column + 1
-          break
-        }
+          done = true
+        } else {
+          let val = self.parse_value()
+          match val {
+            Ok(v) => values.push(v)
+            Err(e) => return Err(e)
+          }
 
-        let val = self.parse_value()
-        match val {
-          Ok(v) => values.push(v)
-          Err(e) => return Err(e)
-        }
+          self.skip_whitespace()
 
-        self.skip_whitespace()
-
-        if self.peek() == "," {
-          self.position = self.position + 1
-          self.column = self.column + 1
+          if self.peek() == Some(',') {
+            self.position = self.position + 1
+            self.column = self.column + 1
+          }
         }
       }
 
       Ok(ListValue(values))
     }
-    '{' => {
+    Some('{') => {
       self.position = self.position + 1
       self.column = self.column + 1
 
       let fields : Map[String, GraphQLValue] = Map([])
 
-      loop {
+      let mut done = false
+      while !done {
         self.skip_whitespace()
 
-        if self.peek() == "}" {
+        if self.peek() == Some('}') {
           self.position = self.position + 1
           self.column = self.column + 1
-          break
-        }
+          done = true
+        } else {
+          let name = self.read_identifier()
 
-        let name = self.read_identifier()
+          self.skip_whitespace()
 
-        self.skip_whitespace()
-
-        if self.peek() != ":" {
-          return Err(SyntaxError("Expected ':'"))
-        }
-        self.position = self.position + 1
-        self.column = self.column + 1
-
-        self.skip_whitespace()
-
-        let value = self.parse_value()
-        match value {
-          Ok(v) => fields.set(name, v)
-          Err(e) => return Err(e)
-        }
-
-        self.skip_whitespace()
-
-        if self.peek() == "," {
+          if self.peek() != Some(':') {
+            return Err(SyntaxError("Expected ':'"))
+          }
           self.position = self.position + 1
           self.column = self.column + 1
+
+          self.skip_whitespace()
+
+          let value = self.parse_value()
+          match value {
+            Ok(v) => fields.set(name, v)
+            Err(e) => return Err(e)
+          }
+
+          self.skip_whitespace()
+
+          if self.peek() == Some(',') {
+            self.position = self.position + 1
+            self.column = self.column + 1
+          }
         }
       }
 
       Ok(ObjectValue(fields))
     }
-    '0'..'9' => {
-      let num = self.read_number()
-      Ok(IntValue(num))
-    }
-    't' | 'f' => {
+    Some('t') | Some('f') => {
       let bool_val = self.read_boolean()
       Ok(BoolValue(bool_val))
     }
-    'n' => {
+    Some('n') => {
       self.read_null()
       Ok(NullValue)
     }
-    _ => {
-      // 可能是变量或枚举值
-      let ident = self.read_identifier()
-      if ident.starts_with("$") {
-        // 变量
-        Ok(StringValue(ident))
+    Some(c) =>
+      if c.is_ascii_digit() {
+        let num = self.read_number()
+        Ok(IntValue(num))
       } else {
-        // 枚举值
-        Ok(StringValue(ident))
+        // 可能是变量或枚举值
+        let ident = self.read_identifier()
+        if ident.has_prefix("$") {
+          // 变量
+          Ok(StringValue(ident))
+        } else {
+          // 枚举值
+          Ok(StringValue(ident))
+        }
       }
-    }
+    None => Err(SyntaxError("Unexpected end of query"))
   }
+}
+
+///|
+/// 判断字符是否为标识符字符
+fn is_ident_char(ch : Char) -> Bool {
+  ch.is_ascii_alphabetic() || ch.is_ascii_digit() || ch == '_'
 }
 
 ///|
@@ -375,15 +401,20 @@ fn GraphQLParser::read_keyword(self : GraphQLParser) -> String {
   self.skip_whitespace()
 
   let start = self.position
-  while self.position < self.text.length() {
-    let ch = self.text[self.position]
-    if not ch.is_alpha() {
-      break
+  let mut continue_reading = true
+  while continue_reading && self.position < self.text.length() {
+    match self.text.get_char(self.position) {
+      Some(ch) =>
+        if ch.is_ascii_alphabetic() {
+          self.position = self.position + 1
+        } else {
+          continue_reading = false
+        }
+      None => continue_reading = false
     }
-    self.position = self.position + 1
   }
 
-  let keyword = self.text.slice(start, self.position)
+  let keyword = self.text[start:self.position].to_owned()
   self.column = self.column + (self.position - start)
 
   keyword
@@ -395,15 +426,20 @@ fn GraphQLParser::read_identifier(self : GraphQLParser) -> String {
   self.skip_whitespace()
 
   let start = self.position
-  while self.position < self.text.length() {
-    let ch = self.text[self.position]
-    if not (ch.is_alpha() or ch.is_digit() or ch == '_') {
-      break
+  let mut continue_reading = true
+  while continue_reading && self.position < self.text.length() {
+    match self.text.get_char(self.position) {
+      Some(ch) =>
+        if is_ident_char(ch) {
+          self.position = self.position + 1
+        } else {
+          continue_reading = false
+        }
+      None => continue_reading = false
     }
-    self.position = self.position + 1
   }
 
-  let ident = self.text.slice(start, self.position)
+  let ident = self.text[start:self.position].to_owned()
   self.column = self.column + (self.position - start)
 
   ident
@@ -412,17 +448,29 @@ fn GraphQLParser::read_identifier(self : GraphQLParser) -> String {
 ///|
 /// 读取字符串
 fn GraphQLParser::read_string(self : GraphQLParser) -> String {
-  let quote = self.text[self.position]
+  let quote = match self.text.get_char(self.position) {
+    Some(ch) => ch
+    None => '"'
+  }
   self.position = self.position + 1
   self.column = self.column + 1
 
   let start = self.position
 
-  while self.position < self.text.length() and self.text[self.position] != quote {
-    self.position = self.position + 1
+  let mut continue_reading = true
+  while continue_reading && self.position < self.text.length() {
+    match self.text.get_char(self.position) {
+      Some(ch) =>
+        if ch == quote {
+          continue_reading = false
+        } else {
+          self.position = self.position + 1
+        }
+      None => continue_reading = false
+    }
   }
 
-  let str_val = self.text.slice(start, self.position)
+  let str_val = self.text[start:self.position].to_owned()
   self.position = self.position + 1
   self.column = self.column + (self.position - start) + 1
 
@@ -434,20 +482,22 @@ fn GraphQLParser::read_string(self : GraphQLParser) -> String {
 fn GraphQLParser::read_number(self : GraphQLParser) -> Int {
   self.skip_whitespace()
 
-  let start = self.position
-
-  while self.position < self.text.length() {
-    let ch = self.text[self.position]
-    if not ch.is_digit() {
-      break
+  let mut num = 0
+  let mut continue_reading = true
+  while continue_reading && self.position < self.text.length() {
+    match self.text.get_char(self.position) {
+      Some(ch) =>
+        if ch.is_ascii_digit() {
+          num = num * 10 + (ch.to_int() - '0'.to_int())
+          self.position = self.position + 1
+        } else {
+          continue_reading = false
+        }
+      None => continue_reading = false
     }
-    self.position = self.position + 1
   }
 
-  let num_str = self.text.slice(start, self.position)
-  self.column = self.column + (self.position - start)
-
-  num_str.parse_int()?
+  num
 }
 
 ///|
@@ -456,11 +506,20 @@ fn GraphQLParser::read_boolean(self : GraphQLParser) -> Bool {
   self.skip_whitespace()
 
   let start = self.position
-  while self.position < self.text.length() and self.text[self.position].is_alpha() {
-    self.position = self.position + 1
+  let mut continue_reading = true
+  while continue_reading && self.position < self.text.length() {
+    match self.text.get_char(self.position) {
+      Some(ch) =>
+        if ch.is_ascii_alphabetic() {
+          self.position = self.position + 1
+        } else {
+          continue_reading = false
+        }
+      None => continue_reading = false
+    }
   }
 
-  let bool_str = self.text.slice(start, self.position)
+  let bool_str = self.text[start:self.position].to_owned()
   self.column = self.column + (self.position - start)
 
   bool_str == "true"
@@ -472,8 +531,17 @@ fn GraphQLParser::read_null(self : GraphQLParser) -> Unit {
   self.skip_whitespace()
 
   let start = self.position
-  while self.position < self.text.length() and self.text[self.position].is_alpha() {
-    self.position = self.position + 1
+  let mut continue_reading = true
+  while continue_reading && self.position < self.text.length() {
+    match self.text.get_char(self.position) {
+      Some(ch) =>
+        if ch.is_ascii_alphabetic() {
+          self.position = self.position + 1
+        } else {
+          continue_reading = false
+        }
+      None => continue_reading = false
+    }
   }
 
   self.column = self.column + (self.position - start)
@@ -481,34 +549,29 @@ fn GraphQLParser::read_null(self : GraphQLParser) -> Unit {
 
 ///|
 /// 查看下一个字符
-fn GraphQLParser::peek(self : GraphQLParser) -> String {
-  if self.position >= self.text.length() {
-    return ""
-  }
-
-  self.text[self.position].to_string()
+fn GraphQLParser::peek(self : GraphQLParser) -> Char? {
+  self.text.get_char(self.position)
 }
 
 ///|
 /// 跳过空白字符
 fn GraphQLParser::skip_whitespace(self : GraphQLParser) -> Unit {
-  while self.position < self.text.length() {
-    let ch = self.text[self.position]
-    match ch {
-      ' ' | '\t' | '\r' => {
+  let mut continue_reading = true
+  while continue_reading && self.position < self.text.length() {
+    match self.text.get_char(self.position) {
+      Some(' ') | Some('\t') | Some('\r') => {
         self.position = self.position + 1
         self.column = self.column + 1
       }
-      '\n' => {
+      Some('\n') => {
         self.position = self.position + 1
         self.line = self.line + 1
         self.column = 1
       }
-      '#' => {
+      Some('#') =>
         // 跳过注释
         self.skip_comment()
-      }
-      _ => break
+      _ => continue_reading = false
     }
   }
 }
@@ -520,8 +583,12 @@ fn GraphQLParser::skip_comment(self : GraphQLParser) -> Unit {
   self.position = self.position + 1
 
   // 跳过直到行尾
-  while self.position < self.text.length() and self.text[self.position] != '\n' {
-    self.position = self.position + 1
+  let mut continue_reading = true
+  while continue_reading && self.position < self.text.length() {
+    match self.text.get_char(self.position) {
+      Some('\n') | None => continue_reading = false
+      Some(_) => self.position = self.position + 1
+    }
   }
 }
 
@@ -533,7 +600,9 @@ pub fn create_parser(text : String) -> GraphQLParser {
 
 ///|
 /// 解析 GraphQL 查询
-pub fn parse_graphql(query : String) -> Result[GraphQLParseResult, GraphQLErrorEnum> {
+pub fn parse_graphql(
+  query : String,
+) -> Result[GraphQLParseResult, GraphQLErrorEnum] {
   let parser = GraphQLParser::new(query)
   parser.parse()
 }

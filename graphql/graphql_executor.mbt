@@ -3,6 +3,58 @@
 // 实现 GraphQL 查询执行、DataLoader、缓存
 
 ///|
+/// 深拷贝 GraphQL 值
+fn clone_value(value : GraphQLValue) -> GraphQLValue {
+  match value {
+    IntValue(i) => IntValue(i)
+    FloatValue(f) => FloatValue(f)
+    StringValue(s) => StringValue(s.to_string())
+    BoolValue(b) => BoolValue(b)
+    NullValue => NullValue
+    ListValue(items) => {
+      let copied : Array[GraphQLValue] = []
+      for item in items {
+        copied.push(clone_value(item))
+      }
+      ListValue(copied)
+    }
+    ObjectValue(items) => {
+      let copied : Map[String, GraphQLValue] = Map([])
+      for (k, v) in items {
+        copied.set(k.to_string(), clone_value(v))
+      }
+      ObjectValue(copied)
+    }
+  }
+}
+
+///|
+/// 深拷贝数据库值
+fn clone_db_value(value : @realtime_db.Value) -> @realtime_db.Value {
+  match value {
+    @realtime_db.Str(s) => @realtime_db.Str(s.to_string())
+    @realtime_db.Int(i) => @realtime_db.Int(i)
+    @realtime_db.Float(f) => @realtime_db.Float(f)
+    @realtime_db.Bool(b) => @realtime_db.Bool(b)
+    @realtime_db.Null => @realtime_db.Null
+    @realtime_db.Arr(items) => {
+      let copied : Array[@realtime_db.Value] = []
+      for item in items {
+        copied.push(clone_db_value(item))
+      }
+      @realtime_db.Arr(copied)
+    }
+    @realtime_db.Map(items) => {
+      let copied : Map[String, @realtime_db.Value] = Map([])
+      for (k, v) in items {
+        copied.set(k.to_string(), clone_db_value(v))
+      }
+      @realtime_db.Map(copied)
+    }
+  }
+}
+
+///|
 /// GraphQL 执行器
 pub(all) struct GraphQLExecutor {
   /// Schema
@@ -32,13 +84,11 @@ pub(all) struct DataLoader {
 
 ///|
 /// 创建 DataLoader
-pub fn DataLoader::new(batch_size : Int, batch_fn : (Array[String]) -> Array[@realtime_db.Value]) -> DataLoader {
-  {
-    batch_size,
-    batch_fn,
-    cache: Map([]),
-    queue: [],
-  }
+pub fn DataLoader::new(
+  batch_size : Int,
+  batch_fn : (Array[String]) -> Array[@realtime_db.Value],
+) -> DataLoader {
+  { batch_size, batch_fn, cache: Map([]), queue: [], }
 }
 
 ///|
@@ -46,7 +96,7 @@ pub fn DataLoader::new(batch_size : Int, batch_fn : (Array[String]) -> Array[@re
 pub fn DataLoader::load(self : DataLoader, key : String) -> @realtime_db.Value? {
   // 检查缓存
   match self.cache.get(key) {
-    Some(value) => return Some(value)
+    Some(value) => return Some(clone_db_value(value))
     None => ()
   }
 
@@ -63,7 +113,10 @@ pub fn DataLoader::load(self : DataLoader, key : String) -> @realtime_db.Value? 
 
 ///|
 /// 批处理加载
-pub fn DataLoader::load_many(self : DataLoader, keys : Array[String]) -> Array[@realtime_db.Value] {
+pub fn DataLoader::load_many(
+  self : DataLoader,
+  keys : Array[String],
+) -> Array[@realtime_db.Value] {
   let results : Array[@realtime_db.Value] = []
 
   for key in keys {
@@ -83,18 +136,19 @@ fn DataLoader::dispatch(self : DataLoader) -> Unit {
     return
   }
 
-  // 执行批处理
-  let values = self.batch_fn(self.queue)
+  // 拷贝队列用于批处理，保留原队列以回填缓存
+  let values = (self.batch_fn)(self.queue.copy())
 
   // 更新缓存
-  for i in 0..self.queue.length() {
+  let queue_len = self.queue.length()
+  for i in 0..<queue_len {
     if i < values.length() {
-      self.cache.set(self.queue[i], values[i])
+      self.cache.set(self.queue[i].to_string(), clone_db_value(values[i]))
     }
   }
 
   // 清空队列
-  self.queue = []
+  self.queue.clear()
 }
 
 ///|
@@ -121,13 +175,7 @@ pub(all) struct GraphQLCache {
 ///|
 /// 创建缓存
 pub fn GraphQLCache::new(max_size : Int, ttl : Int) -> GraphQLCache {
-  {
-    cache: Map([]),
-    max_size,
-    ttl,
-    hit_count: 0,
-    query_count: 0,
-  }
+  { cache: Map([]), max_size, ttl, hit_count: 0, query_count: 0, }
 }
 
 ///|
@@ -138,7 +186,7 @@ pub fn GraphQLCache::get(self : GraphQLCache, key : String) -> GraphQLValue? {
   match self.cache.get(key) {
     Some(value) => {
       self.hit_count = self.hit_count + 1
-      Some(value)
+      Some(clone_value(value))
     }
     None => None
   }
@@ -146,13 +194,22 @@ pub fn GraphQLCache::get(self : GraphQLCache, key : String) -> GraphQLValue? {
 
 ///|
 /// 设置缓存
-pub fn GraphQLCache::set(self : GraphQLCache, key : String, value : GraphQLValue) -> Unit {
+pub fn GraphQLCache::set(
+  self : GraphQLCache,
+  key : String,
+  value : GraphQLValue,
+) -> Unit {
   // 检查缓存大小
   if self.cache.length() >= self.max_size {
-    // 简化实现：删除第一个条目
+    // 简化实现：先找出第一个键再淘汰，避免遍历时修改 Map
+    let mut evict_key : String? = None
     for (k, _) in self.cache {
-      self.cache.remove(k)
+      evict_key = Some(k.to_string())
       break
+    }
+    match evict_key {
+      Some(k) => self.cache.remove(k)
+      None => ()
     }
   }
 
@@ -177,13 +234,16 @@ pub fn GraphQLCache::hit_rate(self : GraphQLCache) -> Double {
 
 ///|
 /// 创建执行器
-pub fn GraphQLExecutor::new(schema : GraphQLSchema, config : GraphQLConfig) -> GraphQLExecutor {
+pub fn GraphQLExecutor::new(
+  schema : GraphQLSchema,
+  config : GraphQLConfig,
+) -> GraphQLExecutor {
   {
     schema,
     config,
     dataloaders: Map([]),
     cache: GraphQLCache::new(config.cache_size, config.cache_ttl),
-    stats: GraphQLStats {
+    stats: GraphQLStats::{
       total_queries: 0,
       total_mutations: 0,
       total_subscriptions: 0,
@@ -202,20 +262,16 @@ pub fn GraphQLExecutor::execute(
   request : GraphQLRequest,
   context : GraphQLContext,
 ) -> GraphQLExecutionResult {
-  var start_time = 0
-  let _ = start_time
-
   // 检查缓存
   if self.config.enable_cache {
-    let cache_key = request.query
+    let cache_key = request.query.to_string()
     match self.cache.get(cache_key) {
-      Some(cached_value) => {
-        return GraphQLExecutionResult {
+      Some(cached_value) =>
+        return GraphQLExecutionResult::{
           success: true,
           data: Some(cached_value),
           errors: [],
         }
-      }
       None => ()
     }
   }
@@ -224,34 +280,46 @@ pub fn GraphQLExecutor::execute(
   let parse_result = GraphQLParser::new(request.query).parse()
 
   match parse_result {
-    Ok(result) => {
+    Ok(result) =>
       if result.success {
-        // 执行查询
-        let data = self.execute_query(result.value?, context)
-
-        // 更新缓存
-        if self.config.enable_cache {
-          self.cache.set(request.query, data?)
-        }
-
-        GraphQLExecutionResult {
-          success: true,
-          data: Some(data?),
-          errors: [],
+        match result.value {
+          Some(parsed) =>
+            // 执行查询
+            match self.execute_query(parsed, context) {
+              Ok(data) => {
+                // 更新缓存
+                if self.config.enable_cache {
+                  self.cache.set(request.query.to_string(), clone_value(data))
+                }
+                GraphQLExecutionResult::{
+                  success: true,
+                  data: Some(data),
+                  errors: [],
+                }
+              }
+              Err(e) =>
+                GraphQLExecutionResult::{
+                  success: false,
+                  data: None,
+                  errors: [e],
+                }
+            }
+          None =>
+            GraphQLExecutionResult::{
+              success: false,
+              data: None,
+              errors: [InternalError("Parsed result has no value")],
+            }
         }
       } else {
-        GraphQLExecutionResult {
+        GraphQLExecutionResult::{
           success: false,
           data: None,
           errors: result.errors,
         }
       }
-    }
-    Err(e) => GraphQLExecutionResult {
-      success: false,
-      data: None,
-      errors: [e],
-    }
+    Err(e) =>
+      GraphQLExecutionResult::{ success: false, data: None, errors: [e], }
   }
 }
 
@@ -261,7 +329,10 @@ fn GraphQLExecutor::execute_query(
   self : GraphQLExecutor,
   query : GraphQLValue,
   context : GraphQLContext,
-) -> Result[GraphQLValue, GraphQLErrorEnum> {
+) -> Result[GraphQLValue, GraphQLErrorEnum] {
+  let _ = self
+  let _ = query
+  let _ = context
   // 简化实现：返回空对象
   Ok(ObjectValue(Map([])))
 }
@@ -278,14 +349,20 @@ pub fn GraphQLExecutor::register_dataloader(
 
 ///|
 /// 获取 DataLoader
-pub fn GraphQLExecutor::get_dataloader(self : GraphQLExecutor, name : String) -> DataLoader? {
-  self.dataloaders.get(name)
+pub fn GraphQLExecutor::get_dataloader(
+  self : GraphQLExecutor,
+  name : String,
+) -> DataLoader? {
+  match self.dataloaders.get(name) {
+    Some(loader) => Some({ ..loader, })
+    None => None
+  }
 }
 
 ///|
 /// 获取统计
 pub fn GraphQLExecutor::get_stats(self : GraphQLExecutor) -> GraphQLStats {
-  GraphQLStats {
+  GraphQLStats::{
     total_queries: self.stats.total_queries,
     total_mutations: self.stats.total_mutations,
     total_subscriptions: self.stats.total_subscriptions,
@@ -314,10 +391,7 @@ pub(all) struct GraphQLService {
 ///|
 /// 创建服务
 pub fn GraphQLService::new(executor : GraphQLExecutor) -> GraphQLService {
-  {
-    executor,
-    is_running: false,
-  }
+  { executor, is_running: false, }
 }
 
 ///|
@@ -341,10 +415,10 @@ pub fn GraphQLService::handle_request(
 ) -> GraphQLResponse {
   let result = self.executor.execute(request, context)
 
-  GraphQLResponse {
+  GraphQLResponse::{
     data: result.data,
     errors: result.errors.map(fn(e) {
-      GraphQLError {
+      GraphQLError::{
         message: e.message(),
         line: None,
         column: None,
@@ -358,7 +432,10 @@ pub fn GraphQLService::handle_request(
 
 ///|
 /// 创建执行器
-pub fn create_executor(schema : GraphQLSchema, config : GraphQLConfig) -> GraphQLExecutor {
+pub fn create_executor(
+  schema : GraphQLSchema,
+  config : GraphQLConfig,
+) -> GraphQLExecutor {
   GraphQLExecutor::new(schema, config)
 }
 

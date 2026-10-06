@@ -19,10 +19,13 @@ pub(all) enum GraphQLValue {
   ListValue(Array[GraphQLValue])
   /// 对象值
   ObjectValue(Map[String, GraphQLValue])
-}
+} derive(Debug)
 
 ///|
-impl Eq for GraphQLValue with fn equal(self, other) -> Bool {
+pub extend GraphQLValue with Debug::{to_repr}
+
+///|
+pub impl Eq for GraphQLValue with fn equal(self, other) -> Bool {
   match (self, other) {
     (IntValue(a), IntValue(b)) => a == b
     (FloatValue(a), FloatValue(b)) => a == b
@@ -39,22 +42,6 @@ impl Eq for GraphQLValue with fn equal(self, other) -> Bool {
 pub extend GraphQLValue with Eq::{equal, not_equal}
 
 ///|
-impl Debug for GraphQLValue with fn to_repr(self) -> Repr {
-  match self {
-    IntValue(i) => Repr::ctor("IntValue", [(None, Repr(i))])
-    FloatValue(f) => Repr::ctor("FloatValue", [(None, Repr(f))])
-    StringValue(s) => Repr::ctor("StringValue", [(None, Repr(s))])
-    BoolValue(b) => Repr::ctor("BoolValue", [(None, Repr(b))])
-    NullValue => Repr::ctor("NullValue", [])
-    ListValue(l) => Repr::ctor("ListValue", [(None, Repr(l))])
-    ObjectValue(o) => Repr::ctor("ObjectValue", [(None, Repr(o))])
-  }
-}
-
-///|
-pub extend GraphQLValue with Debug::{to_repr}
-
-///|
 /// GraphQL 类型
 pub(all) enum GraphQLType {
   /// 标量类型
@@ -62,9 +49,9 @@ pub(all) enum GraphQLType {
   /// 对象类型
   Object(String)
   /// 列表类型
-  List(Box[GraphQLType])
+  List(GraphQLType)
   /// 非空类型
-  NonNull(Box[GraphQLType])
+  NonNull(GraphQLType)
 }
 
 ///|
@@ -77,7 +64,7 @@ pub(all) struct GraphQLField {
   /// 描述
   description : String?
   /// 参数
-  args : Map[String, GraphQLArg>
+  args : Map[String, GraphQLArg]
   /// 解析函数
   resolve_fn : (GraphQLContext) -> GraphQLValue?
 }
@@ -103,7 +90,7 @@ pub(all) struct GraphQLObjectType {
   /// 描述
   description : String?
   /// 字段映射
-  fields : Map[String, GraphQLField>
+  fields : Map[String, GraphQLField]
   /// 接口列表
   interfaces : Array[String]
 }
@@ -120,7 +107,7 @@ pub(all) struct GraphQLSchema {
   /// 类型映射
   types : Map[String, GraphQLObjectType]
   /// 指令映射
-  directives : Map[String, GraphQLDirective>
+  directives : Map[String, GraphQLDirective]
 }
 
 ///|
@@ -133,7 +120,7 @@ pub(all) struct GraphQLDirective {
   /// 位置
   locations : Array[DirectiveLocation]
   /// 参数
-  args : Map[String, GraphQLArg>
+  args : Map[String, GraphQLArg]
 }
 
 ///|
@@ -154,7 +141,7 @@ pub(all) enum DirectiveLocation {
 }
 
 ///|
-impl Eq for DirectiveLocation with fn equal(self, other) -> Bool {
+pub impl Eq for DirectiveLocation with fn equal(self, other) -> Bool {
   match (self, other) {
     (Query, Query) => true
     (Mutation, Mutation) => true
@@ -203,7 +190,7 @@ pub(all) struct GraphQLResponse {
   /// 数据
   data : GraphQLValue?
   /// 错误列表
-  errors : Array[GraphQLError>
+  errors : Array[GraphQLError]
   /// 扩展
   extensions : Map[String, GraphQLValue]
 }
@@ -239,7 +226,7 @@ pub(all) enum GraphQLErrorType {
 }
 
 ///|
-impl Eq for GraphQLErrorType with fn equal(self, other) -> Bool {
+pub impl Eq for GraphQLErrorType with fn equal(self, other) -> Bool {
   match (self, other) {
     (Syntax_Error, Syntax_Error) => true
     (Validation_Error, Validation_Error) => true
@@ -269,7 +256,7 @@ pub(all) enum GraphQLErrorEnum {
 }
 
 ///|
-impl Eq for GraphQLErrorEnum with fn equal(self, other) -> Bool {
+pub impl Eq for GraphQLErrorEnum with fn equal(self, other) -> Bool {
   match (self, other) {
     (SyntaxError(a), SyntaxError(b)) => a == b
     (FieldNotFound(a), FieldNotFound(b)) => a == b
