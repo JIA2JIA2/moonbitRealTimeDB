@@ -38,16 +38,16 @@ pub fn LakeReadConfig::default() -> LakeReadConfig {
 ///|
 /// 创建数据湖读取器
 pub fn LakeReader::new(syncer : LakeSyncer) -> LakeReader {
-  {
-    syncer,
-    config: LakeReadConfig::default(),
-  }
+  { syncer, config: LakeReadConfig::default(), }
 }
 
 ///|
 /// 配置读取器
-pub fn LakeReader::with_config(syncer : LakeSyncer, config : LakeReadConfig) -> LakeReader {
-  { syncer, config }
+pub fn LakeReader::with_config(
+  syncer : LakeSyncer,
+  config : LakeReadConfig,
+) -> LakeReader {
+  { syncer, config, }
 }
 
 ///|
@@ -57,8 +57,8 @@ pub fn LakeReader::read(
   path : String,
   format : LakeFormat,
   columns : Array[String]?,
-  predicate : Expression?,
-) -> Result[Array[@realtime_db.Value], LakeError> {
+  predicate : @sql_engine.Expression?,
+) -> Result[Array[@realtime_db.Value], LakeError] {
   // 应用谓词下推
   let filtered_predicate = if self.config.predicate_pushdown {
     self.pushdown_predicate(predicate)
@@ -67,11 +67,7 @@ pub fn LakeReader::read(
   }
 
   // 应用列裁剪
-  let selected_columns = if self.config.column_pruning {
-    columns
-  } else {
-    None
-  }
+  let selected_columns = if self.config.column_pruning { columns } else { None }
 
   // 根据格式读取
   match format {
@@ -88,8 +84,9 @@ fn LakeReader::read_parquet(
   self : LakeReader,
   path : String,
   columns : Array[String]?,
-  predicate : Expression?,
-) -> Result[Array[@realtime_db.Value], LakeError> {
+  predicate : @sql_engine.Expression?,
+) -> Result[Array[@realtime_db.Value], LakeError] {
+  let _ = self
   // 简化实现：实际需要使用 Parquet 库
   let _ = path
   let _ = columns
@@ -103,8 +100,9 @@ fn LakeReader::read_orc(
   self : LakeReader,
   path : String,
   columns : Array[String]?,
-  predicate : Expression?,
-) -> Result[Array[@realtime_db.Value], LakeError> {
+  predicate : @sql_engine.Expression?,
+) -> Result[Array[@realtime_db.Value], LakeError] {
+  let _ = self
   // 简化实现：实际需要使用 ORC 库
   let _ = path
   let _ = columns
@@ -118,8 +116,9 @@ fn LakeReader::read_delta(
   self : LakeReader,
   path : String,
   columns : Array[String]?,
-  predicate : Expression?,
-) -> Result[Array[@realtime_db.Value], LakeError> {
+  predicate : @sql_engine.Expression?,
+) -> Result[Array[@realtime_db.Value], LakeError] {
+  let _ = self
   // 简化实现：实际需要使用 Delta Lake 库
   let _ = path
   let _ = columns
@@ -133,8 +132,9 @@ fn LakeReader::read_json(
   self : LakeReader,
   path : String,
   columns : Array[String]?,
-  predicate : Expression?,
-) -> Result[Array[@realtime_db.Value], LakeError> {
+  predicate : @sql_engine.Expression?,
+) -> Result[Array[@realtime_db.Value], LakeError] {
+  let _ = self
   // 简化实现：实际需要解析 JSON
   let _ = path
   let _ = columns
@@ -144,17 +144,25 @@ fn LakeReader::read_json(
 
 ///|
 /// 谓词下推
-fn LakeReader::pushdown_predicate(self : LakeReader, predicate : Expression?) -> Expression? {
+fn LakeReader::pushdown_predicate(
+  self : LakeReader,
+  predicate : @sql_engine.Expression?,
+) -> @sql_engine.Expression? {
+  let _ = self
   // 简化实现：实际需要将谓词转换为数据湖格式的过滤条件
   predicate
 }
 
 ///|
 /// 获取数据湖元数据
-pub fn LakeReader::get_metadata(self : LakeReader, path : String) -> Result[LakeMetadata, LakeError> {
+pub fn LakeReader::get_metadata(
+  self : LakeReader,
+  path : String,
+) -> Result[LakeMetadata, LakeError] {
+  let _ = self
   // 简化实现：实际需要读取数据湖元数据
   let _ = path
-  Ok(LakeMetadata {
+  Ok(LakeMetadata::{
     format: Parquet,
     row_count: 0,
     size_bytes: 0,
@@ -173,9 +181,9 @@ pub(all) struct LakeMetadata {
   /// 大小（字节）
   size_bytes : Int
   /// Schema
-  schema : TableSchema?
+  schema : @multi_tenant.TableSchema?
   /// 分区信息
-  partitions : Array[PartitionInfo>
+  partitions : Array[PartitionInfo]
 }
 
 ///|

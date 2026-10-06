@@ -18,7 +18,7 @@ pub(all) enum LakeFormat {
 }
 
 ///|
-impl Eq for LakeFormat with fn equal(self, other) -> Bool {
+pub impl Eq for LakeFormat with fn equal(self, other) -> Bool {
   match (self, other) {
     (Parquet, Parquet) => true
     (Orc, Orc) => true
@@ -33,7 +33,7 @@ impl Eq for LakeFormat with fn equal(self, other) -> Bool {
 pub extend LakeFormat with Eq::{equal, not_equal}
 
 ///|
-impl Debug for LakeFormat with fn to_repr(self) -> Repr {
+pub impl Debug for LakeFormat with fn to_repr(self) -> Repr {
   match self {
     Parquet => Repr::ctor("Parquet", [])
     Orc => Repr::ctor("Orc", [])
@@ -55,10 +55,13 @@ pub(all) enum SyncMode {
   Incremental
   /// 实时同步
   Realtime
-}
+} derive(Debug)
 
 ///|
-impl Eq for SyncMode with fn equal(self, other) -> Bool {
+pub extend SyncMode with Debug::{to_repr}
+
+///|
+pub impl Eq for SyncMode with fn equal(self, other) -> Bool {
   match (self, other) {
     (Full, Full) => true
     (Incremental, Incremental) => true
@@ -83,10 +86,13 @@ pub(all) enum SyncStatus {
   Failed
   /// 已暂停
   Paused
-}
+} derive(Debug)
 
 ///|
-impl Eq for SyncStatus with fn equal(self, other) -> Bool {
+pub extend SyncStatus with Debug::{to_repr}
+
+///|
+pub impl Eq for SyncStatus with fn equal(self, other) -> Bool {
   match (self, other) {
     (Pending, Pending) => true
     (Running, Running) => true
@@ -124,9 +130,9 @@ pub fn LakeConfig::default() -> LakeConfig {
     format: Parquet,
     path: "".to_string(),
     batch_size: 10000,
-    compression: CompressionType::Snappy,
+    compression: Snappy,
     schema_evolution: true,
-    write_mode: WriteMode::Append,
+    write_mode: Append,
   }
 }
 
@@ -143,10 +149,13 @@ pub(all) enum CompressionType {
   Zstd
   /// Lz4 压缩
   Lz4
-}
+} derive(Debug)
 
 ///|
-impl Eq for CompressionType with fn equal(self, other) -> Bool {
+pub extend CompressionType with Debug::{to_repr}
+
+///|
+pub impl Eq for CompressionType with fn equal(self, other) -> Bool {
   match (self, other) {
     (None, None) => true
     (Snappy, Snappy) => true
@@ -171,10 +180,13 @@ pub(all) enum WriteMode {
   ErrorIfExists
   /// 忽略如果存在
   Ignore
-}
+} derive(Debug)
 
 ///|
-impl Eq for WriteMode with fn equal(self, other) -> Bool {
+pub extend WriteMode with Debug::{to_repr}
+
+///|
+pub impl Eq for WriteMode with fn equal(self, other) -> Bool {
   match (self, other) {
     (Append, Append) => true
     (Overwrite, Overwrite) => true
@@ -203,21 +215,21 @@ pub(all) struct SyncTask {
   /// 同步模式
   sync_mode : SyncMode
   /// 同步状态
-  status : SyncStatus
+  mut status : SyncStatus
   /// 同步配置
   config : LakeConfig
   /// 创建时间
   created_at : Int
   /// 更新时间
-  updated_at : Int
+  mut updated_at : Int
   /// 最后同步时间
-  last_sync_at : Int
+  mut last_sync_at : Int
   /// 已同步记录数
-  synced_records : Int
+  mut synced_records : Int
   /// 总记录数
-  total_records : Int
+  mut total_records : Int
   /// 错误信息
-  error_message : String?
+  mut error_message : String?
 }
 
 ///|
@@ -249,11 +261,11 @@ pub(all) struct SchemaMapping {
   /// 目标表名
   target_table : String
   /// 列映射
-  column_mappings : Array[ColumnMapping>
+  mut column_mappings : Array[ColumnMapping]
   /// 是否自动同步 Schema
   auto_sync : Bool
   /// 最后同步时间
-  last_sync_time : Int
+  mut last_sync_time : Int
 }
 
 ///|
@@ -264,7 +276,7 @@ pub(all) struct ColumnMapping {
   /// 目标列名
   target_column : String
   /// 目标类型
-  target_type : ColumnType
+  target_type : @multi_tenant.ColumnType
   /// 是否可空
   nullable : Bool
   /// 默认值
@@ -283,7 +295,7 @@ pub(all) struct SchemaChange {
   /// 变更类型
   change_type : SchemaChangeType
   /// 列定义
-  column : Column?
+  column : @multi_tenant.Column?
   /// 旧列名
   old_column_name : String?
   /// 时间戳
@@ -308,7 +320,7 @@ pub(all) enum SchemaChangeType {
 }
 
 ///|
-impl Eq for SchemaChangeType with fn equal(self, other) -> Bool {
+pub impl Eq for SchemaChangeType with fn equal(self, other) -> Bool {
   match (self, other) {
     (AddColumn, AddColumn) => true
     (DropColumn, DropColumn) => true
@@ -351,7 +363,7 @@ pub(all) enum LakeError {
 }
 
 ///|
-impl Eq for LakeError with fn equal(self, other) -> Bool {
+pub impl Eq for LakeError with fn equal(self, other) -> Bool {
   match (self, other) {
     (Task_Already_Exists, Task_Already_Exists) => true
     (Task_Not_Found, Task_Not_Found) => true
@@ -372,7 +384,7 @@ impl Eq for LakeError with fn equal(self, other) -> Bool {
 pub extend LakeError with Eq::{equal, not_equal}
 
 ///|
-impl Debug for LakeError with fn to_repr(self) -> Repr {
+pub impl Debug for LakeError with fn to_repr(self) -> Repr {
   match self {
     Task_Already_Exists => Repr::ctor("Task_Already_Exists", [])
     Task_Not_Found => Repr::ctor("Task_Not_Found", [])
