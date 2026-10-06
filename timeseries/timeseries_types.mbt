@@ -27,10 +27,10 @@ pub(all) enum AggregationType {
   P90
   /// P99 分位数
   P99
-}
+} derive(Debug)
 
 ///|
-impl Eq for AggregationType with fn equal(self, other) -> Bool {
+pub impl Eq for AggregationType with fn equal(self, other) -> Bool {
   match (self, other) {
     (Avg, Avg) => true
     (Sum, Sum) => true
@@ -51,23 +51,6 @@ impl Eq for AggregationType with fn equal(self, other) -> Bool {
 pub extend AggregationType with Eq::{equal, not_equal}
 
 ///|
-impl Debug for AggregationType with fn to_repr(self) -> Repr {
-  match self {
-    Avg => Repr::ctor("Avg", [])
-    Sum => Repr::ctor("Sum", [])
-    Min => Repr::ctor("Min", [])
-    Max => Repr::ctor("Max", [])
-    Count => Repr::ctor("Count", [])
-    First => Repr::ctor("First", [])
-    Last => Repr::ctor("Last", [])
-    Median => Repr::ctor("Median", [])
-    P50 => Repr::ctor("P50", [])
-    P90 => Repr::ctor("P90", [])
-    P99 => Repr::ctor("P99", [])
-  }
-}
-
-///|
 pub extend AggregationType with Debug::{to_repr}
 
 ///|
@@ -79,10 +62,13 @@ pub(all) enum RetentionPolicyType {
   CountLimited
   /// 大小限制
   SizeLimited
-}
+} derive(Debug)
 
 ///|
-impl Eq for RetentionPolicyType with fn equal(self, other) -> Bool {
+pub extend RetentionPolicyType with Debug::{to_repr}
+
+///|
+pub impl Eq for RetentionPolicyType with fn equal(self, other) -> Bool {
   match (self, other) {
     (TimeExpired, TimeExpired) => true
     (CountLimited, CountLimited) => true
@@ -109,10 +95,10 @@ pub(all) enum DownsamplePrecision {
   Week
   /// 月级
   Month
-}
+} derive(Debug)
 
 ///|
-impl Eq for DownsamplePrecision with fn equal(self, other) -> Bool {
+pub impl Eq for DownsamplePrecision with fn equal(self, other) -> Bool {
   match (self, other) {
     (Second, Second) => true
     (Minute, Minute) => true
@@ -126,18 +112,6 @@ impl Eq for DownsamplePrecision with fn equal(self, other) -> Bool {
 
 ///|
 pub extend DownsamplePrecision with Eq::{equal, not_equal}
-
-///|
-impl Debug for DownsamplePrecision with fn to_repr(self) -> Repr {
-  match self {
-    Second => Repr::ctor("Second", [])
-    Minute => Repr::ctor("Minute", [])
-    Hour => Repr::ctor("Hour", [])
-    Day => Repr::ctor("Day", [])
-    Week => Repr::ctor("Week", [])
-    Month => Repr::ctor("Month", [])
-  }
-}
 
 ///|
 pub extend DownsamplePrecision with Debug::{to_repr}
@@ -156,7 +130,7 @@ pub(all) struct Metric {
   /// 创建时间
   created_at : Int
   /// 更新时间
-  updated_at : Int
+  mut updated_at : Int
 }
 
 ///|
@@ -247,11 +221,11 @@ pub(all) struct TimeSeriesConfig {
 ///|
 /// 默认时间序列配置
 pub fn TimeSeriesConfig::default() -> TimeSeriesConfig {
-  {
+  TimeSeriesConfig::{
     default_retention_seconds: 2592000, // 30 天
     max_data_points: 1000000000,
     auto_downsample: true,
-    default_precision: DownsamplePrecision::Minute,
+    default_precision: Minute,
     enable_continuous_query: true,
     flush_interval_ms: 1000,
   }
@@ -284,10 +258,10 @@ pub(all) enum TimeSeriesError {
   Query_Timeout
   /// 内部错误
   Internal_Error(String)
-}
+} derive(Debug)
 
 ///|
-impl Eq for TimeSeriesError with fn equal(self, other) -> Bool {
+pub impl Eq for TimeSeriesError with fn equal(self, other) -> Bool {
   match (self, other) {
     (Metric_Already_Exists, Metric_Already_Exists) => true
     (Metric_Not_Found, Metric_Not_Found) => true
@@ -307,24 +281,6 @@ impl Eq for TimeSeriesError with fn equal(self, other) -> Bool {
 
 ///|
 pub extend TimeSeriesError with Eq::{equal, not_equal}
-
-///|
-impl Debug for TimeSeriesError with fn to_repr(self) -> Repr {
-  match self {
-    Metric_Already_Exists => Repr::ctor("Metric_Already_Exists", [])
-    Metric_Not_Found => Repr::ctor("Metric_Not_Found", [])
-    Downsample_Policy_Already_Exists => Repr::ctor("Downsample_Policy_Already_Exists", [])
-    Downsample_Policy_Not_Found => Repr::ctor("Downsample_Policy_Not_Found", [])
-    Continuous_Query_Already_Exists => Repr::ctor("Continuous_Query_Already_Exists", [])
-    Continuous_Query_Not_Found => Repr::ctor("Continuous_Query_Not_Found", [])
-    Retention_Policy_Already_Exists => Repr::ctor("Retention_Policy_Already_Exists", [])
-    Retention_Policy_Not_Found => Repr::ctor("Retention_Policy_Not_Found", [])
-    Invalid_DataPoint => Repr::ctor("Invalid_DataPoint", [])
-    Too_Many_DataPoints => Repr::ctor("Too_Many_DataPoints", [])
-    Query_Timeout => Repr::ctor("Query_Timeout", [])
-    Internal_Error(msg) => Repr::ctor("Internal_Error", [(None, Repr(msg))])
-  }
-}
 
 ///|
 pub extend TimeSeriesError with Debug::{to_repr}
@@ -411,17 +367,17 @@ pub(all) struct QueryResult {
 /// 时间序列统计
 pub(all) struct TimeSeriesStats {
   /// 度量数
-  metric_count : Int
+  mut metric_count : Int
   /// 总数据点数
-  total_data_points : Int
+  mut total_data_points : Int
   /// 总大小（字节）
-  total_size_bytes : Int
+  mut total_size_bytes : Int
   /// 平均写入延迟（毫秒）
-  avg_write_latency_ms : Double
+  mut avg_write_latency_ms : Double
   /// 平均查询延迟（毫秒）
-  avg_query_latency_ms : Double
+  mut avg_query_latency_ms : Double
   /// P99 查询延迟（毫秒）
-  p99_query_latency_ms : Int
+  mut p99_query_latency_ms : Int
   /// 查询吞吐量（查询/秒）
-  query_throughput_qps : Double
+  mut query_throughput_qps : Double
 }

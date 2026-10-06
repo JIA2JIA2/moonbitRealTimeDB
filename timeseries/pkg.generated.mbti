@@ -1,0 +1,190 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit/realtime_db/timeseries"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn create_default_timeseries_engine() -> TimeSeriesEngine
+
+pub fn create_timeseries_engine(TimeSeriesConfig) -> TimeSeriesEngine
+
+// Errors
+
+// Types and methods
+pub(all) enum AggregationType {
+  Avg
+  Sum
+  Min
+  Max
+  Count
+  First
+  Last
+  Median
+  P50
+  P90
+  P99
+} derive(@debug.Debug)
+pub fn AggregationType::equal(Self, Self) -> Bool
+pub fn AggregationType::not_equal(Self, Self) -> Bool
+pub fn AggregationType::to_repr(Self) -> @debug.Repr
+pub impl Eq for AggregationType
+
+pub(all) struct ContinuousQuery {
+  query_id : String
+  query_name : String
+  source_metric : String
+  target_metric : String
+  query_interval_seconds : Int
+  aggregation : AggregationType
+  window_seconds : Int
+  is_enabled : Bool
+}
+
+pub(all) struct DataPoint {
+  timestamp : Int
+  value : Double
+  is_valid : Bool
+}
+
+pub(all) struct DownsamplePolicy {
+  policy_id : String
+  policy_name : String
+  precision : DownsamplePrecision
+  aggregation : AggregationType
+  retention_seconds : Int
+  is_enabled : Bool
+}
+
+pub(all) enum DownsamplePrecision {
+  Second
+  Minute
+  Hour
+  Day
+  Week
+  Month
+} derive(@debug.Debug)
+pub fn DownsamplePrecision::equal(Self, Self) -> Bool
+pub fn DownsamplePrecision::not_equal(Self, Self) -> Bool
+pub fn DownsamplePrecision::to_repr(Self) -> @debug.Repr
+pub impl Eq for DownsamplePrecision
+
+pub(all) struct Metric {
+  metric_id : String
+  metric_name : String
+  labels : Map[String, String]
+  mut data_points : Array[DataPoint]
+  created_at : Int
+  mut updated_at : Int
+}
+
+pub(all) struct QueryRequest {
+  metric_name : String
+  label_filters : Map[String, String]
+  start_time : Int
+  end_time : Int
+  aggregation : AggregationType
+  window_seconds : Int?
+  precision : DownsamplePrecision?
+  max_data_points : Int?
+}
+
+pub(all) struct QueryResult {
+  data_points : Array[DataPoint]
+  aggregation : AggregationType
+  precision : DownsamplePrecision?
+  latency_ms : Int
+}
+
+pub(all) struct RetentionPolicy {
+  policy_id : String
+  policy_name : String
+  policy_type : RetentionPolicyType
+  retention_seconds : Int
+  max_data_points : Int
+  max_size_bytes : Int
+  is_enabled : Bool
+}
+
+pub(all) enum RetentionPolicyType {
+  TimeExpired
+  CountLimited
+  SizeLimited
+} derive(@debug.Debug)
+pub fn RetentionPolicyType::equal(Self, Self) -> Bool
+pub fn RetentionPolicyType::not_equal(Self, Self) -> Bool
+pub fn RetentionPolicyType::to_repr(Self) -> @debug.Repr
+pub impl Eq for RetentionPolicyType
+
+pub(all) struct TimeSeriesConfig {
+  default_retention_seconds : Int
+  max_data_points : Int
+  auto_downsample : Bool
+  default_precision : DownsamplePrecision
+  enable_continuous_query : Bool
+  flush_interval_ms : Int
+}
+pub fn TimeSeriesConfig::default() -> Self
+
+pub(all) struct TimeSeriesEngine {
+  mut metrics : Map[String, Metric]
+  mut downsample_policies : Map[String, DownsamplePolicy]
+  mut continuous_queries : Map[String, ContinuousQuery]
+  mut retention_policies : Map[String, RetentionPolicy]
+  config : TimeSeriesConfig
+  mut stats : TimeSeriesStats
+  mut next_metric_id : Int
+  mut next_policy_id : Int
+  mut next_query_id : Int
+}
+pub fn TimeSeriesEngine::batch_write_data_points(Self, String, Array[DataPoint]) -> Result[Unit, TimeSeriesError]
+pub fn TimeSeriesEngine::cleanup_expired_data(Self) -> Int
+pub fn TimeSeriesEngine::create_continuous_query(Self, String, String, String, Int, AggregationType, Int) -> Result[String, TimeSeriesError]
+pub fn TimeSeriesEngine::create_downsample_policy(Self, String, DownsamplePrecision, AggregationType, Int) -> Result[String, TimeSeriesError]
+pub fn TimeSeriesEngine::create_metric(Self, String, Map[String, String]) -> Result[String, TimeSeriesError]
+pub fn TimeSeriesEngine::create_retention_policy(Self, String, RetentionPolicyType, Int, Int, Int) -> Result[String, TimeSeriesError]
+pub fn TimeSeriesEngine::delete_metric(Self, String) -> Result[Unit, TimeSeriesError]
+pub fn TimeSeriesEngine::execute_continuous_queries(Self) -> Unit
+pub fn TimeSeriesEngine::get_metric(Self, String) -> Metric?
+pub fn TimeSeriesEngine::get_stats(Self) -> TimeSeriesStats
+pub fn TimeSeriesEngine::list_metrics(Self) -> Array[Metric]
+pub fn TimeSeriesEngine::new(TimeSeriesConfig) -> Self
+pub fn TimeSeriesEngine::query(Self, QueryRequest) -> Result[QueryResult, TimeSeriesError]
+pub fn TimeSeriesEngine::write_data_point(Self, String, Int, Double) -> Result[Unit, TimeSeriesError]
+
+pub(all) enum TimeSeriesError {
+  Metric_Already_Exists
+  Metric_Not_Found
+  Downsample_Policy_Already_Exists
+  Downsample_Policy_Not_Found
+  Continuous_Query_Already_Exists
+  Continuous_Query_Not_Found
+  Retention_Policy_Already_Exists
+  Retention_Policy_Not_Found
+  Invalid_DataPoint
+  Too_Many_DataPoints
+  Query_Timeout
+  Internal_Error(String)
+} derive(@debug.Debug)
+pub fn TimeSeriesError::code(Self) -> Int
+pub fn TimeSeriesError::equal(Self, Self) -> Bool
+pub fn TimeSeriesError::message(Self) -> String
+pub fn TimeSeriesError::not_equal(Self, Self) -> Bool
+pub fn TimeSeriesError::to_repr(Self) -> @debug.Repr
+pub fn TimeSeriesError::to_string(Self) -> String
+pub impl Eq for TimeSeriesError
+
+pub(all) struct TimeSeriesStats {
+  mut metric_count : Int
+  mut total_data_points : Int
+  mut total_size_bytes : Int
+  mut avg_write_latency_ms : Double
+  mut avg_query_latency_ms : Double
+  mut p99_query_latency_ms : Int
+  mut query_throughput_qps : Double
+}
+
+// Type aliases
+
+// Traits
