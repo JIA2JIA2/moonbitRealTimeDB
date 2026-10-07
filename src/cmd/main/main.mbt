@@ -1,7 +1,7 @@
 ///|
 /// 实时数据库 CLI。
 /// - 无参数：运行内置演示。
-/// - `moon run cmd/main -- "cmd1" "cmd2" ...`：逐条执行命令。
+/// - `moon run src/cmd/main -- "cmd1" "cmd2" ...`：逐条执行命令。
 ///
 /// 命令：
 ///   set <k> <v> [ttl]   setnx <k> <v> [ttl]
