@@ -77,3 +77,7 @@ pub using @versioning {type VersionManager}
 ///|
 /// 时间序列引擎
 pub using @timeseries {type TimeSeriesEngine}
+
+///|
+/// 向量检索引擎
+pub using @vector_search {type CollectionManager, type VectorWriter}

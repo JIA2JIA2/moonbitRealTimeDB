@@ -18,6 +18,7 @@ import {
   "moonbit/realtime_db/src/stream_engine",
   "moonbit/realtime_db/src/timeseries",
   "moonbit/realtime_db/src/transaction",
+  "moonbit/realtime_db/src/vector_search",
   "moonbit/realtime_db/src/versioning",
 }
 
@@ -28,6 +29,8 @@ import {
 // Types and methods
 
 // Type aliases
+pub using @vector_search {type CollectionManager}
+
 pub using @connection {type ConnectionPool}
 
 pub using @realtime_db {type DB}
@@ -73,6 +76,8 @@ pub using @timeseries {type TimeSeriesEngine}
 pub using @transaction {type TransactionManager}
 
 pub using @realtime_db {type Value}
+
+pub using @vector_search {type VectorWriter}
 
 pub using @versioning {type VersionManager}
 

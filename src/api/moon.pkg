@@ -16,4 +16,5 @@ import {
   "moonbit/realtime_db/src/graphql",
   "moonbit/realtime_db/src/versioning",
   "moonbit/realtime_db/src/timeseries",
+  "moonbit/realtime_db/src/vector_search",
 }

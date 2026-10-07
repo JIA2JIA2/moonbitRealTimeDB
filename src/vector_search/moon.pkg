@@ -1,0 +1,8 @@
+// 向量检索引擎模块
+//
+// 提供高维向量存储、近似最近邻检索、元数据过滤与混合检索能力
+
+import {
+  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/persistence",
+}

@@ -1,0 +1,208 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit/realtime_db/src/vector_search"
+
+import {
+  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/persistence",
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) struct ChangeEvent {
+  collection_name : String
+  primary_key : String
+  change_type : ChangeEventType
+  occurred_at : Int
+}
+
+pub(all) enum ChangeEventType {
+  Inserted
+  Updated
+  Deleted
+  CollectionDropped
+} derive(@debug.Debug)
+pub fn ChangeEventType::equal(Self, Self) -> Bool
+pub fn ChangeEventType::not_equal(Self, Self) -> Bool
+pub fn ChangeEventType::to_repr(Self) -> @debug.Repr
+pub impl Eq for ChangeEventType
+
+pub struct CollectionManager {
+  collections : Map[String, VectorCollectionMeta]
+  tenant_collections : Map[String, Array[String]]
+  mut next_id : Int
+}
+pub fn CollectionManager::create_collection(Self, String, Int, DistanceMetric, IndexStrategy, Array[String], String) -> Unit
+pub fn CollectionManager::delete_collection(Self, String, String) -> Unit
+pub fn CollectionManager::get_collection(Self, String, String) -> VectorCollectionMeta?
+pub fn CollectionManager::has_collection(Self, String, String) -> Bool
+pub fn CollectionManager::increment_record_count(Self, String, String, Int) -> Unit
+pub fn CollectionManager::list_collections(Self, String) -> Array[VectorCollectionMeta]
+pub fn CollectionManager::new() -> Self
+pub fn CollectionManager::validate_dimension(Int) -> Unit
+pub fn CollectionManager::validate_metric(DistanceMetric) -> Bool
+
+pub(all) enum DistanceMetric {
+  Cosine
+  Euclidean
+  InnerProduct
+  Manhattan
+} derive(@debug.Debug)
+pub fn DistanceMetric::equal(Self, Self) -> Bool
+pub fn DistanceMetric::not_equal(Self, Self) -> Bool
+pub fn DistanceMetric::to_repr(Self) -> @debug.Repr
+pub impl Eq for DistanceMetric
+
+pub(all) enum FilterExpr {
+  Eq(String, @realtime_db.Value)
+  Gt(String, Double)
+  Lt(String, Double)
+  Gte(String, Double)
+  Lte(String, Double)
+  Exists(String)
+  And(Array[FilterExpr])
+  Or(Array[FilterExpr])
+  Not(FilterExpr)
+} derive(@debug.Debug)
+pub fn FilterExpr::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ImportTaskProgress {
+  task_id : String
+  status : ImportTaskStatus
+  total_records : Int
+  success_count : Int
+  failure_count : Int
+  error_message : String
+}
+
+pub(all) enum ImportTaskStatus {
+  Pending
+  Running
+  Completed
+  Failed
+  Cancelled
+} derive(@debug.Debug)
+pub fn ImportTaskStatus::equal(Self, Self) -> Bool
+pub fn ImportTaskStatus::not_equal(Self, Self) -> Bool
+pub fn ImportTaskStatus::to_repr(Self) -> @debug.Repr
+pub impl Eq for ImportTaskStatus
+
+pub(all) enum IndexStatus {
+  Created
+  Building
+  Active
+  Rebuilding
+  Failed
+} derive(@debug.Debug)
+pub fn IndexStatus::equal(Self, Self) -> Bool
+pub fn IndexStatus::not_equal(Self, Self) -> Bool
+pub fn IndexStatus::to_repr(Self) -> @debug.Repr
+pub impl Eq for IndexStatus
+
+pub(all) struct IndexStatusReport {
+  index_type : String
+  indexed_count : Int
+  build_progress : Int
+  is_ready : Bool
+  last_optimized_at : Int
+  memory_bytes : Int
+}
+
+pub(all) enum IndexStrategy {
+  Exact
+  Approximate
+} derive(@debug.Debug)
+pub fn IndexStrategy::equal(Self, Self) -> Bool
+pub fn IndexStrategy::not_equal(Self, Self) -> Bool
+pub fn IndexStrategy::to_repr(Self) -> @debug.Repr
+pub impl Eq for IndexStrategy
+
+pub(all) enum SearchMode {
+  Exact
+  Approximate
+} derive(@debug.Debug)
+pub fn SearchMode::equal(Self, Self) -> Bool
+pub fn SearchMode::not_equal(Self, Self) -> Bool
+pub fn SearchMode::to_repr(Self) -> @debug.Repr
+pub impl Eq for SearchMode
+
+pub(all) struct SearchResult {
+  primary_key : String
+  score : Double
+  metadata : Map[String, @realtime_db.Value]
+  distance_metric : DistanceMetric
+  search_mode : SearchMode
+  scanned_count : Int
+}
+
+pub(all) struct VectorCollectionMeta {
+  collection_name : String
+  dimension : Int
+  distance_metric : DistanceMetric
+  index_strategy : IndexStrategy
+  filterable_fields : Array[String]
+  record_count : Int
+  tenant_id : String
+  created_at : Int
+}
+
+pub(all) struct VectorRecord {
+  primary_key : String
+  vector : Array[Double]
+  metadata : Map[String, @realtime_db.Value]
+  version : Int
+  updated_at : Int
+}
+
+pub(all) enum VectorSearchError {
+  CollectionAlreadyExists
+  CollectionNotFound
+  InvalidDimension
+  InvalidMetric
+  DimensionMismatch
+  EmptyPrimaryKey
+  DuplicatePrimaryKey
+  InvalidVectorValue
+  InvalidMetadata
+  InvalidTopK
+  QueryDimensionMismatch
+  SearchTimeout
+  IndexUnavailable
+  FilterFieldNotIndexed
+  InvalidFilterExpression
+  IndexBuildResourceExhausted
+  IndexBuildInProgress
+  PersistFailed
+  ImportPartialFailure
+} derive(@debug.Debug)
+pub fn VectorSearchError::equal(Self, Self) -> Bool
+pub fn VectorSearchError::not_equal(Self, Self) -> Bool
+pub fn VectorSearchError::to_repr(Self) -> @debug.Repr
+pub impl Eq for VectorSearchError
+
+pub(all) struct VectorSearchMetrics {
+  search_qps : Double
+  search_latency_p50 : Double
+  search_latency_p95 : Double
+  search_latency_p99 : Double
+  index_memory_bytes : Int
+  collection_record_count : Int
+  index_healthy : Bool
+  import_throughput : Double
+}
+
+pub struct VectorWriter {
+  collection_manager : CollectionManager
+  wal : @persistence.WAL
+}
+pub fn VectorWriter::insert_batch(Self, String, String, Array[(String, Array[Double], Map[String, @realtime_db.Value])]) -> Unit
+pub fn VectorWriter::insert_single(Self, String, String, String, Array[Double], Map[String, @realtime_db.Value]) -> Unit
+pub fn VectorWriter::new(CollectionManager, @persistence.WAL) -> Self
+pub fn VectorWriter::upsert_single(Self, String, String, String, Array[Double], Map[String, @realtime_db.Value]) -> Unit
+
+// Type aliases
+
+// Traits
