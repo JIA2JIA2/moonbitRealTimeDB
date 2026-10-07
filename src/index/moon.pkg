@@ -1,0 +1,7 @@
+// 二级索引模块
+//
+// 提供 Hash/BTree/Fulltext 索引、复合索引、查询引擎
+
+import {
+  "moonbit/realtime_db",
+}

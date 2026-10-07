@@ -1,0 +1,81 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit/realtime_db/src/api"
+
+import {
+  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/cluster",
+  "moonbit/realtime_db/src/connection",
+  "moonbit/realtime_db/src/feature_store",
+  "moonbit/realtime_db/src/graphql",
+  "moonbit/realtime_db/src/index",
+  "moonbit/realtime_db/src/lake_integration",
+  "moonbit/realtime_db/src/monitor",
+  "moonbit/realtime_db/src/multi_tenant",
+  "moonbit/realtime_db/src/perf_pipeline",
+  "moonbit/realtime_db/src/persistence",
+  "moonbit/realtime_db/src/replication",
+  "moonbit/realtime_db/src/sql_engine",
+  "moonbit/realtime_db/src/stream_engine",
+  "moonbit/realtime_db/src/timeseries",
+  "moonbit/realtime_db/src/transaction",
+  "moonbit/realtime_db/src/versioning",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @connection {type ConnectionPool}
+
+pub using @realtime_db {type DB}
+
+pub using @realtime_db {type Event}
+
+pub using @feature_store {type FeatureStoreManager}
+
+pub using @graphql {type GraphQLExecutor}
+
+pub using @graphql {type GraphQLService}
+
+pub using @index {type IndexManager}
+
+pub using @lake_integration {type LakeSyncer}
+
+pub using @monitor {type Monitor}
+
+pub using @cluster {type NodeManager}
+
+pub using @perf_pipeline {type Pipeline}
+
+pub using @stream_engine {type PipelineManager}
+
+pub using @index {type QueryEngine}
+
+pub using @sql_engine {type QueryExecutor}
+
+pub using @sql_engine {type QueryOptimizer}
+
+pub using @replication {type ReplicationManager}
+
+pub using @cluster {type RoutingTableService}
+
+pub using @cluster {type ShardManager}
+
+pub using @persistence {type Snapshot}
+
+pub using @multi_tenant {type TenantManager}
+
+pub using @timeseries {type TimeSeriesEngine}
+
+pub using @transaction {type TransactionManager}
+
+pub using @realtime_db {type Value}
+
+pub using @versioning {type VersionManager}
+
+pub using @persistence {type WAL}
+
+// Traits

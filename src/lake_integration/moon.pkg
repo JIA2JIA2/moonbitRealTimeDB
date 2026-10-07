@@ -1,0 +1,9 @@
+// 数据湖集成模块
+//
+// 提供 Parquet/ORC/Delta Lake 双向同步、Schema 演化
+
+import {
+  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/multi_tenant",
+  "moonbit/realtime_db/src/sql_engine",
+}

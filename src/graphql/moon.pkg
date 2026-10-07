@@ -1,0 +1,7 @@
+// GraphQL 接口模块
+//
+// 提供多层嵌套查询、DataLoader 批量查询、结果缓存
+
+import {
+  "moonbit/realtime_db",
+}

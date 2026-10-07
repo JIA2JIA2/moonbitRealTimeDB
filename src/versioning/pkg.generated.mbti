@@ -1,0 +1,198 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit/realtime_db/src/versioning"
+
+import {
+  "moonbit/realtime_db",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn create_default_version_manager() -> VersionManager
+
+pub fn create_version_manager(VersioningConfig) -> VersionManager
+
+// Errors
+
+// Types and methods
+pub(all) struct Branch {
+  branch_id : String
+  branch_name : String
+  branch_type : BranchType
+  mut current_version : String
+  parent_branch : String?
+  created_at : Int
+  mut updated_at : Int
+}
+
+pub(all) enum BranchType {
+  Main
+  Dev
+  Feature
+  Release
+  Hotfix
+} derive(@debug.Debug)
+pub fn BranchType::equal(Self, Self) -> Bool
+pub fn BranchType::not_equal(Self, Self) -> Bool
+pub fn BranchType::to_repr(Self) -> @debug.Repr
+pub impl Eq for BranchType
+
+pub(all) enum ChangeType {
+  Added
+  Deleted
+  Modified
+} derive(@debug.Debug)
+pub fn ChangeType::equal(Self, Self) -> Bool
+pub fn ChangeType::not_equal(Self, Self) -> Bool
+pub fn ChangeType::to_repr(Self) -> @debug.Repr
+pub impl Eq for ChangeType
+
+pub(all) enum MergeStrategy {
+  FastForward
+  ThreeWay
+  Squash
+  Rebase
+} derive(@debug.Debug)
+pub fn MergeStrategy::equal(Self, Self) -> Bool
+pub fn MergeStrategy::not_equal(Self, Self) -> Bool
+pub fn MergeStrategy::to_repr(Self) -> @debug.Repr
+pub impl Eq for MergeStrategy
+
+pub(all) struct PointInTimeQuery {
+  timestamp : Int
+  branch_name : String?
+  version_id : String?
+}
+
+pub(all) struct RollbackRequest {
+  target_version : String
+  create_new_version : Bool
+  commit_message : String
+}
+
+pub(all) struct Snapshot {
+  snapshot_id : String
+  snapshot_name : String
+  snapshot_type : SnapshotType
+  data : @realtime_db.Value
+  metadata : Map[String, @realtime_db.Value]
+  created_at : Int
+  expire_at : Int?
+  size_bytes : Int
+}
+
+pub(all) enum SnapshotType {
+  Auto
+  Manual
+  Scheduled
+} derive(@debug.Debug)
+pub fn SnapshotType::equal(Self, Self) -> Bool
+pub fn SnapshotType::not_equal(Self, Self) -> Bool
+pub fn SnapshotType::to_repr(Self) -> @debug.Repr
+pub impl Eq for SnapshotType
+
+pub(all) struct VersionChange {
+  change_type : ChangeType
+  key : String
+  old_value : @realtime_db.Value?
+  new_value : @realtime_db.Value?
+}
+
+pub(all) struct VersionDiff {
+  source_version : String
+  target_version : String
+  changes : Array[VersionChange]
+}
+
+pub(all) struct VersionEntry {
+  version_id : String
+  version : Int
+  snapshot_id : String
+  commit_message : String
+  author : String
+  timestamp : Int
+  parent_version : String?
+  branch_name : String
+}
+
+pub(all) struct VersionHistory {
+  history_id : String
+  mut versions : Array[VersionEntry]
+  mut branches : Map[String, Branch]
+  mut current_branch : String
+}
+
+pub(all) struct VersionManager {
+  mut snapshots : Map[String, Snapshot]
+  version_history : VersionHistory
+  config : VersioningConfig
+  mut db : @realtime_db.DB?
+  mut next_snapshot_id : Int
+  mut next_branch_id : Int
+  mut next_version_id : Int
+}
+pub fn VersionManager::branch_count(Self) -> Int
+pub fn VersionManager::cleanup_expired_snapshots(Self) -> Int
+pub fn VersionManager::commit(Self, String, String, String, String) -> Result[String, VersioningError]
+pub fn VersionManager::create_branch(Self, String, BranchType, String?) -> Result[String, VersioningError]
+pub fn VersionManager::create_snapshot(Self, String, SnapshotType, @realtime_db.Value) -> Result[String, VersioningError]
+pub fn VersionManager::delete_branch(Self, String) -> Result[Unit, VersioningError]
+pub fn VersionManager::delete_snapshot(Self, String) -> Result[Unit, VersioningError]
+pub fn VersionManager::diff(Self, String, String) -> Result[VersionDiff, VersioningError]
+pub fn VersionManager::get_branch(Self, String) -> Branch?
+pub fn VersionManager::get_snapshot(Self, String) -> Snapshot?
+pub fn VersionManager::get_version(Self, String) -> VersionEntry?
+pub fn VersionManager::get_version_history(Self, String?) -> Array[VersionEntry]
+pub fn VersionManager::list_branches(Self) -> Array[Branch]
+pub fn VersionManager::list_snapshots(Self) -> Array[Snapshot]
+pub fn VersionManager::merge(Self, String, String, MergeStrategy, String) -> Result[String, VersioningError]
+pub fn VersionManager::new(VersioningConfig) -> Self
+pub fn VersionManager::point_in_time_query(Self, PointInTimeQuery) -> Result[@realtime_db.Value, VersioningError]
+pub fn VersionManager::rollback(Self, RollbackRequest) -> Result[String, VersioningError]
+pub fn VersionManager::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn VersionManager::snapshot_count(Self) -> Int
+
+pub(all) enum VersionStatus {
+  Active
+  Deleted
+  Merged
+} derive(@debug.Debug)
+pub fn VersionStatus::equal(Self, Self) -> Bool
+pub fn VersionStatus::not_equal(Self, Self) -> Bool
+pub fn VersionStatus::to_repr(Self) -> @debug.Repr
+pub impl Eq for VersionStatus
+
+pub(all) struct VersioningConfig {
+  auto_snapshot : Bool
+  snapshot_interval : Int
+  max_snapshots : Int
+  snapshot_retention_days : Int
+  enable_branch_protection : Bool
+  max_branches : Int
+}
+pub fn VersioningConfig::default() -> Self
+
+pub(all) enum VersioningError {
+  Snapshot_Already_Exists
+  Snapshot_Not_Found
+  Branch_Already_Exists
+  Branch_Not_Found
+  Version_Not_Found
+  Version_Conflict
+  Merge_Conflict
+  Branch_Protected
+  Branch_Limit_Exceeded
+  Snapshot_Limit_Exceeded
+  Invalid_Operation
+  Internal_Error(String)
+} derive(@debug.Debug)
+pub fn VersioningError::code(Self) -> Int
+pub fn VersioningError::equal(Self, Self) -> Bool
+pub fn VersioningError::message(Self) -> String
+pub fn VersioningError::not_equal(Self, Self) -> Bool
+pub fn VersioningError::to_repr(Self) -> @debug.Repr
+pub fn VersioningError::to_string(Self) -> String
+pub impl Eq for VersioningError
+
+// Type aliases
+
+// Traits

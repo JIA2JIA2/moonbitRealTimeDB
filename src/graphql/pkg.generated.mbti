@@ -1,0 +1,237 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit/realtime_db/src/graphql"
+
+import {
+  "moonbit/realtime_db",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn create_dataloader(Int, (Array[String]) -> Array[@realtime_db.Value]) -> DataLoader
+
+pub fn create_executor(GraphQLSchema, GraphQLConfig) -> GraphQLExecutor
+
+pub fn create_parser(String) -> GraphQLParser
+
+pub fn create_service(GraphQLExecutor) -> GraphQLService
+
+pub fn parse_graphql(String) -> Result[GraphQLParseResult, GraphQLErrorEnum]
+
+// Errors
+
+// Types and methods
+pub(all) struct DataLoader {
+  batch_size : Int
+  batch_fn : (Array[String]) -> Array[@realtime_db.Value]
+  mut cache : Map[String, @realtime_db.Value]
+  mut queue : Array[String]
+}
+pub fn DataLoader::clear(Self) -> Unit
+pub fn DataLoader::load(Self, String) -> @realtime_db.Value?
+pub fn DataLoader::load_many(Self, Array[String]) -> Array[@realtime_db.Value]
+pub fn DataLoader::new(Int, (Array[String]) -> Array[@realtime_db.Value]) -> Self
+
+pub(all) enum DirectiveLocation {
+  Query
+  Mutation
+  Subscription
+  Field
+  FragmentDefinition
+  FragmentSpread
+}
+pub fn DirectiveLocation::equal(Self, Self) -> Bool
+pub fn DirectiveLocation::not_equal(Self, Self) -> Bool
+pub impl Eq for DirectiveLocation
+
+pub(all) struct GraphQLArg {
+  name : String
+  arg_type : GraphQLType
+  default_value : GraphQLValue?
+  description : String?
+}
+
+pub(all) struct GraphQLCache {
+  mut cache : Map[String, GraphQLValue]
+  max_size : Int
+  ttl : Int
+  mut hit_count : Int
+  mut query_count : Int
+}
+pub fn GraphQLCache::clear(Self) -> Unit
+pub fn GraphQLCache::get(Self, String) -> GraphQLValue?
+pub fn GraphQLCache::hit_rate(Self) -> Double
+pub fn GraphQLCache::new(Int, Int) -> Self
+pub fn GraphQLCache::set(Self, String, GraphQLValue) -> Unit
+
+pub(all) struct GraphQLConfig {
+  enable_dataloader : Bool
+  enable_cache : Bool
+  cache_size : Int
+  cache_ttl : Int
+  max_query_depth : Int
+  max_field_count : Int
+  enable_subscription : Bool
+}
+pub fn GraphQLConfig::default() -> Self
+
+pub(all) struct GraphQLContext {
+  request_id : String
+  operation_name : String?
+  variables : Map[String, GraphQLValue]
+  context_data : Map[String, @realtime_db.Value]
+  db : @realtime_db.DB?
+  tenant_id : String?
+}
+
+pub(all) struct GraphQLDirective {
+  name : String
+  description : String?
+  locations : Array[DirectiveLocation]
+  args : Map[String, GraphQLArg]
+}
+
+pub(all) struct GraphQLError {
+  message : String
+  line : Int?
+  column : Int?
+  path : Array[String]?
+  extensions : Map[String, GraphQLValue]
+}
+
+pub(all) enum GraphQLErrorEnum {
+  SyntaxError(String)
+  FieldNotFound(String)
+  TypeMismatch(String)
+  MissingArgument(String)
+  InternalError(String)
+}
+pub fn GraphQLErrorEnum::code(Self) -> Int
+pub fn GraphQLErrorEnum::equal(Self, Self) -> Bool
+pub fn GraphQLErrorEnum::message(Self) -> String
+pub fn GraphQLErrorEnum::not_equal(Self, Self) -> Bool
+pub impl Eq for GraphQLErrorEnum
+
+pub(all) enum GraphQLErrorType {
+  Syntax_Error
+  Validation_Error
+  Parse_Error
+  Execution_Error
+  Internal_Error
+}
+pub fn GraphQLErrorType::equal(Self, Self) -> Bool
+pub fn GraphQLErrorType::not_equal(Self, Self) -> Bool
+pub impl Eq for GraphQLErrorType
+
+pub(all) struct GraphQLExecutionResult {
+  success : Bool
+  data : GraphQLValue?
+  errors : Array[GraphQLErrorEnum]
+}
+
+pub(all) struct GraphQLExecutor {
+  schema : GraphQLSchema
+  config : GraphQLConfig
+  mut dataloaders : Map[String, DataLoader]
+  cache : GraphQLCache
+  mut stats : GraphQLStats
+}
+pub fn GraphQLExecutor::clear_cache(Self) -> Unit
+pub fn GraphQLExecutor::execute(Self, GraphQLRequest, GraphQLContext) -> GraphQLExecutionResult
+pub fn GraphQLExecutor::get_dataloader(Self, String) -> DataLoader?
+pub fn GraphQLExecutor::get_stats(Self) -> GraphQLStats
+pub fn GraphQLExecutor::new(GraphQLSchema, GraphQLConfig) -> Self
+pub fn GraphQLExecutor::register_dataloader(Self, String, DataLoader) -> Unit
+
+pub(all) struct GraphQLField {
+  name : String
+  field_type : GraphQLType
+  description : String?
+  args : Map[String, GraphQLArg]
+  resolve_fn : (GraphQLContext) -> GraphQLValue?
+}
+
+pub(all) struct GraphQLObjectType {
+  name : String
+  description : String?
+  fields : Map[String, GraphQLField]
+  interfaces : Array[String]
+}
+
+pub(all) struct GraphQLParseResult {
+  success : Bool
+  value : GraphQLValue?
+  errors : Array[GraphQLErrorEnum]
+}
+
+pub(all) struct GraphQLParser {
+  text : String
+  mut position : Int
+  mut line : Int
+  mut column : Int
+}
+pub fn GraphQLParser::new(String) -> Self
+pub fn GraphQLParser::parse(Self) -> Result[GraphQLParseResult, GraphQLErrorEnum]
+
+pub(all) struct GraphQLRequest {
+  query : String
+  operation_name : String?
+  variables : Map[String, GraphQLValue]
+}
+
+pub(all) struct GraphQLResponse {
+  data : GraphQLValue?
+  errors : Array[GraphQLError]
+  extensions : Map[String, GraphQLValue]
+}
+
+pub(all) struct GraphQLSchema {
+  query_type : GraphQLObjectType
+  mutation_type : GraphQLObjectType?
+  subscription_type : GraphQLObjectType?
+  types : Map[String, GraphQLObjectType]
+  directives : Map[String, GraphQLDirective]
+}
+
+pub(all) struct GraphQLService {
+  executor : GraphQLExecutor
+  mut is_running : Bool
+}
+pub fn GraphQLService::handle_request(Self, GraphQLRequest, GraphQLContext) -> GraphQLResponse
+pub fn GraphQLService::new(GraphQLExecutor) -> Self
+pub fn GraphQLService::start(Self) -> Unit
+pub fn GraphQLService::stop(Self) -> Unit
+
+pub(all) struct GraphQLStats {
+  total_queries : Int
+  total_mutations : Int
+  total_subscriptions : Int
+  avg_latency_ms : Double
+  p99_latency_ms : Int
+  error_count : Int
+  cache_hit_rate : Double
+}
+
+pub(all) enum GraphQLType {
+  Scalar(String)
+  Object(String)
+  List(GraphQLType)
+  NonNull(GraphQLType)
+}
+
+pub(all) enum GraphQLValue {
+  IntValue(Int)
+  FloatValue(Double)
+  StringValue(String)
+  BoolValue(Bool)
+  NullValue
+  ListValue(Array[GraphQLValue])
+  ObjectValue(Map[String, GraphQLValue])
+} derive(@debug.Debug)
+pub fn GraphQLValue::equal(Self, Self) -> Bool
+pub fn GraphQLValue::not_equal(Self, Self) -> Bool
+pub fn GraphQLValue::to_repr(Self) -> @debug.Repr
+pub impl Eq for GraphQLValue
+
+// Type aliases
+
+// Traits

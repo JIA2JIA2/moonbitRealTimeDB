@@ -1,0 +1,8 @@
+// 实时数据流引擎模块
+//
+// 提供窗口聚合、过滤订阅、状态存储、检查点、水位线
+
+import {
+  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/persistence",
+}

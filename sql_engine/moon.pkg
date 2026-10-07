@@ -1,4 +1,0 @@
-import {
-  "moonbit/realtime_db",
-  "moonbitlang/core/string",
-}

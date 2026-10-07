@@ -7,6 +7,12 @@ You can browse and install extra skills here:
 
 ## Project Structure
 
+- This project uses a layered layout: the core database lives at the module
+  root (`realtime_db.mbt`), while all feature modules are organized under `src/`
+  (e.g. `src/index`, `src/cluster`, `src/sql_engine`). The `src/api` package is a
+  facade that re-exports the public types of every module via `pub using`.
+  See `STRUCTURE.md` for the full specification.
+
 - MoonBit packages are organized per directory; each directory contains a
   `moon.pkg` file listing its dependencies. Each package has its files and
   blackbox test files (ending in `_test.mbt`) and whitebox test files (ending in

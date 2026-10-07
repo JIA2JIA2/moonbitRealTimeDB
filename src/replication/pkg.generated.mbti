@@ -1,0 +1,269 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit/realtime_db/src/replication"
+
+import {
+  "moonbit/realtime_db",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn create_conflict_detector(ConflictResolutionStrategy) -> ConflictDetector
+
+pub fn create_conflict_resolver(ConflictResolutionStrategy) -> ConflictResolver
+
+pub fn create_replication_manager() -> ReplicationManager
+
+pub fn create_replication_manager_with_config(ReplicationConfig) -> ReplicationManager
+
+// Errors
+
+// Types and methods
+pub(all) enum ClockOrder {
+  Before
+  After
+  Concurrent
+} derive(Eq, @debug.Debug)
+pub fn ClockOrder::equal(Self, Self) -> Bool
+pub fn ClockOrder::not_equal(Self, Self) -> Bool
+pub fn ClockOrder::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ClusterInfo {
+  cluster_id : String
+  cluster_name : String
+  cluster_addr : String
+  nodes : Array[NodeInfo]
+  created_at : Int
+  last_active_at : Int
+}
+
+pub(all) struct ConflictDetector {
+  vector_clock : VectorClock
+  version_vector : VersionVector
+  strategy : ConflictResolutionStrategy
+}
+pub fn ConflictDetector::detect(Self, String, @realtime_db.Value, Int, String, @realtime_db.Value, Int, String) -> Bool
+pub fn ConflictDetector::new(ConflictResolutionStrategy) -> Self
+pub fn ConflictDetector::resolve(Self, String, @realtime_db.Value, Int, Int, String, @realtime_db.Value, Int, Int, String) -> ConflictResolutionResult
+
+pub(all) struct ConflictRecord {
+  conflict_id : String
+  task_id : String
+  key : String
+  source_value : @realtime_db.Value
+  target_value : @realtime_db.Value
+  source_timestamp : Int
+  target_timestamp : Int
+  source_version : Int
+  target_version : Int
+  resolution_strategy : ConflictResolutionStrategy
+  resolved_value : @realtime_db.Value?
+  resolved_at : Int
+}
+
+pub(all) struct ConflictResolutionResult {
+  key : String
+  resolved_value : @realtime_db.Value
+  resolution_strategy : ConflictResolutionStrategy
+  resolved_at : Int
+}
+
+pub(all) enum ConflictResolutionStrategy {
+  Timestamp
+  Version
+  Source_Priority
+  Target_Priority
+  Custom
+} derive(@debug.Debug)
+pub fn ConflictResolutionStrategy::equal(Self, Self) -> Bool
+pub fn ConflictResolutionStrategy::not_equal(Self, Self) -> Bool
+pub fn ConflictResolutionStrategy::to_repr(Self) -> @debug.Repr
+pub impl Eq for ConflictResolutionStrategy
+
+pub(all) struct ConflictResolver {
+  mut strategies : Map[String, ConflictResolutionStrategy]
+  default_strategy : ConflictResolutionStrategy
+}
+pub fn ConflictResolver::get_strategy(Self, String) -> ConflictResolutionStrategy
+pub fn ConflictResolver::new(ConflictResolutionStrategy) -> Self
+pub fn ConflictResolver::resolve(Self, String, String, @realtime_db.Value, Int, Int, String, @realtime_db.Value, Int, Int, String) -> ConflictResolutionResult
+pub fn ConflictResolver::set_strategy(Self, String, ConflictResolutionStrategy) -> Unit
+
+pub(all) struct NodeInfo {
+  node_id : String
+  node_addr : String
+  is_primary : Bool
+  priority : Int
+  latency_ms : Int
+  is_healthy : Bool
+}
+
+pub(all) struct ReplicationConfig {
+  default_batch_size : Int
+  default_replication_interval_ms : Int
+  max_retries : Int
+  retry_interval_ms : Int
+  replication_timeout_ms : Int
+  enable_checkpoint : Bool
+}
+pub fn ReplicationConfig::default() -> Self
+
+pub(all) enum ReplicationError {
+  Task_Already_Exists
+  Task_Not_Found
+  Cluster_Not_Found
+  Connection_Failed
+  Authentication_Failed
+  Replication_Timeout
+  Data_Inconsistency
+  Conflict_Detection_Failed
+  Conflict_Resolution_Failed
+  Checkpoint_Failed
+  Internal_Error(String)
+}
+pub fn ReplicationError::code(Self) -> Int
+pub fn ReplicationError::equal(Self, Self) -> Bool
+pub fn ReplicationError::message(Self) -> String
+pub fn ReplicationError::not_equal(Self, Self) -> Bool
+pub fn ReplicationError::to_repr(Self) -> @debug.Repr
+pub fn ReplicationError::to_string(Self) -> String
+pub impl Eq for ReplicationError
+pub impl @debug.Debug for ReplicationError
+
+pub(all) struct ReplicationLog {
+  log_id : String
+  task_id : String
+  operation : String
+  key : String
+  value : @realtime_db.Value?
+  timestamp : Int
+  source_cluster : String
+  target_cluster : String
+  success : Bool
+  error_message : String?
+}
+
+pub(all) struct ReplicationManager {
+  mut clusters : Map[String, ClusterInfo]
+  mut tasks : Map[String, ReplicationTask]
+  mut replication_logs : Array[ReplicationLog]
+  conflict_records : Array[ConflictRecord]
+  config : ReplicationConfig
+  mut next_task_id : Int
+}
+pub fn ReplicationManager::create_replication_task(Self, ReplicationTaskConfig) -> Result[String, ReplicationError]
+pub fn ReplicationManager::delete_replication_task(Self, String) -> Result[Unit, ReplicationError]
+pub fn ReplicationManager::get_cluster(Self, String) -> ClusterInfo?
+pub fn ReplicationManager::get_conflict_records(Self, String) -> Array[ConflictRecord]
+pub fn ReplicationManager::get_replication_logs(Self, String) -> Array[ReplicationLog]
+pub fn ReplicationManager::get_task_stats(Self, String) -> ReplicationStats?
+pub fn ReplicationManager::get_task_status(Self, String) -> ReplicationTask?
+pub fn ReplicationManager::list_clusters(Self) -> Array[ClusterInfo]
+pub fn ReplicationManager::list_tasks(Self) -> Array[ReplicationTask]
+pub fn ReplicationManager::new() -> Self
+pub fn ReplicationManager::pause_replication(Self, String) -> Result[Unit, ReplicationError]
+pub fn ReplicationManager::register_cluster(Self, ClusterInfo) -> Result[Unit, ReplicationError]
+pub fn ReplicationManager::resume_replication(Self, String) -> Result[Unit, ReplicationError]
+pub fn ReplicationManager::start_replication(Self, String) -> Result[Unit, ReplicationError]
+pub fn ReplicationManager::stop_replication(Self, String) -> Result[Unit, ReplicationError]
+pub fn ReplicationManager::unregister_cluster(Self, String) -> Result[Unit, ReplicationError]
+pub fn ReplicationManager::with_config(ReplicationConfig) -> Self
+
+pub(all) enum ReplicationMode {
+  Sync
+  Async
+  Semi_Sync
+} derive(@debug.Debug)
+pub fn ReplicationMode::equal(Self, Self) -> Bool
+pub fn ReplicationMode::not_equal(Self, Self) -> Bool
+pub fn ReplicationMode::to_repr(Self) -> @debug.Repr
+pub impl Eq for ReplicationMode
+
+pub(all) struct ReplicationStats {
+  task_id : String
+  total_records : Int
+  replicated_records : Int
+  failed_records : Int
+  conflict_records : Int
+  avg_latency_ms : Double
+  p99_latency_ms : Int
+  throughput_qps : Double
+  replication_lag_ms : Int
+}
+
+pub(all) enum ReplicationStatus {
+  Initializing
+  Running
+  Paused
+  Stopped
+  Error
+  Disconnected
+} derive(@debug.Debug)
+pub fn ReplicationStatus::equal(Self, Self) -> Bool
+pub fn ReplicationStatus::not_equal(Self, Self) -> Bool
+pub fn ReplicationStatus::to_repr(Self) -> @debug.Repr
+pub impl Eq for ReplicationStatus
+
+pub(all) struct ReplicationTask {
+  task_id : String
+  task_name : String
+  source_cluster : ClusterInfo
+  target_cluster : ClusterInfo
+  topology : ReplicationTopology
+  mode : ReplicationMode
+  mut status : ReplicationStatus
+  conflict_strategy : ConflictResolutionStrategy
+  created_at : Int
+  mut updated_at : Int
+  replicated_records : Int
+  total_records : Int
+  replication_lag_ms : Int
+  error_message : String?
+}
+
+pub(all) struct ReplicationTaskConfig {
+  task_name : String
+  source_cluster_id : String
+  target_cluster_id : String
+  topology : ReplicationTopology
+  mode : ReplicationMode
+  conflict_strategy : ConflictResolutionStrategy
+  batch_size : Int
+  replication_interval_ms : Int
+  enable_checkpoint : Bool
+  max_retries : Int
+  retry_interval_ms : Int
+}
+
+pub(all) enum ReplicationTopology {
+  Primary_Replica
+  Multi_Master
+  Ring
+  Star
+  Full_Mesh
+}
+pub fn ReplicationTopology::equal(Self, Self) -> Bool
+pub fn ReplicationTopology::not_equal(Self, Self) -> Bool
+pub fn ReplicationTopology::to_repr(Self) -> @debug.Repr
+pub impl Eq for ReplicationTopology
+pub impl @debug.Debug for ReplicationTopology
+
+pub(all) struct VectorClock {
+  mut clocks : Map[String, Int]
+}
+pub fn VectorClock::compare(Self, Self) -> ClockOrder
+pub fn VectorClock::get(Self, String) -> Int
+pub fn VectorClock::new() -> Self
+pub fn VectorClock::update(Self, String, Int) -> Unit
+
+pub(all) struct VersionVector {
+  mut versions : Map[String, Int]
+}
+pub fn VersionVector::get(Self, String) -> Int
+pub fn VersionVector::increment(Self, String) -> Int
+pub fn VersionVector::merge(Self, Self) -> Unit
+pub fn VersionVector::new() -> Self
+pub fn VersionVector::update(Self, String, Int) -> Unit
+
+// Type aliases
+
+// Traits

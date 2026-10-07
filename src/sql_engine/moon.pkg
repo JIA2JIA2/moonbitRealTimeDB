@@ -1,0 +1,8 @@
+// SQL 查询引擎模块
+//
+// 提供 SQL 解析、基于成本的优化、查询执行
+
+import {
+  "moonbit/realtime_db",
+  "moonbitlang/core/string",
+}

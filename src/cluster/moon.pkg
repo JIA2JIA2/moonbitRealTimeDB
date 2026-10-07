@@ -1,0 +1,8 @@
+// 分布式集群模块
+//
+// 提供节点管理、分片管理、Raft 共识、故障转移、再平衡
+
+import {
+  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/persistence",
+}

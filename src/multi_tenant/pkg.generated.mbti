@@ -1,0 +1,306 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit/realtime_db/src/multi_tenant"
+
+import {
+  "moonbit/realtime_db",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn create_billing_meter(TenantManager) -> BillingMeter
+
+pub fn create_isolation_guard(TenantManager) -> IsolationGuard
+
+pub fn create_namespace_resolver(TenantManager) -> NamespaceResolver
+
+pub fn create_resource_quota_manager(TenantManager) -> ResourceQuotaManager
+
+pub fn create_tenant_manager() -> TenantManager
+
+pub fn create_tenant_monitor(TenantManager) -> TenantMonitor
+
+// Errors
+
+// Types and methods
+pub(all) struct AuditLog {
+  log_id : String
+  tenant_id : String
+  operation : String
+  resource_type : String
+  resource_id : String
+  result : Bool
+  timestamp : Int
+  details : String?
+}
+
+pub(all) struct BillingData {
+  tenant_id : String
+  billing_period : String
+  cpu_hours : Double
+  memory_gb_hours : Double
+  storage_gb_hours : Double
+  connection_hours : Int
+  throughput_gb : Double
+  amount : Double
+  currency : String
+}
+
+pub(all) struct BillingMeter {
+  tenant_manager : TenantManager
+  rates : BillingRates
+  mut billing_data : Map[String, BillingData]
+}
+pub fn BillingMeter::calculate_billing(Self, String) -> Result[BillingData, TenantError]
+pub fn BillingMeter::generate_report(Self, String) -> Result[String, TenantError]
+pub fn BillingMeter::new(TenantManager) -> Self
+
+pub(all) struct BillingRates {
+  cpu_rate : Double
+  memory_rate : Double
+  storage_rate : Double
+  connection_rate : Double
+  throughput_rate : Double
+}
+pub fn BillingRates::default() -> Self
+
+pub(all) struct Column {
+  name : String
+  column_type : ColumnType
+  nullable : Bool
+  default_value : @realtime_db.Value?
+  length : Int?
+}
+
+pub(all) enum ColumnType {
+  Int
+  BigInt
+  Double
+  String
+  Boolean
+  Timestamp
+  Decimal
+  Array
+  Map
+}
+pub fn ColumnType::equal(Self, Self) -> Bool
+pub fn ColumnType::not_equal(Self, Self) -> Bool
+pub fn ColumnType::to_repr(Self) -> @debug.Repr
+pub impl Eq for ColumnType
+pub impl @debug.Debug for ColumnType
+
+pub(all) struct Constraint {
+  name : String
+  constraint_type : ConstraintType
+  columns : Array[String]
+}
+
+pub(all) enum ConstraintType {
+  PrimaryKey
+  ForeignKey
+  Unique
+  NotNull
+  Check
+}
+pub fn ConstraintType::equal(Self, Self) -> Bool
+pub fn ConstraintType::not_equal(Self, Self) -> Bool
+pub impl Eq for ConstraintType
+
+pub(all) struct FeatureTable {
+  feature_table_id : String
+  name : String
+  source_table : String
+  schema : TableSchema
+  created_at : Int
+}
+
+pub(all) struct IsolationGuard {
+  tenant_manager : TenantManager
+  mut audit_logs : Array[AuditLog]
+}
+pub fn IsolationGuard::check_cross_tenant_access(Self, String, String) -> Result[Unit, TenantError]
+pub fn IsolationGuard::get_audit_logs(Self, String) -> Array[AuditLog]
+pub fn IsolationGuard::new(TenantManager) -> Self
+pub fn IsolationGuard::validate_namespace_access(Self, String, String) -> Result[Unit, TenantError]
+
+pub(all) enum IsolationLevel {
+  Namespace
+  Table
+  Row
+}
+pub fn IsolationLevel::equal(Self, Self) -> Bool
+pub fn IsolationLevel::not_equal(Self, Self) -> Bool
+pub impl Eq for IsolationLevel
+
+pub(all) struct Namespace {
+  namespace_id : String
+  tenant_id : String
+  tables : Map[String, Table]
+  feature_tables : Map[String, FeatureTable]
+  created_at : Int
+  updated_at : Int
+}
+
+pub(all) struct NamespaceResolver {
+  tenant_manager : TenantManager
+}
+pub fn NamespaceResolver::create_namespace(Self, String, String) -> Result[Unit, TenantError]
+pub fn NamespaceResolver::list_namespaces(Self, String) -> Result[Array[Namespace], TenantError]
+pub fn NamespaceResolver::new(TenantManager) -> Self
+pub fn NamespaceResolver::resolve(Self, String, String) -> Result[Namespace, TenantError]
+
+pub(all) struct QuotaCheckResult {
+  passed : Bool
+  used : Int64
+  limit : Int64
+  remaining : Int64
+  error : String?
+}
+
+pub(all) struct ResourceQuotaManager {
+  tenant_manager : TenantManager
+  alert_threshold : Double
+}
+pub fn ResourceQuotaManager::check_quota(Self, String, ResourceType, Int) -> Result[QuotaCheckResult, TenantError]
+pub fn ResourceQuotaManager::new(TenantManager) -> Self
+pub fn ResourceQuotaManager::record_usage(Self, String, ResourceType, Int) -> Result[Unit, TenantError]
+pub fn ResourceQuotaManager::release_usage(Self, String, ResourceType, Int) -> Result[Unit, TenantError]
+
+pub(all) enum ResourceType {
+  Cpu
+  Memory
+  Storage
+  Connections
+  Throughput
+}
+pub fn ResourceType::equal(Self, Self) -> Bool
+pub fn ResourceType::not_equal(Self, Self) -> Bool
+pub fn ResourceType::to_repr(Self) -> @debug.Repr
+pub impl Eq for ResourceType
+pub impl @debug.Debug for ResourceType
+
+pub(all) struct ResourceUsage {
+  mut cpu_used : Double
+  cpu_limit : Double
+  mut memory_used : Int
+  memory_limit : Int
+  mut storage_used : Int64
+  storage_limit : Int64
+  mut connections_used : Int
+  connections_limit : Int
+  mut throughput_used : Int
+  throughput_limit : Int
+}
+pub fn ResourceUsage::default() -> Self
+
+pub(all) struct Table {
+  table_id : String
+  name : String
+  schema : TableSchema
+  row_count : Int
+  storage_size : Int
+  created_at : Int
+}
+
+pub(all) struct TableSchema {
+  columns : Array[Column]
+  primary_key : Array[String]
+  constraints : Array[Constraint]
+}
+
+pub(all) struct Tenant {
+  tenant_id : String
+  tenant_name : String
+  status : TenantStatus
+  mut config : TenantConfig
+  namespaces : Map[String, Namespace]
+  resource_usage : ResourceUsage
+  created_at : Int
+  mut updated_at : Int
+  deleted_at : Int?
+}
+
+pub(all) struct TenantConfig {
+  cpu_quota : Double
+  memory_quota : Int
+  storage_quota : Int64
+  connection_quota : Int
+  throughput_quota : Int
+  max_namespaces : Int
+  max_tables : Int
+  auto_scaling : Bool
+  isolation_level : IsolationLevel
+}
+pub fn TenantConfig::default() -> Self
+
+pub(all) enum TenantError {
+  Tenant_Already_Exists
+  Tenant_Not_Found
+  Tenant_Invalid_State
+  Quota_Exceeded
+  Resource_Exhausted
+  Namespace_Not_Found
+  Namespace_Already_Exists
+  Table_Not_Found
+  Table_Already_Exists
+  Invalid_Config
+  Internal_Error(String)
+}
+pub fn TenantError::code(Self) -> Int
+pub fn TenantError::equal(Self, Self) -> Bool
+pub fn TenantError::message(Self) -> String
+pub fn TenantError::not_equal(Self, Self) -> Bool
+pub fn TenantError::to_repr(Self) -> @debug.Repr
+pub fn TenantError::to_string(Self) -> String
+pub impl Eq for TenantError
+pub impl @debug.Debug for TenantError
+
+pub(all) struct TenantManager {
+  mut tenants : Map[String, Tenant]
+  mut tenant_state_machines : Map[String, TenantStateMachine]
+  default_config : TenantConfig
+  mut next_id : Int
+}
+pub fn TenantManager::create_tenant(Self, String, TenantConfig?) -> Result[String, TenantError]
+pub fn TenantManager::delete_tenant(Self, String) -> Result[Unit, TenantError]
+pub fn TenantManager::get_tenant(Self, String) -> Tenant?
+pub fn TenantManager::list_tenants(Self) -> Array[Tenant]
+pub fn TenantManager::new() -> Self
+pub fn TenantManager::update_tenant_config(Self, String, TenantConfig) -> Result[Unit, TenantError]
+
+pub(all) struct TenantMonitor {
+  tenant_manager : TenantManager
+  mut metrics : Map[String, Double]
+}
+pub fn TenantMonitor::expose_metrics(Self) -> String
+pub fn TenantMonitor::get_metric(Self, String) -> Double?
+pub fn TenantMonitor::new(TenantManager) -> Self
+pub fn TenantMonitor::update_metric(Self, String, Double) -> Unit
+
+pub(all) struct TenantStateMachine {
+  mut status : TenantStatus
+  mut state_history : Array[(Int, TenantStatus)]
+}
+pub fn TenantStateMachine::can_transition_to(Self, TenantStatus) -> Bool
+pub fn TenantStateMachine::get_status(Self) -> TenantStatus
+pub fn TenantStateMachine::is_active(Self) -> Bool
+pub fn TenantStateMachine::is_deleted(Self) -> Bool
+pub fn TenantStateMachine::new() -> Self
+pub fn TenantStateMachine::transition_to(Self, TenantStatus) -> Result[Unit, TenantError]
+
+pub(all) enum TenantStatus {
+  Creating
+  Active
+  Isolated
+  Maintenance
+  Deleting
+  Deleted
+}
+pub fn TenantStatus::equal(Self, Self) -> Bool
+pub fn TenantStatus::not_equal(Self, Self) -> Bool
+pub fn TenantStatus::to_repr(Self) -> @debug.Repr
+pub impl Eq for TenantStatus
+pub impl @debug.Debug for TenantStatus
+
+// Type aliases
+
+// Traits

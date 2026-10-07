@@ -1,0 +1,468 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit/realtime_db/src/index"
+
+import {
+  "moonbit/realtime_db",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const DEFAULT_BATCH_SIZE : Int = 1000
+
+pub const DEFAULT_CACHE_SIZE : Int = 1000
+
+pub const DEFAULT_COLLECT_INTERVAL : Int = 3600
+
+pub const DEFAULT_FRAGMENTATION_THRESHOLD : Double = 0.3
+
+pub const DEFAULT_QUERY_CACHE_SIZE : Int = 1000
+
+pub const DEFAULT_QUERY_TIMEOUT_US : Int = 1_000_000
+
+pub const DEFAULT_TARGET_FRAGMENTATION : Double = 0.1
+
+pub let default_order : Int
+
+// Errors
+
+// Types and methods
+pub(all) struct BTreeIndex {
+  name : String
+  mut root : BTreeNode?
+  mut first_leaf : BTreeNode?
+  mut total_entries : Int
+  mut height : Int
+  order : Int
+  mut memory_bytes : Int
+}
+pub fn BTreeIndex::batch_update(Self, Array[(@realtime_db.Value, String)], Array[(@realtime_db.Value, String)]) -> BatchUpdateResult
+pub fn BTreeIndex::clear(Self) -> Unit
+pub fn BTreeIndex::delete(Self, @realtime_db.Value, String) -> Bool
+pub fn BTreeIndex::height(Self) -> Int
+pub fn BTreeIndex::index_type(Self) -> IndexType
+pub fn BTreeIndex::insert(Self, @realtime_db.Value, String) -> Bool
+pub fn BTreeIndex::memory_usage(Self) -> Int
+pub fn BTreeIndex::new(String) -> Self
+pub fn BTreeIndex::node_count(Self) -> Int
+pub fn BTreeIndex::prefix_query(Self, String) -> Array[String]
+pub fn BTreeIndex::query(Self, @realtime_db.Value) -> Array[String]
+pub fn BTreeIndex::range_query(Self, @realtime_db.Value?, @realtime_db.Value?, Bool?, Bool?) -> Array[String]
+pub fn BTreeIndex::size(Self) -> Int
+pub fn BTreeIndex::with_order(String, Int) -> Self
+
+pub(all) struct BTreeNode {
+  node_type : BTreeNodeType
+  mut entries : Array[(@realtime_db.Value, Array[String])]
+  mut children : Array[BTreeNode]
+  mut next_leaf : BTreeNode?
+}
+
+pub(all) enum BTreeNodeType {
+  Internal
+  Leaf
+}
+
+pub(all) struct BatchUpdateResult {
+  inserted : Int
+  deleted : Int
+  failed : Int
+}
+
+pub(all) struct CompositeEntry {
+  values : Array[@realtime_db.Value]
+  key : String
+}
+
+pub(all) struct CompositeIndex {
+  name : String
+  field_paths : Array[String]
+  mut sub_indices : Array[IndexStorageHandle]
+  mut key_to_values : Map[String, Array[@realtime_db.Value]]
+  mut total_entries : Int
+  mut memory_bytes : Int
+}
+pub fn CompositeIndex::batch_update(Self, Array[(@realtime_db.Value, String)], Array[(@realtime_db.Value, String)]) -> BatchUpdateResult
+pub fn CompositeIndex::clear(Self) -> Unit
+pub fn CompositeIndex::composite_query(Self, Array[@realtime_db.Value?], Int?) -> Array[String]
+pub fn CompositeIndex::delete(Self, @realtime_db.Value, String) -> Bool
+pub fn CompositeIndex::field_count(Self) -> Int
+pub fn CompositeIndex::get_field_paths(Self) -> Array[String]
+pub fn CompositeIndex::index_type(Self) -> IndexType
+pub fn CompositeIndex::insert(Self, @realtime_db.Value, String) -> Bool
+pub fn CompositeIndex::memory_usage(Self) -> Int
+pub fn CompositeIndex::new(String, Array[String]) -> Self
+pub fn CompositeIndex::prefix_query(Self, String) -> Array[String]
+pub fn CompositeIndex::query(Self, @realtime_db.Value) -> Array[String]
+pub fn CompositeIndex::range_query(Self, @realtime_db.Value?, @realtime_db.Value?, Bool?, Bool?) -> Array[String]
+pub fn CompositeIndex::set_sub_indices(Self, Array[IndexStorageHandle]) -> Unit
+pub fn CompositeIndex::size(Self) -> Int
+pub fn CompositeIndex::supports_prefix_match(Self, Int) -> Bool
+
+pub(all) struct DefragmentStats {
+  mut total_runs : Int
+  mut indices_processed : Int
+  mut memory_freed : Int
+  mut total_time_us : Int
+}
+
+pub struct Defragmenter {
+  mut manager : IndexManager?
+  mut fragmentation_threshold : Double
+  mut target_fragmentation : Double
+  mut is_defragmenting : Bool
+  stats : DefragmentStats
+}
+pub fn Defragmenter::auto_defragment(Self) -> Result[Int, IndexError]
+pub fn Defragmenter::defragment(Self, String?) -> Result[Unit, IndexError]
+pub fn Defragmenter::get_stats(Self) -> DefragmentStats
+pub fn Defragmenter::is_defragmenting(Self) -> Bool
+pub fn Defragmenter::new() -> Self
+pub fn Defragmenter::set_fragmentation_threshold(Self, Double) -> Unit
+pub fn Defragmenter::set_manager(Self, IndexManager?) -> Unit
+pub fn Defragmenter::set_target_fragmentation(Self, Double) -> Unit
+pub fn Defragmenter::should_defragment(Self, String) -> Bool
+
+pub struct FieldParser {
+  mut cache : Map[String, Array[PathSegment]]
+  max_cache_size : Int
+  mut total_lookups : Int
+  mut cache_hits : Int
+}
+pub fn FieldParser::cache_hit_rate(Self) -> Double
+pub fn FieldParser::clear_cache(Self) -> Unit
+pub fn FieldParser::extract_fields(Self, @realtime_db.Value, Array[String]) -> Array[@realtime_db.Value?]
+pub fn FieldParser::extract_value(Self, @realtime_db.Value, String) -> @realtime_db.Value?
+pub fn FieldParser::new() -> Self
+pub fn FieldParser::parse_path(Self, String) -> Result[Array[PathSegment], String]
+pub fn FieldParser::with_cache_size(Int) -> Self
+
+pub(all) struct FulltextIndex {
+  name : String
+  mut root : TrieNode
+  mut total_entries : Int
+  mut memory_bytes : Int
+}
+pub fn FulltextIndex::batch_update(Self, Array[(@realtime_db.Value, String)], Array[(@realtime_db.Value, String)]) -> BatchUpdateResult
+pub fn FulltextIndex::clear(Self) -> Unit
+pub fn FulltextIndex::delete(Self, @realtime_db.Value, String) -> Bool
+pub fn FulltextIndex::index_type(Self) -> IndexType
+pub fn FulltextIndex::insert(Self, @realtime_db.Value, String) -> Bool
+pub fn FulltextIndex::memory_usage(Self) -> Int
+pub fn FulltextIndex::new(String) -> Self
+pub fn FulltextIndex::node_count(Self) -> Int
+pub fn FulltextIndex::prefix_query(Self, String) -> Array[String]
+pub fn FulltextIndex::query(Self, @realtime_db.Value) -> Array[String]
+pub fn FulltextIndex::range_query(Self, @realtime_db.Value?, @realtime_db.Value?, Bool?, Bool?) -> Array[String]
+pub fn FulltextIndex::size(Self) -> Int
+
+pub(all) struct HashIndex {
+  name : String
+  mut buckets : Map[String, Array[String]]
+  mut key_to_value : Map[String, @realtime_db.Value]
+  mut total_entries : Int
+  mut memory_bytes : Int
+}
+pub fn HashIndex::avg_bucket_depth(Self) -> Double
+pub fn HashIndex::batch_update(Self, Array[(@realtime_db.Value, String)], Array[(@realtime_db.Value, String)]) -> BatchUpdateResult
+pub fn HashIndex::bucket_count(Self) -> Int
+pub fn HashIndex::clear(Self) -> Unit
+pub fn HashIndex::delete(Self, @realtime_db.Value, String) -> Bool
+pub fn HashIndex::index_type(Self) -> IndexType
+pub fn HashIndex::insert(Self, @realtime_db.Value, String) -> Bool
+pub fn HashIndex::keys(Self) -> Array[String]
+pub fn HashIndex::memory_usage(Self) -> Int
+pub fn HashIndex::new(String) -> Self
+pub fn HashIndex::prefix_query(Self, String) -> Array[String]
+pub fn HashIndex::query(Self, @realtime_db.Value) -> Array[String]
+pub fn HashIndex::range_query(Self, @realtime_db.Value?, @realtime_db.Value?, Bool?, Bool?) -> Array[String]
+pub fn HashIndex::size(Self) -> Int
+pub fn HashIndex::values(Self) -> Array[@realtime_db.Value]
+
+pub struct IndexBuilder {
+  mut db : @realtime_db.DB?
+  mut manager : IndexManager?
+  mut batch_size : Int
+  mut is_building : Bool
+  mut processed : Int
+  mut total : Int
+}
+pub fn IndexBuilder::build_from_scan(Self, String, ((Int, Int, Double) -> Unit)?) -> Result[Int, IndexError]
+pub fn IndexBuilder::build_index(Self, String) -> Result[Int, IndexError]
+pub fn IndexBuilder::build_multiple_indices(Self, Array[String], ((Int, Int, Double) -> Unit)?) -> Result[Int, IndexError]
+pub fn IndexBuilder::cancel(Self) -> Unit
+pub fn IndexBuilder::is_building_flag(Self) -> Bool
+pub fn IndexBuilder::new() -> Self
+pub fn IndexBuilder::processed_count(Self) -> Int
+pub fn IndexBuilder::progress(Self) -> Double
+pub fn IndexBuilder::set_batch_size(Self, Int) -> Unit
+pub fn IndexBuilder::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn IndexBuilder::set_manager(Self, IndexManager?) -> Unit
+pub fn IndexBuilder::total_count(Self) -> Int
+pub fn IndexBuilder::with_batch_size(Int) -> Self
+
+pub(all) struct IndexDef {
+  name : String
+  field_paths : Array[String]
+  index_type : IndexType
+  is_unique : Bool
+  mut status : IndexStatus
+  mut storage : IndexStorageHandle?
+  created_at : Int
+  mut updated_at : Int
+  mut watch_id : Int?
+}
+
+pub(all) enum IndexError {
+  Index_Already_Exists
+  Index_Not_Found
+  Invalid_Field_Path
+  Index_Limit_Exceeded
+  Unsupported_Type
+  Index_Not_Active
+  Index_Rebuilding
+  Index_Dropped
+  Build_Failed
+  Rebuild_Failed
+  Query_Timeout
+  Type_Mismatch
+  Cover_Index_Not_Satisfied
+  Defragment_Failed
+  Stats_Collect_Failed
+  Internal_Error(String)
+}
+pub fn IndexError::equal(Self, Self) -> Bool
+pub fn IndexError::not_equal(Self, Self) -> Bool
+pub fn IndexError::to_repr(Self) -> @debug.Repr
+pub fn IndexError::to_string(Self) -> String
+pub impl Eq for IndexError
+pub impl @debug.Debug for IndexError
+
+pub struct IndexManager {
+  indices : Map[String, IndexDef]
+  mut db : @realtime_db.DB?
+  parser : FieldParser
+  next_id : Int
+  max_indices_per_table : Int
+  config : IndexManagerConfig
+}
+pub fn IndexManager::clear_all(Self) -> Unit
+pub fn IndexManager::create_index(Self, String, Array[String], IndexType, Bool) -> Result[IndexMeta, IndexError]
+pub fn IndexManager::drop_index(Self, String) -> Result[Unit, IndexError]
+pub fn IndexManager::get_index_meta(Self, String) -> IndexMeta?
+pub fn IndexManager::get_index_storage(Self, String) -> IndexStorageHandle?
+pub fn IndexManager::index_count(Self) -> Int
+pub fn IndexManager::list_indexes(Self) -> Array[IndexMeta]
+pub fn IndexManager::new() -> Self
+pub fn IndexManager::rebuild_index(Self, String, RebuildMode) -> Result[Unit, IndexError]
+pub fn IndexManager::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn IndexManager::with_config(IndexManagerConfig) -> Self
+
+pub struct IndexManagerConfig {
+  max_indices_per_table : Int
+  auto_rebuild : Bool
+  rebuild_retry_interval : Int
+}
+pub fn IndexManagerConfig::default() -> Self
+
+pub(all) struct IndexMeta {
+  name : String
+  field_paths : Array[String]
+  index_type : IndexType
+  is_unique : Bool
+  status : IndexStatus
+  created_at : Int
+  updated_at : Int
+}
+
+pub struct IndexOptions {
+  cache_size : Int
+  concurrency : Int
+  enable_stats : Bool
+  stats_interval : Int
+}
+pub fn IndexOptions::default() -> Self
+
+pub(all) struct IndexScore {
+  index_name : String
+  coverage_score : Double
+  selectivity_score : Double
+  cost_score : Double
+  total_score : Double
+}
+
+pub struct IndexSelector {
+  mut manager : IndexManager?
+  mut stats_collector : StatsCollector?
+}
+pub fn IndexSelector::new() -> Self
+pub fn IndexSelector::select_index(Self, Array[QueryCondition]) -> String?
+pub fn IndexSelector::select_index_with_scores(Self, Array[QueryCondition]) -> Array[IndexScore]
+pub fn IndexSelector::set_manager(Self, IndexManager?) -> Unit
+pub fn IndexSelector::set_stats_collector(Self, StatsCollector?) -> Unit
+
+pub(all) struct IndexStats {
+  name : String
+  cardinality : Int
+  total_entries : Int
+  memory_usage : Int
+  fragmentation_rate : Double
+  hit_rate : Double
+  query_latency_p99 : Int
+  update_latency_p99 : Int
+}
+
+pub(all) enum IndexStatus {
+  Created
+  Building
+  Active
+  Dropping
+  Rebuilding
+  Failed
+}
+pub fn IndexStatus::equal(Self, Self) -> Bool
+pub fn IndexStatus::not_equal(Self, Self) -> Bool
+pub fn IndexStatus::to_repr(Self) -> @debug.Repr
+pub impl Eq for IndexStatus
+pub impl @debug.Debug for IndexStatus
+
+pub(all) enum IndexStorageHandle {
+  Hash(HashIndex)
+  BTree(BTreeIndex)
+  Fulltext(FulltextIndex)
+  Composite(CompositeIndex)
+}
+pub fn IndexStorageHandle::batch_update(Self, Array[(@realtime_db.Value, String)], Array[(@realtime_db.Value, String)]) -> BatchUpdateResult
+pub fn IndexStorageHandle::clear(Self) -> Unit
+pub fn IndexStorageHandle::delete(Self, @realtime_db.Value, String) -> Bool
+pub fn IndexStorageHandle::index_type(Self) -> IndexType
+pub fn IndexStorageHandle::insert(Self, @realtime_db.Value, String) -> Bool
+pub fn IndexStorageHandle::memory_usage(Self) -> Int
+pub fn IndexStorageHandle::prefix_query(Self, String) -> Array[String]
+pub fn IndexStorageHandle::query(Self, @realtime_db.Value) -> Array[String]
+pub fn IndexStorageHandle::range_query(Self, @realtime_db.Value?, @realtime_db.Value?, Bool?, Bool?) -> Array[String]
+pub fn IndexStorageHandle::size(Self) -> Int
+
+pub(all) enum IndexType {
+  Hash
+  BTree
+  Fulltext
+  Composite
+}
+pub fn IndexType::equal(Self, Self) -> Bool
+pub fn IndexType::not_equal(Self, Self) -> Bool
+pub fn IndexType::to_repr(Self) -> @debug.Repr
+pub impl Eq for IndexType
+pub impl @debug.Debug for IndexType
+
+pub(all) enum PathSegment {
+  Key(String)
+  Index(Int)
+}
+pub fn PathSegment::equal(Self, Self) -> Bool
+pub fn PathSegment::not_equal(Self, Self) -> Bool
+pub fn PathSegment::to_repr(Self) -> @debug.Repr
+pub impl Eq for PathSegment
+pub impl @debug.Debug for PathSegment
+
+pub(all) struct QueryCondition {
+  field_path : String
+  value : @realtime_db.Value?
+  query_type : QueryType
+}
+
+pub struct QueryEngine {
+  mut db : @realtime_db.DB?
+  mut manager : IndexManager?
+  mut selector : IndexSelector?
+  mut timeout_us : Int
+  mut enable_cache : Bool
+  mut cache : Map[String, QueryResult]
+  mut cache_lookups : Int
+  mut cache_hits : Int
+}
+pub fn QueryEngine::cache_hit_rate(Self) -> Double
+pub fn QueryEngine::clear_cache(Self) -> Unit
+pub fn QueryEngine::composite_query(Self, String, Array[@realtime_db.Value?], Int?) -> Result[QueryResult, QueryError]
+pub fn QueryEngine::fetch_full_data(Self, Array[String]) -> Array[(String, @realtime_db.Value)]
+pub fn QueryEngine::index_prefix(Self, String?, String, String, Int?) -> Result[QueryResult, QueryError]
+pub fn QueryEngine::index_query(Self, String?, String, @realtime_db.Value, Int?, Int?) -> Result[QueryResult, QueryError]
+pub fn QueryEngine::index_range(Self, String?, String, @realtime_db.Value?, @realtime_db.Value?, Bool?, Bool?, Int?, Int?) -> Result[QueryResult, QueryError]
+pub fn QueryEngine::new() -> Self
+pub fn QueryEngine::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn QueryEngine::set_enable_cache(Self, Bool) -> Unit
+pub fn QueryEngine::set_manager(Self, IndexManager?) -> Unit
+pub fn QueryEngine::set_selector(Self, IndexSelector?) -> Unit
+pub fn QueryEngine::set_timeout(Self, Int) -> Unit
+
+pub(all) enum QueryError {
+  Index_Not_Found
+  Index_Not_Active
+  Query_Timeout
+  Type_Mismatch
+  Invalid_Range
+  Internal_Error(String)
+}
+pub fn QueryError::equal(Self, Self) -> Bool
+pub fn QueryError::not_equal(Self, Self) -> Bool
+pub fn QueryError::to_repr(Self) -> @debug.Repr
+pub fn QueryError::to_string(Self) -> String
+pub impl Eq for QueryError
+pub impl @debug.Debug for QueryError
+
+pub(all) struct QueryResult {
+  keys : Array[String]
+  latency_us : Int
+  hit_cache : Bool
+  index_used : String
+}
+
+pub(all) enum QueryType {
+  Equal
+  Range
+  Prefix
+}
+pub fn QueryType::equal(Self, Self) -> Bool
+pub fn QueryType::not_equal(Self, Self) -> Bool
+pub impl Eq for QueryType
+
+pub(all) enum RebuildMode {
+  Full
+  Incremental
+}
+pub fn RebuildMode::equal(Self, Self) -> Bool
+pub fn RebuildMode::not_equal(Self, Self) -> Bool
+pub fn RebuildMode::to_repr(Self) -> @debug.Repr
+pub impl Eq for RebuildMode
+pub impl @debug.Debug for RebuildMode
+
+pub struct StatsCollector {
+  mut manager : IndexManager?
+  mut collect_interval : Int
+  mut last_collect_time : Int
+  mut stats_cache : Map[String, IndexStats]
+  mut auto_collect : Bool
+  mut query_count : Int
+  mut hit_count : Int
+}
+pub fn StatsCollector::clear_cache(Self) -> Unit
+pub fn StatsCollector::collect_stats(Self, String?) -> Result[IndexStats, IndexError]
+pub fn StatsCollector::expose_metrics(Self) -> String
+pub fn StatsCollector::get_all_stats(Self) -> Array[IndexStats]
+pub fn StatsCollector::get_index_stats(Self, String) -> IndexStats?
+pub fn StatsCollector::new() -> Self
+pub fn StatsCollector::record_query(Self, Bool) -> Unit
+pub fn StatsCollector::set_auto_collect(Self, Bool) -> Unit
+pub fn StatsCollector::set_collect_interval(Self, Int) -> Unit
+pub fn StatsCollector::set_manager(Self, IndexManager?) -> Unit
+pub fn StatsCollector::should_collect(Self) -> Bool
+
+pub(all) struct TrieNode {
+  mut children : Map[Char, TrieNode]
+  mut is_end : Bool
+  mut keys : Array[String]
+}
+
+// Type aliases
+pub type BuildProgressCallback = (Int, Int, Double) -> Unit
+
+// Traits

@@ -1,0 +1,43 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit/realtime_db/src/connection"
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct Connection {
+  id : Int
+  addr : String
+  mut last_used : Int
+  mut healthy : Bool
+}
+pub fn Connection::addr(Self) -> String
+pub fn Connection::id(Self) -> Int
+pub fn Connection::is_healthy(Self) -> Bool
+pub fn Connection::last_used(Self) -> Int
+pub fn Connection::mark_unhealthy(Self) -> Unit
+pub fn Connection::new(Int, String, Int) -> Self
+
+pub struct ConnectionPool {
+  connections : Array[Connection]
+  idle_queue : Array[Int]
+  max_connections : Int
+  mut current_count : Int
+  mut next_id : Int
+}
+pub fn ConnectionPool::current_count(Self) -> Int
+pub fn ConnectionPool::get(Self, String, Int) -> Result[Connection, PoolError]
+pub fn ConnectionPool::idle_count(Self) -> Int
+pub fn ConnectionPool::mark_unhealthy(Self, Int) -> Bool
+pub fn ConnectionPool::max_connections(Self) -> Int
+pub fn ConnectionPool::new(Int) -> Self
+pub fn ConnectionPool::return_connection(Self, Connection, Int) -> Unit
+
+pub(all) enum PoolError {
+  Pool_Exhausted
+}
+
+// Type aliases
+
+// Traits

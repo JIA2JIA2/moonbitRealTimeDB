@@ -1,0 +1,9 @@
+// 高性能数据管道模块
+//
+// 提供零拷贝批量导入、流式处理、压缩、转换、调度
+
+import {
+  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/persistence",
+  "moonbit/realtime_db/src/monitor",
+}

@@ -227,19 +227,42 @@ moon test
 ### 模块结构
 
 ```
-realtime_db/
-├── realtime_db.mbt          # 核心数据库引擎
-├── transaction.mbt          # 事务支持模块
-├── wal.mbt                  # WAL 预写日志模块
-├── snapshot.mbt             # 快照持久化模块
-├── monitor.mbt              # 监控指标模块
-├── connection_pool.mbt      # 连接池模块
-├── perf_pipeline/           # 高性能数据管道
-├── index/                   # 二级索引
-├── stream_engine/           # 实时数据流引擎
-├── cmd/main/                # CLI 入口
-└── realtime_db_test.mbt     # 黑盒测试
+moonbitRealTimeDB/
+├── realtime_db.mbt           # 核心数据库引擎（根包）
+├── moon.mod / moon.pkg       # 模块与包定义
+└── src/                      # 功能模块统一目录
+    ├── api/                  # 统一 API 门面包
+    ├── transaction/          # 事务支持
+    ├── persistence/          # 持久化（WAL + 快照）
+    ├── monitor/              # 监控指标
+    ├── connection/           # 连接池
+    ├── perf_pipeline/        # 高性能数据管道
+    ├── index/                # 二级索引
+    ├── stream_engine/        # 实时数据流引擎
+    ├── cluster/              # 分布式集群
+    ├── multi_tenant/         # 多租户管理
+    ├── sql_engine/           # SQL 查询引擎
+    ├── lake_integration/     # 数据湖集成
+    ├── replication/          # 跨集群复制
+    ├── feature_store/        # 特征存储
+    ├── graphql/              # GraphQL 接口
+    ├── versioning/           # 数据版本控制
+    ├── timeseries/           # 时间序列引擎
+    └── cmd/main/             # CLI 入口
 ```
+
+### 统一 API 入口
+
+`src/api/` 包重导出所有模块的公共类型，提供单一导入入口：
+
+```moonbit
+import { "moonbit/realtime_db/src/api" }
+
+let db = @api.DB::new()
+let idx = @api.IndexManager::new()
+```
+
+详见 [STRUCTURE.md](STRUCTURE.md) 代码结构规范。
 
 ### 设计原则
 

@@ -1,0 +1,675 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbit/realtime_db/src/cluster"
+
+import {
+  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/persistence",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub const DEFAULT_VIRTUAL_NODES : Int = 100
+
+pub fn create_consistent_hash(Int) -> ConsistentHash
+
+pub fn create_default_node_manager() -> NodeManager
+
+pub fn create_default_raft_state() -> RaftState
+
+pub fn create_election(RaftNode, NodeManager, ClusterConfig) -> Election
+
+pub fn create_failover_controller(FailureDetector, Election, ShardManager, ClusterConfig) -> FailoverController
+
+pub fn create_failure_detector(NodeManager, HeartbeatService, ClusterConfig) -> FailureDetector
+
+pub fn create_heartbeat_service(NodeManager, ClusterConfig) -> HeartbeatService
+
+pub fn create_log_persister(RaftLog) -> LogPersister
+
+pub fn create_migration_executor(MigrationTask, ShardManager) -> MigrationExecutor
+
+pub fn create_node_manager(ClusterConfig) -> NodeManager
+
+pub fn create_progress_tracker() -> ProgressTracker
+
+pub fn create_query_router(RoutingTableService, Int) -> QueryRouter
+
+pub fn create_raft_log() -> RaftLog
+
+pub fn create_raft_node(String, Array[String], ClusterConfig) -> RaftNode
+
+pub fn create_raft_state(Int, Int) -> RaftState
+
+pub fn create_rebalance_planner(NodeManager, ShardManager) -> RebalancePlanner
+
+pub fn create_result_aggregator(AggregationStrategy) -> ResultAggregator
+
+pub fn create_routing_table_service(ShardManager, Int) -> RoutingTableService
+
+pub fn create_shard_allocator(NodeManager, ClusterConfig) -> ShardAllocator
+
+pub fn create_shard_manager(NodeManager, ShardAllocator, ClusterConfig) -> ShardManager
+
+pub fn create_shard_proxy(QueryRouter, NodeManager) -> ShardProxy
+
+pub fn map_key_to_shard(String, Int) -> Int
+
+// Errors
+
+// Types and methods
+pub(all) enum AggregationStrategy {
+  MergeAll
+  Distinct
+  Sorted
+}
+
+pub(all) enum AllocationStrategy {
+  RoundRobin
+  LowestLoad
+  LabelMatch
+}
+pub fn AllocationStrategy::equal(Self, Self) -> Bool
+pub fn AllocationStrategy::not_equal(Self, Self) -> Bool
+
+pub(all) struct AppendEntriesRequest {
+  term : Int
+  leader_id : String
+  prev_log_index : Int
+  prev_log_term : Int
+  entries : Array[LogEntry]
+  leader_commit : Int
+}
+
+pub(all) struct AppendEntriesResponse {
+  term : Int
+  success : Bool
+  conflict_index : Int
+  conflict_term : Int
+}
+
+pub(all) struct ClusterConfig {
+  node_id_pattern : String
+  heartbeat_interval_ms : Int
+  heartbeat_timeout_count : Int
+  suspect_timeout_ms : Int
+  replica_factor : Int
+  total_shards : Int
+  election_timeout_min_ms : Int
+  election_timeout_max_ms : Int
+  failover_timeout_ms : Int
+}
+pub fn ClusterConfig::default() -> Self
+
+pub(all) enum ClusterError {
+  Invalid_Node_Id
+  Auth_Failed
+  Node_Already_Exists
+  Node_Not_Found
+  Node_Unavailable
+  Node_Invalid_State
+  Invalid_Shard_Id
+  Shard_Already_Exists
+  Shard_Not_Found
+  Shard_Unavailable
+  Shard_Invalid_State
+  Route_Not_Found
+  Route_Expired
+  Route_Conflict
+  Stale_Term
+  Log_Outdated
+  Already_Voted
+  Not_Leader
+  Election_Timeout
+  No_Candidate
+  Failover_Failed
+  Rebalance_In_Progress
+  Migration_Failed
+  Timeout
+  Internal_Error(String)
+  Invalid_Config
+  Resource_Exhausted
+}
+pub fn ClusterError::code(Self) -> Int
+pub fn ClusterError::equal(Self, Self) -> Bool
+pub fn ClusterError::message(Self) -> String
+pub fn ClusterError::not_equal(Self, Self) -> Bool
+pub fn ClusterError::to_repr(Self) -> @debug.Repr
+pub fn ClusterError::to_string(Self) -> String
+
+pub(all) struct ConsistentHash {
+  virtual_nodes : Int
+  mut hash_ring : Map[Int, String]
+  mut node_map : Map[String, Array[Int]]
+  total_shards : Int
+}
+pub fn ConsistentHash::add_node(Self, String) -> Unit
+pub fn ConsistentHash::get_node(Self, String) -> String?
+pub fn ConsistentHash::get_nodes_for_shard(Self, Int) -> Array[String]
+pub fn ConsistentHash::new(Int) -> Self
+pub fn ConsistentHash::remove_node(Self, String) -> Unit
+pub fn ConsistentHash::with_virtual_nodes(Int, Int) -> Self
+
+pub(all) struct Election {
+  raft_node : RaftNode
+  node_manager : NodeManager
+  mut is_electing : Bool
+  election_timeout_ms : Int
+}
+pub fn Election::complete_election(Self) -> Unit
+pub fn Election::get_leader(Self) -> String?
+pub fn Election::new(RaftNode, NodeManager, ClusterConfig) -> Self
+pub fn Election::receive_vote_response(Self, VoteResponse) -> Bool
+pub fn Election::should_start_election(Self, Int) -> Bool
+pub fn Election::start_election(Self) -> Unit
+
+pub(all) struct FailoverController {
+  failure_detector : FailureDetector
+  election : Election
+  shard_manager : ShardManager
+  mut is_in_progress : Bool
+  failover_timeout_ms : Int
+}
+pub fn FailoverController::is_in_progress(Self) -> Bool
+pub fn FailoverController::new(FailureDetector, Election, ShardManager, ClusterConfig) -> Self
+pub fn FailoverController::start_failover(Self, String) -> Result[Unit, ClusterError]
+
+pub(all) struct FailureDetector {
+  node_manager : NodeManager
+  heartbeat_service : HeartbeatService
+  mut failed_nodes : Array[String]
+  detection_interval_ms : Int
+  timeout_threshold : Int
+  mut is_running : Bool
+}
+pub fn FailureDetector::clear_failed_node(Self, String) -> Unit
+pub fn FailureDetector::detect_failures(Self, Int) -> Array[String]
+pub fn FailureDetector::get_failed_nodes(Self) -> Array[String]
+pub fn FailureDetector::new(NodeManager, HeartbeatService, ClusterConfig) -> Self
+pub fn FailureDetector::start(Self) -> Unit
+pub fn FailureDetector::stop(Self) -> Unit
+
+pub(all) struct HeartbeatMessage {
+  node_id : String
+  timestamp : Int
+  status : NodeStatus
+  shard_count : Int
+  load_score : Double
+  route_version : Int
+}
+
+pub(all) struct HeartbeatResponse {
+  success : Bool
+  cluster_status : String
+  route_version : Int
+  timestamp : Int
+  error_message : String
+}
+
+pub(all) struct HeartbeatService {
+  node_manager : NodeManager
+  heartbeat_interval_ms : Int
+  timeout_threshold : Int
+  suspect_timeout_ms : Int
+  mut last_heartbeat_times : Map[String, Int]
+  mut is_running : Bool
+}
+pub fn HeartbeatService::check_timeouts(Self, Int) -> Array[String]
+pub fn HeartbeatService::get_last_heartbeat(Self, String) -> Int
+pub fn HeartbeatService::is_running(Self) -> Bool
+pub fn HeartbeatService::mark_dead(Self, String) -> Result[Unit, ClusterError]
+pub fn HeartbeatService::mark_suspect(Self, String) -> Result[Unit, ClusterError]
+pub fn HeartbeatService::new(NodeManager, ClusterConfig) -> Self
+pub fn HeartbeatService::receive_heartbeat(Self, HeartbeatMessage) -> HeartbeatResponse
+pub fn HeartbeatService::remove_node(Self, String) -> Unit
+pub fn HeartbeatService::send_heartbeat(Self, String, NodeStatus, Int, Double, Int) -> HeartbeatMessage
+pub fn HeartbeatService::start(Self) -> Unit
+pub fn HeartbeatService::stop(Self) -> Unit
+
+pub(all) struct LogEntry {
+  mut index : Int
+  term : Int
+  command : String
+  data : @realtime_db.Value?
+}
+
+pub(all) struct LogPersister {
+  log : RaftLog
+  mut wal : @persistence.WAL?
+}
+pub fn LogPersister::new(RaftLog) -> Self
+pub fn LogPersister::persist(Self, LogEntry) -> Result[Unit, ClusterError]
+pub fn LogPersister::restore_from_wal(Self) -> Result[Unit, ClusterError]
+pub fn LogPersister::set_wal(Self, @persistence.WAL?) -> Unit
+pub fn LogPersister::sync(Self) -> Result[Unit, ClusterError]
+
+pub(all) struct MigrationExecutor {
+  task : MigrationTask
+  shard_manager : ShardManager
+  mut is_migrating : Bool
+}
+pub fn MigrationExecutor::cancel(Self) -> Unit
+pub fn MigrationExecutor::execute(Self) -> Result[Unit, ClusterError]
+pub fn MigrationExecutor::new(MigrationTask, ShardManager) -> Self
+pub fn MigrationExecutor::progress(Self) -> Double
+
+pub(all) struct MigrationTask {
+  task_id : String
+  shard_id : String
+  source_node : String
+  target_node : String
+  mut status : String
+  mut progress : Double
+  migrated_bytes : Int
+  total_bytes : Int
+  mut started_at : Int
+  mut completed_at : Int
+}
+
+pub(all) struct NodeInfo {
+  id : String
+  addr : String
+  mut status : NodeStatus
+  labels : Map[String, String]
+  mut shard_count : Int
+  mut load_score : Double
+  joined_at : Int
+  mut last_active_at : Int
+  mut heartbeat_timeouts : Int
+}
+
+pub(all) struct NodeLabelMatcher {
+}
+pub fn NodeLabelMatcher::match_region(Self, Map[String, String], String) -> Bool
+pub fn NodeLabelMatcher::match_type(Self, Map[String, String], String) -> Bool
+pub fn NodeLabelMatcher::matches(Self, Map[String, String], Map[String, String]) -> Bool
+pub fn NodeLabelMatcher::new() -> Self
+
+pub(all) struct NodeManager {
+  mut nodes : Map[String, NodeState]
+  mut node_addrs : Map[String, String]
+  config : ClusterConfig
+  label_matcher : NodeLabelMatcher
+  mut next_id : Int
+}
+pub fn NodeManager::active_node_count(Self) -> Int
+pub fn NodeManager::deregister_node(Self, String) -> Result[Unit, ClusterError]
+pub fn NodeManager::get_active_nodes(Self) -> Array[NodeInfo]
+pub fn NodeManager::get_all_nodes(Self) -> Array[NodeInfo]
+pub fn NodeManager::get_available_nodes(Self) -> Array[NodeInfo]
+pub fn NodeManager::get_node_addr(Self, String) -> String?
+pub fn NodeManager::get_node_info(Self, String) -> NodeInfo?
+pub fn NodeManager::get_node_state(Self, String) -> NodeState?
+pub fn NodeManager::mark_dead(Self, String) -> Result[Unit, ClusterError]
+pub fn NodeManager::mark_heartbeat_timeout(Self, String) -> Result[Unit, ClusterError]
+pub fn NodeManager::mark_suspect(Self, String) -> Result[Unit, ClusterError]
+pub fn NodeManager::new(ClusterConfig) -> Self
+pub fn NodeManager::node_count(Self) -> Int
+pub fn NodeManager::node_exists(Self, String) -> Bool
+pub fn NodeManager::recover_node(Self, String) -> Result[Unit, ClusterError]
+pub fn NodeManager::register_node(Self, String, String, Map[String, String]) -> Result[String, ClusterError]
+pub fn NodeManager::select_nodes_by_label(Self, Map[String, String]) -> Array[NodeInfo]
+pub fn NodeManager::update_heartbeat(Self, String) -> Result[Unit, ClusterError]
+
+pub(all) struct NodeState {
+  info : NodeInfo
+  mut status : NodeStatus
+  mut state_history : Array[(Int, NodeStatus)]
+  mut is_transitioning : Bool
+}
+pub fn NodeState::decrement_shard_count(Self) -> Unit
+pub fn NodeState::get_heartbeat_timeouts(Self) -> Int
+pub fn NodeState::get_info(Self) -> NodeInfo
+pub fn NodeState::get_shard_count(Self) -> Int
+pub fn NodeState::get_status(Self) -> NodeStatus
+pub fn NodeState::increment_heartbeat_timeout(Self) -> Int
+pub fn NodeState::increment_shard_count(Self) -> Unit
+pub fn NodeState::is_active(Self) -> Bool
+pub fn NodeState::is_healthy(Self) -> Bool
+pub fn NodeState::new(NodeInfo) -> Self
+pub fn NodeState::reset_heartbeat_timeout(Self) -> Unit
+pub fn NodeState::transition_to(Self, NodeStatus) -> Result[Unit, ClusterError]
+pub fn NodeState::update_heartbeat(Self) -> Unit
+pub fn NodeState::update_load_score(Self, Double) -> Unit
+
+pub(all) enum NodeStatus {
+  Joining
+  Active
+  Suspect
+  Leaving
+  Left
+  Dead
+}
+pub fn NodeStatus::can_transition_to(Self, Self) -> Bool
+pub fn NodeStatus::equal(Self, Self) -> Bool
+pub fn NodeStatus::is_available(Self) -> Bool
+pub fn NodeStatus::is_healthy(Self) -> Bool
+pub fn NodeStatus::not_equal(Self, Self) -> Bool
+pub fn NodeStatus::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ProgressTracker {
+  mut plan : RebalancePlan?
+  mut progress_callback : ((String, Double) -> Unit)?
+}
+pub fn ProgressTracker::new() -> Self
+pub fn ProgressTracker::overall_progress(Self) -> Double
+pub fn ProgressTracker::set_plan(Self, RebalancePlan) -> Unit
+pub fn ProgressTracker::set_progress_callback(Self, (String, Double) -> Unit) -> Unit
+pub fn ProgressTracker::update_progress(Self, String, Double) -> Unit
+
+pub(all) enum ProxyError {
+  Route_Not_Found
+  Backend_Unavailable
+  Request_Timeout
+  Invalid_Request
+  Internal_Error(String)
+}
+pub fn ProxyError::equal(Self, Self) -> Bool
+pub fn ProxyError::not_equal(Self, Self) -> Bool
+
+pub(all) struct QueryRouter {
+  routing_service : RoutingTableService
+  consistent_hash : ConsistentHash
+  mut route_cache : Map[String, RoutingEntry]
+}
+pub fn QueryRouter::clear_cache(Self) -> Unit
+pub fn QueryRouter::new(RoutingTableService, Int) -> Self
+pub fn QueryRouter::route(Self, String) -> Result[RoutingEntry, ClusterError]
+pub fn QueryRouter::route_batch(Self, Array[String]) -> Array[Result[RoutingEntry, ClusterError]]
+
+pub(all) enum RaftError {
+  Stale_Term
+  Log_Outdated
+  Already_Voted
+  Not_Leader
+  Election_Timeout
+  Log_Inconsistency
+  Compaction_In_Progress
+  Snapshot_Outdated
+  Internal_Error(String)
+}
+pub fn RaftError::equal(Self, Self) -> Bool
+pub fn RaftError::not_equal(Self, Self) -> Bool
+
+pub(all) struct RaftLog {
+  mut entries : Array[LogEntry]
+  start_index : Int
+  mut last_index : Int
+  mut last_term : Int
+  mut commit_index : Int
+  mut snapshot_index : Int
+  mut snapshot_term : Int
+}
+pub fn RaftLog::append(Self, LogEntry) -> Int
+pub fn RaftLog::append_batch(Self, Array[LogEntry]) -> Int
+pub fn RaftLog::check_consistency(Self, Int, Int) -> Bool
+pub fn RaftLog::clear(Self) -> Unit
+pub fn RaftLog::commit_index(Self) -> Int
+pub fn RaftLog::create_snapshot(Self, Int, @realtime_db.Value) -> Unit
+pub fn RaftLog::delete_from(Self, Int) -> Unit
+pub fn RaftLog::get_entries(Self, Int, Int) -> Array[LogEntry]
+pub fn RaftLog::get_entry(Self, Int) -> LogEntry?
+pub fn RaftLog::is_empty(Self) -> Bool
+pub fn RaftLog::last_index(Self) -> Int
+pub fn RaftLog::last_term(Self) -> Int
+pub fn RaftLog::new() -> Self
+pub fn RaftLog::restore_from_snapshot(Self, Int, Int) -> Unit
+pub fn RaftLog::size(Self) -> Int
+pub fn RaftLog::snapshot_index(Self) -> Int
+pub fn RaftLog::snapshot_term(Self) -> Int
+pub fn RaftLog::truncate(Self, Int) -> Unit
+pub fn RaftLog::update_commit_index(Self, Int) -> Unit
+
+pub(all) struct RaftNode {
+  node_id : String
+  state : RaftState
+  mut peers : Array[String]
+  vote_service : VoteService
+  election_timeout : Int
+  heartbeat_interval_ms : Int
+  mut is_running : Bool
+}
+pub fn RaftNode::append_log(Self, String, @realtime_db.Value?) -> Int
+pub fn RaftNode::current_term(Self) -> Int
+pub fn RaftNode::is_leader(Self) -> Bool
+pub fn RaftNode::is_running(Self) -> Bool
+pub fn RaftNode::new(String, Array[String], ClusterConfig) -> Self
+pub fn RaftNode::node_id(Self) -> String
+pub fn RaftNode::receive_append_entries(Self, AppendEntriesRequest) -> AppendEntriesResponse
+pub fn RaftNode::receive_vote_response(Self, VoteResponse) -> Bool
+pub fn RaftNode::request_vote(Self, VoteRequest) -> VoteResponse
+pub fn RaftNode::send_heartbeat(Self) -> Array[AppendEntriesRequest]
+pub fn RaftNode::start(Self) -> Unit
+pub fn RaftNode::start_election(Self) -> Unit
+pub fn RaftNode::state(Self) -> RaftState
+pub fn RaftNode::stop(Self) -> Unit
+
+pub(all) enum RaftNodeState {
+  Follower
+  Candidate
+  Leader
+}
+pub fn RaftNodeState::equal(Self, Self) -> Bool
+pub fn RaftNodeState::not_equal(Self, Self) -> Bool
+pub fn RaftNodeState::to_repr(Self) -> @debug.Repr
+
+pub(all) struct RaftState {
+  mut current_term : Int
+  mut voted_for : String?
+  mut state : RaftNodeState
+  mut commit_index : Int
+  mut last_applied : Int
+  mut last_log_index : Int
+  mut last_log_term : Int
+  election_timeout_min_ms : Int
+  election_timeout_max_ms : Int
+  mut last_heartbeat : Int
+  mut last_vote_time : Int
+  mut vote_count : Int
+}
+pub fn RaftState::become_candidate(Self) -> Unit
+pub fn RaftState::become_follower(Self, Int) -> Unit
+pub fn RaftState::become_leader(Self) -> Unit
+pub fn RaftState::commit_index(Self) -> Int
+pub fn RaftState::current_term(Self) -> Int
+pub fn RaftState::get_random_election_timeout(Self) -> Int
+pub fn RaftState::has_voted(Self) -> Bool
+pub fn RaftState::increment_term(Self) -> Unit
+pub fn RaftState::increment_vote_count(Self) -> Int
+pub fn RaftState::is_candidate(Self) -> Bool
+pub fn RaftState::is_follower(Self) -> Bool
+pub fn RaftState::is_leader(Self) -> Bool
+pub fn RaftState::is_log_up_to_date(Self, Int, Int) -> Bool
+pub fn RaftState::is_timeout(Self, Int, Int) -> Bool
+pub fn RaftState::last_heartbeat(Self) -> Int
+pub fn RaftState::last_log_index(Self) -> Int
+pub fn RaftState::last_log_term(Self) -> Int
+pub fn RaftState::new(Int, Int) -> Self
+pub fn RaftState::reset_vote_count(Self) -> Unit
+pub fn RaftState::set_state(Self, RaftNodeState) -> Unit
+pub fn RaftState::set_term(Self, Int) -> Unit
+pub fn RaftState::set_voted_for(Self, String) -> Unit
+pub fn RaftState::state(Self) -> RaftNodeState
+pub fn RaftState::update_commit_index(Self, Int) -> Unit
+pub fn RaftState::update_heartbeat(Self) -> Unit
+pub fn RaftState::update_log_index(Self, Int, Int) -> Unit
+pub fn RaftState::vote_count(Self) -> Int
+pub fn RaftState::voted_for(Self) -> String?
+
+pub(all) struct RebalancePlan {
+  plan_id : String
+  mut tasks : Array[MigrationTask]
+  mut status : String
+  created_at : Int
+  completed_at : Int
+}
+
+pub(all) struct RebalancePlanner {
+  node_manager : NodeManager
+  shard_manager : ShardManager
+  threshold : Double
+  mut current_plan : RebalancePlan?
+}
+pub fn RebalancePlanner::new(NodeManager, ShardManager) -> Self
+pub fn RebalancePlanner::plan_rebalance(Self) -> RebalancePlan?
+
+pub(all) struct Replica {
+  id : String
+  node_id : String
+  role : ReplicaRole
+  latency_ms : Int
+  is_healthy : Bool
+  last_heartbeat : Int
+}
+
+pub(all) enum ReplicaRole {
+  Primary
+  Secondary
+}
+pub fn ReplicaRole::equal(Self, Self) -> Bool
+pub fn ReplicaRole::not_equal(Self, Self) -> Bool
+pub fn ReplicaRole::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ResultAggregator {
+  strategy : AggregationStrategy
+  mut results : Array[@realtime_db.Value]
+}
+pub fn ResultAggregator::add_result(Self, @realtime_db.Value) -> Unit
+pub fn ResultAggregator::aggregate(Self) -> @realtime_db.Value
+pub fn ResultAggregator::clear(Self) -> Unit
+pub fn ResultAggregator::new(AggregationStrategy) -> Self
+
+pub(all) struct RoutingEntry {
+  shard_id : String
+  primary_addr : String
+  replica_addrs : Array[String]
+  version : Int
+}
+
+pub(all) struct RoutingTable {
+  entries : Map[String, RoutingEntry]
+  shard_mapping : Map[Int, String]
+  mut version : Int
+  updated_at : Int
+}
+pub fn RoutingTable::add_entry(Self, RoutingEntry) -> Unit
+pub fn RoutingTable::get_all_entries(Self) -> Array[RoutingEntry]
+pub fn RoutingTable::get_entry(Self, String) -> RoutingEntry?
+pub fn RoutingTable::get_version(Self) -> Int
+pub fn RoutingTable::new() -> Self
+pub fn RoutingTable::remove_entry(Self, String) -> Unit
+
+pub(all) struct RoutingTableService {
+  mut routing_table : RoutingTable
+  shard_manager : ShardManager
+  consistent_hash : ConsistentHash
+  mut route_cache : Map[String, RoutingEntry]
+}
+pub fn RoutingTableService::clear_cache(Self) -> Unit
+pub fn RoutingTableService::get_route(Self, String) -> Result[RoutingEntry, ClusterError]
+pub fn RoutingTableService::get_routing_table(Self) -> RoutingTable
+pub fn RoutingTableService::get_version(Self) -> Int
+pub fn RoutingTableService::new(ShardManager, Int) -> Self
+pub fn RoutingTableService::update_routing_table(Self) -> Result[Unit, ClusterError]
+
+pub(all) struct ShardAllocator {
+  node_manager : NodeManager
+  mut strategy : AllocationStrategy
+  replica_factor : Int
+  total_shards : Int
+  mut round_robin_index : Int
+}
+pub fn ShardAllocator::allocate_replicas(Self, String, Array[String]) -> Result[Array[String], ClusterError]
+pub fn ShardAllocator::new(NodeManager, ClusterConfig) -> Self
+pub fn ShardAllocator::set_strategy(Self, AllocationStrategy) -> Unit
+
+pub(all) struct ShardInfo {
+  id : String
+  replicas : Array[Replica]
+  primary_node_id : String
+  mut status : ShardStatus
+  mut version : Int
+  key_range : ShardKeyRange
+  size_bytes : Int
+  created_at : Int
+  updated_at : Int
+}
+
+pub(all) struct ShardKeyRange {
+  start_key : String
+  end_key : String
+}
+
+pub(all) struct ShardManager {
+  node_manager : NodeManager
+  allocator : ShardAllocator
+  mut shards : Map[String, ShardInfo]
+  mut shard_states : Map[String, ShardStatus]
+  replica_factor : Int
+  total_shards : Int
+  mut version : Int
+}
+pub fn ShardManager::create_shard(Self, String, ShardKeyRange) -> Result[ShardInfo, ClusterError]
+pub fn ShardManager::delete_shard(Self, String) -> Result[Unit, ClusterError]
+pub fn ShardManager::get_active_shards(Self) -> Array[ShardInfo]
+pub fn ShardManager::get_all_shards(Self) -> Array[ShardInfo]
+pub fn ShardManager::get_primary_shard(Self, String) -> ShardInfo?
+pub fn ShardManager::get_shard_info(Self, String) -> ShardInfo?
+pub fn ShardManager::get_shard_status(Self, String) -> ShardStatus?
+pub fn ShardManager::get_shards_by_node(Self, String) -> Array[ShardInfo]
+pub fn ShardManager::get_version(Self) -> Int
+pub fn ShardManager::migrate_shard(Self, String, String, String) -> Result[Unit, ClusterError]
+pub fn ShardManager::new(NodeManager, ShardAllocator, ClusterConfig) -> Self
+pub fn ShardManager::shard_count(Self) -> Int
+pub fn ShardManager::update_shard_status(Self, String, ShardStatus) -> Result[Unit, ClusterError]
+
+pub(all) struct ShardProxy {
+  router : QueryRouter
+  node_manager : NodeManager
+  mut read_write_splitting : Bool
+  mut strong_consistency : Bool
+}
+pub fn ShardProxy::handle_batch_read(Self, Array[String]) -> Result[Array[@realtime_db.Value], ClusterError]
+pub fn ShardProxy::handle_batch_write(Self, Array[(String, @realtime_db.Value)]) -> Result[Array[@realtime_db.Value], ClusterError]
+pub fn ShardProxy::handle_read(Self, String) -> Result[@realtime_db.Value, ClusterError]
+pub fn ShardProxy::handle_write(Self, String, @realtime_db.Value) -> Result[@realtime_db.Value, ClusterError]
+pub fn ShardProxy::new(QueryRouter, NodeManager) -> Self
+pub fn ShardProxy::set_read_write_splitting(Self, Bool) -> Unit
+pub fn ShardProxy::set_strong_consistency(Self, Bool) -> Unit
+
+pub(all) enum ShardStatus {
+  Creating
+  Active
+  Moving
+  Deleting
+  Failed
+}
+pub fn ShardStatus::can_transition_to(Self, Self) -> Bool
+pub fn ShardStatus::equal(Self, Self) -> Bool
+pub fn ShardStatus::is_readable(Self) -> Bool
+pub fn ShardStatus::is_writable(Self) -> Bool
+pub fn ShardStatus::not_equal(Self, Self) -> Bool
+pub fn ShardStatus::to_repr(Self) -> @debug.Repr
+
+pub(all) struct VoteRequest {
+  term : Int
+  candidate_id : String
+  last_log_index : Int
+  last_log_term : Int
+}
+
+pub(all) struct VoteResponse {
+  term : Int
+  vote_granted : Bool
+  error : String?
+}
+
+pub(all) struct VoteService {
+  state : RaftState
+  node_id : String
+}
+pub fn VoteService::new(RaftState, String) -> Self
+pub fn VoteService::request_vote(Self, VoteRequest) -> VoteResponse
+
+// Type aliases
+
+// Traits

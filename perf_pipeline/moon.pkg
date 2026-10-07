@@ -1,5 +1,0 @@
-import {
-  "moonbit/realtime_db",
-  "moonbit/realtime_db/persistence",
-  "moonbit/realtime_db/monitor",
-}
