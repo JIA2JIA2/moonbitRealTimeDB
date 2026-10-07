@@ -2,7 +2,7 @@
 package "moonbit/realtime_db/src/perf_pipeline"
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core",
   "moonbit/realtime_db/src/monitor",
   "moonbit/realtime_db/src/persistence",
   "moonbitlang/core/debug",
@@ -83,7 +83,7 @@ pub fn BackpressureController::trigger_time(Self) -> Int
 
 pub struct BatchAggregator {
   watchers : Map[Int, BatchWatcher]
-  watcher_buffers : Map[Int, Array[@realtime_db.Event]]
+  watcher_buffers : Map[Int, Array[@core.Event]]
   watcher_window_starts : Map[Int, Int]
   config : PipelineConfig
   mut next_watcher_id : Int
@@ -91,31 +91,31 @@ pub struct BatchAggregator {
 pub fn BatchAggregator::flush(Self, Int) -> Unit
 pub fn BatchAggregator::flush_due(Self, Int) -> Unit
 pub fn BatchAggregator::new(PipelineConfig) -> Self
-pub fn BatchAggregator::notify(Self, @realtime_db.Event) -> Unit
-pub fn BatchAggregator::notify_at(Self, @realtime_db.Event, Int) -> Unit
+pub fn BatchAggregator::notify(Self, @core.Event) -> Unit
+pub fn BatchAggregator::notify_at(Self, @core.Event, Int) -> Unit
 pub fn BatchAggregator::subscribe_batch(Self, (BatchNotification) -> Unit, Int?) -> Int
 pub fn BatchAggregator::unsubscribe_batch(Self, Int) -> Unit
 
 pub struct BatchImporter {
-  mut db : @realtime_db.DB?
+  mut db : @core.DB?
   mut wal : @persistence.WAL?
   mut mempool : MemoryPool?
   config : PipelineConfig
 }
-pub fn BatchImporter::import_batch(Self, Array[(String, @realtime_db.Value)], Int?) -> BatchResult
-pub fn BatchImporter::new(@realtime_db.DB?, @persistence.WAL?, MemoryPool?, PipelineConfig) -> Self
-pub fn BatchImporter::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn BatchImporter::import_batch(Self, Array[(String, @core.Value)], Int?) -> BatchResult
+pub fn BatchImporter::new(@core.DB?, @persistence.WAL?, MemoryPool?, PipelineConfig) -> Self
+pub fn BatchImporter::set_db(Self, @core.DB?) -> Unit
 pub fn BatchImporter::set_mempool(Self, MemoryPool?) -> Unit
 pub fn BatchImporter::set_wal(Self, @persistence.WAL?) -> Unit
 
 pub struct BatchNotification {
-  events : Array[@realtime_db.Event]
+  events : Array[@core.Event]
   timestamp : Int
   batch_id : Int
 }
 pub fn BatchNotification::batch_id(Self) -> Int
-pub fn BatchNotification::events(Self) -> Array[@realtime_db.Event]
-pub fn BatchNotification::new(Array[@realtime_db.Event], Int, Int) -> Self
+pub fn BatchNotification::events(Self) -> Array[@core.Event]
+pub fn BatchNotification::new(Array[@core.Event], Int, Int) -> Self
 pub fn BatchNotification::timestamp(Self) -> Int
 
 pub struct BatchResult {
@@ -274,7 +274,7 @@ pub struct ParallelImporter {
 pub fn ParallelImporter::import_shard(Self, Shard) -> Result[BatchResult, ParallelError]
 pub fn ParallelImporter::merge_results(Self, Array[BatchResult]) -> ParallelResult
 pub fn ParallelImporter::new(BatchImporter?, ParallelImportConfig) -> Self
-pub fn ParallelImporter::parallel_import(Self, Array[(String, @realtime_db.Value)], Int?) -> Result[ParallelResult, ParallelError]
+pub fn ParallelImporter::parallel_import(Self, Array[(String, @core.Value)], Int?) -> Result[ParallelResult, ParallelError]
 pub fn ParallelImporter::set_importer(Self, BatchImporter?) -> Unit
 pub fn ParallelImporter::stats(Self) -> ParallelResult
 
@@ -315,7 +315,7 @@ pub fn Pipeline::new(PipelineConfig) -> Self
 pub fn Pipeline::parallel_importer(Self) -> ParallelImporter?
 pub fn Pipeline::pause(Self) -> Unit
 pub fn Pipeline::scheduler(Self) -> PriorityScheduler?
-pub fn Pipeline::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn Pipeline::set_db(Self, @core.DB?) -> Unit
 pub fn Pipeline::set_wal(Self, @persistence.WAL?) -> Unit
 pub fn Pipeline::start(Self) -> Result[Unit, String]
 pub fn Pipeline::status(Self) -> PipelineStatus
@@ -421,23 +421,23 @@ pub struct PriorityScheduler {
   stats : SchedulerStats
   mut next_job_id : Int
 }
-pub fn PriorityScheduler::batch_submit(Self, Array[@realtime_db.Value], Int) -> Array[JobResult]
+pub fn PriorityScheduler::batch_submit(Self, Array[@core.Value], Int) -> Array[JobResult]
 pub fn PriorityScheduler::check_starvation(Self) -> Unit
 pub fn PriorityScheduler::execute_next(Self) -> JobResult?
 pub fn PriorityScheduler::new(SchedulerConfig) -> Self
 pub fn PriorityScheduler::queue_size(Self) -> Int
 pub fn PriorityScheduler::stats(Self) -> SchedulerStats
-pub fn PriorityScheduler::submit_job(Self, @realtime_db.Value, Int) -> JobResult
+pub fn PriorityScheduler::submit_job(Self, @core.Value, Int) -> JobResult
 pub fn PriorityScheduler::update_priority(Self, Int, Int) -> Bool
 
 pub struct PriorityTask {
   id : Int
-  data : @realtime_db.Value
+  data : @core.Value
   priority : Int
   submit_time : Int
   mut status : TaskStatus
 }
-pub fn PriorityTask::new(Int, @realtime_db.Value, Int, Int) -> Self
+pub fn PriorityTask::new(Int, @core.Value, Int, Int) -> Self
 pub fn PriorityTask::priority(Self) -> Int
 pub fn PriorityTask::set_status(Self, TaskStatus) -> Unit
 pub fn PriorityTask::status(Self) -> TaskStatus
@@ -473,12 +473,12 @@ pub fn SchedulerStats::total_jobs(Self) -> Int
 
 pub struct Shard {
   id : Int
-  data : Array[(String, @realtime_db.Value)]
+  data : Array[(String, @core.Value)]
   offset : Int
   size : Int
 }
-pub fn Shard::data(Self) -> Array[(String, @realtime_db.Value)]
-pub fn Shard::new(Int, Array[(String, @realtime_db.Value)], Int, Int) -> Self
+pub fn Shard::data(Self) -> Array[(String, @core.Value)]
+pub fn Shard::new(Int, Array[(String, @core.Value)], Int, Int) -> Self
 pub fn Shard::size(Self) -> Int
 
 pub struct ShardingStrategy {
@@ -489,7 +489,7 @@ pub fn ShardingStrategy::calculate_shard_count(Self, Int) -> Int
 pub fn ShardingStrategy::new(Int) -> Self
 pub fn ShardingStrategy::set_shard_size(Self, Int) -> Unit
 pub fn ShardingStrategy::shard_count(Self) -> Int
-pub fn ShardingStrategy::split_data(Self, Array[(String, @realtime_db.Value)]) -> Array[Shard]
+pub fn ShardingStrategy::split_data(Self, Array[(String, @core.Value)]) -> Array[Shard]
 
 pub struct StreamResult {
   mut completed : Bool
@@ -511,18 +511,18 @@ pub fn StreamResult::success_count(Self) -> Int
 pub fn StreamResult::total_records(Self) -> Int
 
 pub struct StreamingProcessor {
-  mut db : @realtime_db.DB?
+  mut db : @core.DB?
   wal : @persistence.WAL?
   mempool : MemoryPool?
-  buffer : Array[(@realtime_db.Value, Int)]
+  buffer : Array[(@core.Value, Int)]
   backpressure : BackpressureController?
   config : PipelineConfig
 }
 pub fn StreamingProcessor::buffer_usage(Self) -> Int
 pub fn StreamingProcessor::in_flight(Self) -> Int
-pub fn StreamingProcessor::new(@realtime_db.DB?, @persistence.WAL?, MemoryPool?, PipelineConfig) -> Self
-pub fn StreamingProcessor::set_db(Self, @realtime_db.DB?) -> Unit
-pub fn StreamingProcessor::stream_write(Self, Array[(@realtime_db.Value, Int)]) -> StreamResult
+pub fn StreamingProcessor::new(@core.DB?, @persistence.WAL?, MemoryPool?, PipelineConfig) -> Self
+pub fn StreamingProcessor::set_db(Self, @core.DB?) -> Unit
+pub fn StreamingProcessor::stream_write(Self, Array[(@core.Value, Int)]) -> StreamResult
 
 pub(all) enum TaskStatus {
   Pending
@@ -557,14 +557,14 @@ pub struct TransformEngine {
   rules : Array[TransformRule]
   mut stats : TransformResult
 }
-pub fn TransformEngine::apply_rules(Self, @realtime_db.Value) -> Result[@realtime_db.Value, TransformError]
-pub fn TransformEngine::apply_transform_chain(Self, @realtime_db.Value) -> Result[@realtime_db.Value, TransformError]
+pub fn TransformEngine::apply_rules(Self, @core.Value) -> Result[@core.Value, TransformError]
+pub fn TransformEngine::apply_transform_chain(Self, @core.Value) -> Result[@core.Value, TransformError]
 pub fn TransformEngine::new(TransformConfig) -> Self
 pub fn TransformEngine::reset_stats(Self) -> Unit
 pub fn TransformEngine::stats(Self) -> TransformResult
-pub fn TransformEngine::transform_batch(Self, Array[@realtime_db.Value]) -> TransformResult
-pub fn TransformEngine::transform_field(Self, @realtime_db.Value, TransformRule) -> Result[@realtime_db.Value, TransformError]
-pub fn TransformEngine::validate_output(Self, @realtime_db.Value) -> Result[Unit, TransformError]
+pub fn TransformEngine::transform_batch(Self, Array[@core.Value]) -> TransformResult
+pub fn TransformEngine::transform_field(Self, @core.Value, TransformRule) -> Result[@core.Value, TransformError]
+pub fn TransformEngine::validate_output(Self, @core.Value) -> Result[Unit, TransformError]
 
 pub(all) enum TransformError {
   Rule_Syntax_Error
@@ -577,12 +577,12 @@ pub(all) enum TransformError {
 pub struct TransformResult {
   mut success_count : Int
   mut failed_count : Int
-  transformed_records : Array[@realtime_db.Value]
+  transformed_records : Array[@core.Value]
 }
 pub fn TransformResult::failed_count(Self) -> Int
 pub fn TransformResult::new() -> Self
 pub fn TransformResult::success_count(Self) -> Int
-pub fn TransformResult::transformed_records(Self) -> Array[@realtime_db.Value]
+pub fn TransformResult::transformed_records(Self) -> Array[@core.Value]
 
 pub struct TransformRule {
   field : String
@@ -597,17 +597,17 @@ pub fn TransformRule::set_target(Self, String) -> Unit
 pub fn TransformRule::set_target_type(Self, String) -> Unit
 
 pub struct ZeroCopyReader {
-  mut db : @realtime_db.DB?
+  mut db : @core.DB?
   mut mempool : MemoryPool?
   mut ref_count : Int
 }
 pub fn ZeroCopyReader::check_valid(Self, DataReference) -> Bool
 pub fn ZeroCopyReader::get_batch(Self, Array[String]) -> Array[DataReference]
 pub fn ZeroCopyReader::get_reference(Self, String) -> DataReference?
-pub fn ZeroCopyReader::new(@realtime_db.DB?, MemoryPool?) -> Self
+pub fn ZeroCopyReader::new(@core.DB?, MemoryPool?) -> Self
 pub fn ZeroCopyReader::ref_count(Self) -> Int
 pub fn ZeroCopyReader::release_reference(Self, DataReference) -> Unit
-pub fn ZeroCopyReader::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn ZeroCopyReader::set_db(Self, @core.DB?) -> Unit
 pub fn ZeroCopyReader::set_mempool(Self, MemoryPool?) -> Unit
 
 // Type aliases

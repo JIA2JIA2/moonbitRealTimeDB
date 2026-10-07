@@ -2,7 +2,7 @@
 package "moonbit/realtime_db/src/lake_integration"
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core",
   "moonbit/realtime_db/src/multi_tenant",
   "moonbit/realtime_db/src/sql_engine",
   "moonbitlang/core/debug",
@@ -25,7 +25,7 @@ pub(all) struct ColumnMapping {
   target_column : String
   target_type : @multi_tenant.ColumnType
   nullable : Bool
-  default_value : @realtime_db.Value?
+  default_value : @core.Value?
   transformation : String?
 }
 
@@ -108,11 +108,11 @@ pub(all) struct LakeReader {
 }
 pub fn LakeReader::get_metadata(Self, String) -> Result[LakeMetadata, LakeError]
 pub fn LakeReader::new(LakeSyncer) -> Self
-pub fn LakeReader::read(Self, String, LakeFormat, Array[String]?, @sql_engine.Expression?) -> Result[Array[@realtime_db.Value], LakeError]
+pub fn LakeReader::read(Self, String, LakeFormat, Array[String]?, @sql_engine.Expression?) -> Result[Array[@core.Value], LakeError]
 pub fn LakeReader::with_config(LakeSyncer, LakeReadConfig) -> Self
 
 pub(all) struct LakeSyncer {
-  mut db : @realtime_db.DB?
+  mut db : @core.DB?
   mut tasks : Map[String, SyncTask]
   mut schema_mappings : Map[String, SchemaMapping]
   config : LakeConfig
@@ -123,7 +123,7 @@ pub fn LakeSyncer::delete_sync_task(Self, String) -> Result[Unit, LakeError]
 pub fn LakeSyncer::get_task_status(Self, String) -> SyncTask?
 pub fn LakeSyncer::list_tasks(Self) -> Array[SyncTask]
 pub fn LakeSyncer::new(LakeConfig) -> Self
-pub fn LakeSyncer::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn LakeSyncer::set_db(Self, @core.DB?) -> Unit
 pub fn LakeSyncer::start_sync(Self, String) -> Result[Unit, LakeError]
 pub fn LakeSyncer::stop_sync(Self, String) -> Result[Unit, LakeError]
 

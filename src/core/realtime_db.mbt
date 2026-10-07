@@ -18,9 +18,9 @@
 //
 // ## 使用示例
 // ```moonbit
-// let db = @realtime_db.DB::new()
-// db.set("key", @realtime_db.Str("value"))
-// let value = db.get("key") // Some(@realtime_db.Str("value"))
+// let db = @core.DB::new()
+// db.set("key", @core.Str("value"))
+// let value = db.get("key") // Some(@core.Str("value"))
 // ```
 
 ///|
@@ -121,8 +121,8 @@ struct Entry {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// let db = @realtime_db.DB::new()
-/// db.set("key", @realtime_db.Str("value"))
+/// let db = @core.DB::new()
+/// db.set("key", @core.Str("value"))
 /// let value = db.get("key")
 /// ```
 pub struct DB {
@@ -197,8 +197,8 @@ pub fn DB::expire_now(self : DB) -> Int {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("key", @realtime_db.Str("value"))
-/// db.set("temp", @realtime_db.Int(42), ttl=10)
+/// db.set("key", @core.Str("value"))
+/// db.set("temp", @core.Int(42), ttl=10)
 /// ```
 pub fn DB::set(self : DB, key : String, value : Value, ttl? : Int) -> Unit {
   let old = match self.data.get(key) {
@@ -226,8 +226,8 @@ pub fn DB::set(self : DB, key : String, value : Value, ttl? : Int) -> Unit {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("key", @realtime_db.Str("value"))
-/// let value = db.get("key") // Some(@realtime_db.Str("value"))
+/// db.set("key", @core.Str("value"))
+/// let value = db.get("key") // Some(@core.Str("value"))
 /// ```
 pub fn DB::get(self : DB, key : String) -> Value? {
   guard self.data.get(key) is Some(entry) else { return None }
@@ -251,8 +251,8 @@ pub fn DB::get(self : DB, key : String) -> Value? {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("key", @realtime_db.Str("value"))
-/// let old = db.delete("key") // Some(@realtime_db.Str("value"))
+/// db.set("key", @core.Str("value"))
+/// let old = db.delete("key") // Some(@core.Str("value"))
 /// ```
 pub fn DB::delete(self : DB, key : String) -> Value? {
   guard self.data.get(key) is Some(entry) else { return None }
@@ -278,7 +278,7 @@ pub fn DB::delete(self : DB, key : String) -> Value? {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("key", @realtime_db.Str("value"))
+/// db.set("key", @core.Str("value"))
 /// assert_true(db.contains("key"))
 /// ```
 pub fn DB::contains(self : DB, key : String) -> Bool {
@@ -299,8 +299,8 @@ pub fn DB::contains(self : DB, key : String) -> Bool {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("a", @realtime_db.Int(1))
-/// db.set("b", @realtime_db.Int(2))
+/// db.set("a", @core.Int(1))
+/// db.set("b", @core.Int(2))
 /// assert_eq(db.size(), 2)
 /// ```
 pub fn DB::size(self : DB) -> Int {
@@ -317,8 +317,8 @@ pub fn DB::size(self : DB) -> Int {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("a", @realtime_db.Int(1))
-/// db.set("b", @realtime_db.Int(2))
+/// db.set("a", @core.Int(1))
+/// db.set("b", @core.Int(2))
 /// let keys = db.keys() // ["a", "b"]
 /// ```
 pub fn DB::keys(self : DB) -> Array[String] {
@@ -339,8 +339,8 @@ pub fn DB::keys(self : DB) -> Array[String] {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("a", @realtime_db.Int(1))
-/// db.set("b", @realtime_db.Str("x"))
+/// db.set("a", @core.Int(1))
+/// db.set("b", @core.Str("x"))
 /// let values = db.values() // [Int(1), Str("x")]
 /// ```
 pub fn DB::values(self : DB) -> Array[Value] {
@@ -361,8 +361,8 @@ pub fn DB::values(self : DB) -> Array[Value] {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("a", @realtime_db.Int(1))
-/// db.set("b", @realtime_db.Str("x"))
+/// db.set("a", @core.Int(1))
+/// db.set("b", @core.Str("x"))
 /// let entries = db.entries() // [("a", Int(1)), ("b", Str("x"))]
 /// ```
 pub fn DB::entries(self : DB) -> Array[(String, Value)] {
@@ -384,8 +384,8 @@ pub fn DB::entries(self : DB) -> Array[(String, Value)] {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.mset([("a", @realtime_db.Int(1)), ("b", @realtime_db.Str("x"))])
-/// db.mset([("c", @realtime_db.Int(3))], ttl=10)
+/// db.mset([("a", @core.Int(1)), ("b", @core.Str("x"))])
+/// db.mset([("c", @core.Int(3))], ttl=10)
 /// ```
 pub fn DB::mset(self : DB, pairs : Array[(String, Value)], ttl? : Int) -> Unit {
   for (k, v) in pairs {
@@ -407,8 +407,8 @@ pub fn DB::mset(self : DB, pairs : Array[(String, Value)], ttl? : Int) -> Unit {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("a", @realtime_db.Int(1))
-/// db.set("b", @realtime_db.Str("x"))
+/// db.set("a", @core.Int(1))
+/// db.set("b", @core.Str("x"))
 /// let values = db.mget(["a", "b", "c"]) // [Some(Int(1)), Some(Str("x")), None]
 /// ```
 pub fn DB::mget(self : DB, keys : Array[String]) -> Array[Value?] {
@@ -431,8 +431,8 @@ pub fn DB::mget(self : DB, keys : Array[String]) -> Array[Value?] {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("a", @realtime_db.Int(1))
-/// db.set("b", @realtime_db.Str("x"))
+/// db.set("a", @core.Int(1))
+/// db.set("b", @core.Str("x"))
 /// let deleted = db.mdelete(["a", "c"]) // [Some(Int(1)), None]
 /// ```
 pub fn DB::mdelete(self : DB, keys : Array[String]) -> Array[Value?] {
@@ -494,7 +494,7 @@ pub fn DB::incr(self : DB, key : String, delta? : Int) -> Bool {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("counter", @realtime_db.Int(10))
+/// db.set("counter", @core.Int(10))
 /// assert_true(db.decr("counter")) // 从 10 减少到 9
 /// assert_true(db.decr("counter", delta=3)) // 从 9 减少到 6
 /// ```
@@ -521,10 +521,10 @@ pub fn DB::decr(self : DB, key : String, delta? : Int) -> Bool {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("k", @realtime_db.Int(1), ttl=2)
+/// db.set("k", @core.Int(1), ttl=2)
 /// assert_true(db.touch("k", 10)) // 重置为 10
 /// let _ = db.advance(5) // 未过期
-/// assert_eq(db.get("k"), Some(@realtime_db.Int(1)))
+/// assert_eq(db.get("k"), Some(@core.Int(1)))
 /// ```
 pub fn DB::touch(self : DB, key : String, ttl : Int) -> Bool {
   guard self.data.get(key) is Some(entry) else { return false }
@@ -550,10 +550,10 @@ pub fn DB::touch(self : DB, key : String, ttl : Int) -> Bool {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("k", @realtime_db.Int(1), ttl=2)
+/// db.set("k", @core.Int(1), ttl=2)
 /// assert_true(db.persist("k"))
 /// let _ = db.advance(100) // 远超过原 TTL
-/// assert_eq(db.get("k"), Some(@realtime_db.Int(1))) // 仍然存在
+/// assert_eq(db.get("k"), Some(@core.Int(1))) // 仍然存在
 /// ```
 pub fn DB::persist(self : DB, key : String) -> Bool {
   self.touch(key, 0)
@@ -565,8 +565,8 @@ pub fn DB::persist(self : DB, key : String) -> Bool {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// db.set("a", @realtime_db.Int(1))
-/// db.set("b", @realtime_db.Int(2))
+/// db.set("a", @core.Int(1))
+/// db.set("b", @core.Int(2))
 /// db.clear()
 /// assert_eq(db.size(), 0)
 /// ```
@@ -592,10 +592,10 @@ pub fn DB::clear(self : DB) -> Unit {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// assert_true(db.setnx("k", @realtime_db.Int(1)))
-/// assert_eq(db.get("k"), Some(@realtime_db.Int(1)))
-/// assert_false(db.setnx("k", @realtime_db.Int(99))) // 不能覆盖
-/// assert_eq(db.get("k"), Some(@realtime_db.Int(1)))
+/// assert_true(db.setnx("k", @core.Int(1)))
+/// assert_eq(db.get("k"), Some(@core.Int(1)))
+/// assert_false(db.setnx("k", @core.Int(99))) // 不能覆盖
+/// assert_eq(db.get("k"), Some(@core.Int(1)))
 /// ```
 pub fn DB::setnx(self : DB, key : String, value : Value, ttl? : Int) -> Bool {
   match self.get(key) {
@@ -623,9 +623,9 @@ pub fn DB::setnx(self : DB, key : String, value : Value, ttl? : Int) -> Bool {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// let events : Array[@realtime_db.Event] = []
+/// let events : Array[@core.Event] = []
 /// let id = db.watch("key", fn(e) { events.push(e) })
-/// db.set("key", @realtime_db.Str("new")) // 触发回调
+/// db.set("key", @core.Str("new")) // 触发回调
 /// db.unwatch(id)
 /// ```
 pub fn DB::watch(self : DB, key : String, callback : (Event) -> Unit) -> Int {
@@ -651,10 +651,10 @@ pub fn DB::watch(self : DB, key : String, callback : (Event) -> Unit) -> Int {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// let events : Array[@realtime_db.Event] = []
+/// let events : Array[@core.Event] = []
 /// let id = db.watch_prefix("user:", fn(e) { events.push(e) })
-/// db.set("user:1", @realtime_db.Int(1)) // 匹配
-/// db.set("post:1", @realtime_db.Int(2)) // 不匹配
+/// db.set("user:1", @core.Int(1)) // 匹配
+/// db.set("post:1", @core.Int(2)) // 不匹配
 /// db.unwatch(id)
 /// ```
 pub fn DB::watch_prefix(
@@ -680,9 +680,9 @@ pub fn DB::watch_prefix(
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// let events : Array[@realtime_db.Event] = []
+/// let events : Array[@core.Event] = []
 /// let id = db.watch_all(fn(e) { events.push(e) })
-/// db.set("key", @realtime_db.Int(1)) // 触发回调
+/// db.set("key", @core.Int(1)) // 触发回调
 /// db.unwatch(id)
 /// ```
 pub fn DB::watch_all(self : DB, callback : (Event) -> Unit) -> Int {
@@ -806,9 +806,9 @@ fn str_starts_with(s : String, prefix : String) -> Bool {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// assert_eq(@realtime_db.Str("hi").to_string(), "hi")
-/// assert_eq(@realtime_db.Int(42).to_string(), "42")
-/// assert_eq(@realtime_db.Bool(true).to_string(), "true")
+/// assert_eq(@core.Str("hi").to_string(), "hi")
+/// assert_eq(@core.Int(42).to_string(), "42")
+/// assert_eq(@core.Bool(true).to_string(), "true")
 /// ```
 pub fn Value::to_string(self : Value) -> String {
   match self {
@@ -852,10 +852,10 @@ pub fn Value::to_string(self : Value) -> String {
 ///
 /// ## 示例
 /// ```moonbit nocheck
-/// let db = @realtime_db.DB::new()
+/// let db = @core.DB::new()
 /// let events : Array[String] = []
 /// let _ = db.watch("k", fn(e) { events.push(e.to_string()) })
-/// db.set("k", @realtime_db.Int(1))
+/// db.set("k", @core.Int(1))
 /// assert_eq(events[0], "SET k = 1 (new)")
 /// ```
 pub fn Event::to_string(self : Event) -> String {

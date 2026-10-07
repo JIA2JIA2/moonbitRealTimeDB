@@ -2,7 +2,7 @@
 package "moonbit/realtime_db/src/cluster"
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core",
   "moonbit/realtime_db/src/persistence",
   "moonbitlang/core/debug",
 }
@@ -229,7 +229,7 @@ pub(all) struct LogEntry {
   mut index : Int
   term : Int
   command : String
-  data : @realtime_db.Value?
+  data : @core.Value?
 }
 
 pub(all) struct LogPersister {
@@ -404,7 +404,7 @@ pub fn RaftLog::append_batch(Self, Array[LogEntry]) -> Int
 pub fn RaftLog::check_consistency(Self, Int, Int) -> Bool
 pub fn RaftLog::clear(Self) -> Unit
 pub fn RaftLog::commit_index(Self) -> Int
-pub fn RaftLog::create_snapshot(Self, Int, @realtime_db.Value) -> Unit
+pub fn RaftLog::create_snapshot(Self, Int, @core.Value) -> Unit
 pub fn RaftLog::delete_from(Self, Int) -> Unit
 pub fn RaftLog::get_entries(Self, Int, Int) -> Array[LogEntry]
 pub fn RaftLog::get_entry(Self, Int) -> LogEntry?
@@ -428,7 +428,7 @@ pub(all) struct RaftNode {
   heartbeat_interval_ms : Int
   mut is_running : Bool
 }
-pub fn RaftNode::append_log(Self, String, @realtime_db.Value?) -> Int
+pub fn RaftNode::append_log(Self, String, @core.Value?) -> Int
 pub fn RaftNode::current_term(Self) -> Int
 pub fn RaftNode::is_leader(Self) -> Bool
 pub fn RaftNode::is_running(Self) -> Bool
@@ -531,10 +531,10 @@ pub fn ReplicaRole::to_repr(Self) -> @debug.Repr
 
 pub(all) struct ResultAggregator {
   strategy : AggregationStrategy
-  mut results : Array[@realtime_db.Value]
+  mut results : Array[@core.Value]
 }
-pub fn ResultAggregator::add_result(Self, @realtime_db.Value) -> Unit
-pub fn ResultAggregator::aggregate(Self) -> @realtime_db.Value
+pub fn ResultAggregator::add_result(Self, @core.Value) -> Unit
+pub fn ResultAggregator::aggregate(Self) -> @core.Value
 pub fn ResultAggregator::clear(Self) -> Unit
 pub fn ResultAggregator::new(AggregationStrategy) -> Self
 
@@ -628,10 +628,10 @@ pub(all) struct ShardProxy {
   mut read_write_splitting : Bool
   mut strong_consistency : Bool
 }
-pub fn ShardProxy::handle_batch_read(Self, Array[String]) -> Result[Array[@realtime_db.Value], ClusterError]
-pub fn ShardProxy::handle_batch_write(Self, Array[(String, @realtime_db.Value)]) -> Result[Array[@realtime_db.Value], ClusterError]
-pub fn ShardProxy::handle_read(Self, String) -> Result[@realtime_db.Value, ClusterError]
-pub fn ShardProxy::handle_write(Self, String, @realtime_db.Value) -> Result[@realtime_db.Value, ClusterError]
+pub fn ShardProxy::handle_batch_read(Self, Array[String]) -> Result[Array[@core.Value], ClusterError]
+pub fn ShardProxy::handle_batch_write(Self, Array[(String, @core.Value)]) -> Result[Array[@core.Value], ClusterError]
+pub fn ShardProxy::handle_read(Self, String) -> Result[@core.Value, ClusterError]
+pub fn ShardProxy::handle_write(Self, String, @core.Value) -> Result[@core.Value, ClusterError]
 pub fn ShardProxy::new(QueryRouter, NodeManager) -> Self
 pub fn ShardProxy::set_read_write_splitting(Self, Bool) -> Unit
 pub fn ShardProxy::set_strong_consistency(Self, Bool) -> Unit

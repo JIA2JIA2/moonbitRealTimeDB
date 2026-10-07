@@ -228,9 +228,9 @@ moon test
 
 ```
 moonbitRealTimeDB/
-├── realtime_db.mbt           # 核心数据库引擎（根包）
-├── moon.mod / moon.pkg       # 模块与包定义
-└── src/                      # 功能模块统一目录
+├── moon.mod                  # 模块定义（名称/版本/依赖）
+└── src/                      # 全部代码统一目录
+    ├── core/                 # 核心数据库引擎（realtime_db.mbt + 测试）
     ├── api/                  # 统一 API 门面包
     ├── transaction/          # 事务支持
     ├── persistence/          # 持久化（WAL + 快照）
@@ -248,6 +248,7 @@ moonbitRealTimeDB/
     ├── graphql/              # GraphQL 接口
     ├── versioning/           # 数据版本控制
     ├── timeseries/           # 时间序列引擎
+    ├── vector_search/        # 向量检索引擎
     └── cmd/main/             # CLI 入口
 ```
 

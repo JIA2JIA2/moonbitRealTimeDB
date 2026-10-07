@@ -2,7 +2,7 @@
 package "moonbit/realtime_db/src/vector_search"
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core",
   "moonbit/realtime_db/src/persistence",
   "moonbitlang/core/debug",
 }
@@ -57,7 +57,7 @@ pub fn DistanceMetric::to_repr(Self) -> @debug.Repr
 pub impl Eq for DistanceMetric
 
 pub(all) enum FilterExpr {
-  Eq(String, @realtime_db.Value)
+  Eq(String, @core.Value)
   Gt(String, Double)
   Lt(String, Double)
   Gte(String, Double)
@@ -132,7 +132,7 @@ pub impl Eq for SearchMode
 pub(all) struct SearchResult {
   primary_key : String
   score : Double
-  metadata : Map[String, @realtime_db.Value]
+  metadata : Map[String, @core.Value]
   distance_metric : DistanceMetric
   search_mode : SearchMode
   scanned_count : Int
@@ -152,7 +152,7 @@ pub(all) struct VectorCollectionMeta {
 pub(all) struct VectorRecord {
   primary_key : String
   vector : Array[Double]
-  metadata : Map[String, @realtime_db.Value]
+  metadata : Map[String, @core.Value]
   version : Int
   updated_at : Int
 }
@@ -198,10 +198,10 @@ pub struct VectorWriter {
   collection_manager : CollectionManager
   wal : @persistence.WAL
 }
-pub fn VectorWriter::insert_batch(Self, String, String, Array[(String, Array[Double], Map[String, @realtime_db.Value])]) -> Unit
-pub fn VectorWriter::insert_single(Self, String, String, String, Array[Double], Map[String, @realtime_db.Value]) -> Unit
+pub fn VectorWriter::insert_batch(Self, String, String, Array[(String, Array[Double], Map[String, @core.Value])]) -> Unit
+pub fn VectorWriter::insert_single(Self, String, String, String, Array[Double], Map[String, @core.Value]) -> Unit
 pub fn VectorWriter::new(CollectionManager, @persistence.WAL) -> Self
-pub fn VectorWriter::upsert_single(Self, String, String, String, Array[Double], Map[String, @realtime_db.Value]) -> Unit
+pub fn VectorWriter::upsert_single(Self, String, String, String, Array[Double], Map[String, @core.Value]) -> Unit
 
 // Type aliases
 

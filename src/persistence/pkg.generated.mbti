@@ -2,7 +2,7 @@
 package "moonbit/realtime_db/src/persistence"
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core",
 }
 
 // Values
@@ -17,7 +17,7 @@ pub fn Lsn::new(Int) -> Self
 pub fn Lsn::value(Self) -> Int
 
 pub(all) enum Operation {
-  Set(String, @realtime_db.Value)
+  Set(String, @core.Value)
   Delete(String)
   Begin(Int)
   Commit(Int)

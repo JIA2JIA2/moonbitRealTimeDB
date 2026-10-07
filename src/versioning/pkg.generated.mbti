@@ -2,7 +2,7 @@
 package "moonbit/realtime_db/src/versioning"
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core",
   "moonbitlang/core/debug",
 }
 
@@ -73,8 +73,8 @@ pub(all) struct Snapshot {
   snapshot_id : String
   snapshot_name : String
   snapshot_type : SnapshotType
-  data : @realtime_db.Value
-  metadata : Map[String, @realtime_db.Value]
+  data : @core.Value
+  metadata : Map[String, @core.Value]
   created_at : Int
   expire_at : Int?
   size_bytes : Int
@@ -93,8 +93,8 @@ pub impl Eq for SnapshotType
 pub(all) struct VersionChange {
   change_type : ChangeType
   key : String
-  old_value : @realtime_db.Value?
-  new_value : @realtime_db.Value?
+  old_value : @core.Value?
+  new_value : @core.Value?
 }
 
 pub(all) struct VersionDiff {
@@ -125,7 +125,7 @@ pub(all) struct VersionManager {
   mut snapshots : Map[String, Snapshot]
   version_history : VersionHistory
   config : VersioningConfig
-  mut db : @realtime_db.DB?
+  mut db : @core.DB?
   mut next_snapshot_id : Int
   mut next_branch_id : Int
   mut next_version_id : Int
@@ -134,7 +134,7 @@ pub fn VersionManager::branch_count(Self) -> Int
 pub fn VersionManager::cleanup_expired_snapshots(Self) -> Int
 pub fn VersionManager::commit(Self, String, String, String, String) -> Result[String, VersioningError]
 pub fn VersionManager::create_branch(Self, String, BranchType, String?) -> Result[String, VersioningError]
-pub fn VersionManager::create_snapshot(Self, String, SnapshotType, @realtime_db.Value) -> Result[String, VersioningError]
+pub fn VersionManager::create_snapshot(Self, String, SnapshotType, @core.Value) -> Result[String, VersioningError]
 pub fn VersionManager::delete_branch(Self, String) -> Result[Unit, VersioningError]
 pub fn VersionManager::delete_snapshot(Self, String) -> Result[Unit, VersioningError]
 pub fn VersionManager::diff(Self, String, String) -> Result[VersionDiff, VersioningError]
@@ -146,9 +146,9 @@ pub fn VersionManager::list_branches(Self) -> Array[Branch]
 pub fn VersionManager::list_snapshots(Self) -> Array[Snapshot]
 pub fn VersionManager::merge(Self, String, String, MergeStrategy, String) -> Result[String, VersioningError]
 pub fn VersionManager::new(VersioningConfig) -> Self
-pub fn VersionManager::point_in_time_query(Self, PointInTimeQuery) -> Result[@realtime_db.Value, VersioningError]
+pub fn VersionManager::point_in_time_query(Self, PointInTimeQuery) -> Result[@core.Value, VersioningError]
 pub fn VersionManager::rollback(Self, RollbackRequest) -> Result[String, VersioningError]
-pub fn VersionManager::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn VersionManager::set_db(Self, @core.DB?) -> Unit
 pub fn VersionManager::snapshot_count(Self) -> Int
 
 pub(all) enum VersionStatus {

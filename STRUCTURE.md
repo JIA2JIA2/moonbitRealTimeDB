@@ -4,23 +4,25 @@
 
 ## 项目结构
 
-MoonBit 采用「每个目录一个包（package）」的模型。本项目采用「根核心 + src 功能模块」的分层布局：
+MoonBit 采用「每个目录一个包（package）」的模型。本项目采用「src 全量收纳」的分层布局：
+模块根目录只保留工程配置与文档，全部代码（含核心引擎）都位于 `src/` 下：
 
 ```
 moonbitRealTimeDB/
 ├── moon.mod                          # 模块定义（名称/版本/依赖）
-├── moon.pkg                          # 根包定义
 ├── README.md                         # 项目说明
 ├── AGENTS.md                         # Agent 开发指南
 ├── STRUCTURE.md                      # 本文件：结构规范
 ├── LICENSE                           # 许可证
 │
-├── realtime_db.mbt                   # 核心数据库引擎（根包）
-├── realtime_db_test.mbt              # 核心黑盒测试
-├── realtime_db_wbtest.mbt            # 核心白盒测试
-├── pkg.generated.mbti                # 根包接口（自动生成）
-│
-└── src/                              # 功能模块统一目录
+└── src/                              # 全部代码统一目录
+    ├── core/                         # 核心数据库引擎
+    │   ├── moon.pkg                  # 核心包定义（无内部依赖）
+    │   ├── realtime_db.mbt           # 核心实现
+    │   ├── realtime_db_test.mbt      # 核心黑盒测试
+    │   ├── realtime_db_wbtest.mbt    # 核心白盒测试
+    │   └── pkg.generated.mbti        # 核心包接口（自动生成）
+    │
     ├── api/                          # 【统一 API 门面包】
     │   ├── moon.pkg                  # 依赖所有模块
     │   ├── api.mbt                   # pub using 重导出
@@ -42,13 +44,14 @@ moonbitRealTimeDB/
     ├── graphql/                      # GraphQL 接口
     ├── versioning/                   # 数据版本控制
     ├── timeseries/                   # 时间序列引擎
+    ├── vector_search/                # 向量检索引擎
     └── cmd/main/                     # CLI 入口
 ```
 
 ## 包层次
 
 ```
-moonbit/realtime_db                    ← 根包：核心数据库
+moonbit/realtime_db/src/core           ← 核心数据库（无内部依赖）
 ├── moonbit/realtime_db/src/api        ← 统一门面包（依赖所有模块）
 ├── moonbit/realtime_db/src/transaction
 ├── moonbit/realtime_db/src/persistence
@@ -65,8 +68,12 @@ moonbit/realtime_db                    ← 根包：核心数据库
 ├── moonbit/realtime_db/src/feature_store
 ├── moonbit/realtime_db/src/graphql
 ├── moonbit/realtime_db/src/versioning
-└── moonbit/realtime_db/src/timeseries
+├── moonbit/realtime_db/src/timeseries
+└── moonbit/realtime_db/src/vector_search
 ```
+
+> 说明：模块根目录不再放置代码包（无根 `moon.pkg`）。
+> 核心包路径为 `moonbit/realtime_db/src/core`，包别名默认为 `@core`。
 
 ## 模块文件命名规范
 
@@ -93,8 +100,9 @@ moonbit/realtime_db                    ← 根包：核心数据库
 
 ## 包定义规范（moon.pkg）
 
-统一格式，包含模块说明注释。根包依赖直接写 `moonbit/realtime_db`，
-功能模块间依赖写完整 `src` 路径：
+统一格式，包含模块说明注释。模块内所有依赖一律写完整 `src` 路径。
+依赖核心包时显式指定别名为 `@realtime_db`，使各模块代码中的
+`@realtime_db.Value` 等引用保持统一：
 
 ```moonbit
 // {模块名} - {功能说明}
@@ -102,12 +110,13 @@ moonbit/realtime_db                    ← 根包：核心数据库
 // {补充说明}
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core" @realtime_db,
   "moonbit/realtime_db/src/persistence",
 }
 ```
 
-无外部依赖时，保留空 `import {}` 块与说明注释。
+无依赖时（如 `src/core`），保留空 `moon.pkg` 文件与说明注释。
+CLI 入口按自身需要取别名，例如 `src/cmd/main` 使用 `@db`。
 
 ## 统一门面包（src/api/）
 

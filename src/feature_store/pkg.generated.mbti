@@ -2,7 +2,7 @@
 package "moonbit/realtime_db/src/feature_store"
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core",
   "moonbit/realtime_db/src/stream_engine",
   "moonbitlang/core/debug",
 }
@@ -38,8 +38,8 @@ pub(all) enum AggregatorKind {
 pub(all) struct AvgAggregator {
   _placeholder : Unit
 }
-pub fn AvgAggregator::aggregate(Self, Array[@realtime_db.Value]) -> Result[@realtime_db.Value, FeatureError]
-pub fn AvgAggregator::merge(Self, @realtime_db.Value, @realtime_db.Value) -> Result[@realtime_db.Value, FeatureError]
+pub fn AvgAggregator::aggregate(Self, Array[@core.Value]) -> Result[@core.Value, FeatureError]
+pub fn AvgAggregator::merge(Self, @core.Value, @core.Value) -> Result[@core.Value, FeatureError]
 pub fn AvgAggregator::new() -> Self
 pub impl FeatureAggregator for AvgAggregator
 
@@ -50,8 +50,8 @@ pub(all) struct BatchComputeEngine {
 pub(all) struct CountAggregator {
   _placeholder : Unit
 }
-pub fn CountAggregator::aggregate(Self, Array[@realtime_db.Value]) -> Result[@realtime_db.Value, FeatureError]
-pub fn CountAggregator::merge(Self, @realtime_db.Value, @realtime_db.Value) -> Result[@realtime_db.Value, FeatureError]
+pub fn CountAggregator::aggregate(Self, Array[@core.Value]) -> Result[@core.Value, FeatureError]
+pub fn CountAggregator::merge(Self, @core.Value, @core.Value) -> Result[@core.Value, FeatureError]
 pub fn CountAggregator::new() -> Self
 pub impl FeatureAggregator for CountAggregator
 
@@ -71,8 +71,8 @@ pub(all) struct Feature {
   status : FeatureStatus
   source : FeatureSource
   description : String?
-  default_value : @realtime_db.Value?
-  metadata : Map[String, @realtime_db.Value]
+  default_value : @core.Value?
+  metadata : Map[String, @core.Value]
   created_at : Int
   updated_at : Int
 }
@@ -95,7 +95,7 @@ pub(all) struct FeatureComputeEngine {
   mut aggregators : Map[String, AggregatorKind]
   mut window_configs : Map[String, WindowConfig]
 }
-pub fn FeatureComputeEngine::compute(Self, String, Array[@realtime_db.Value]) -> Result[@realtime_db.Value, FeatureError]
+pub fn FeatureComputeEngine::compute(Self, String, Array[@core.Value]) -> Result[@core.Value, FeatureError]
 pub fn FeatureComputeEngine::new() -> Self
 pub fn FeatureComputeEngine::register_aggregator(Self, String, AggregatorKind) -> Result[Unit, FeatureError]
 pub fn FeatureComputeEngine::register_window_config(Self, String, WindowConfig) -> Result[Unit, FeatureError]
@@ -223,7 +223,7 @@ pub(all) struct FeatureVector {
   vector_id : String
   entity_id : String
   table_id : String
-  values : Map[String, @realtime_db.Value]
+  values : Map[String, @core.Value]
   version : Int
   timestamp : Int
   is_valid : Bool
@@ -260,7 +260,7 @@ pub impl Eq for FeatureViewType
 pub(all) struct FeatureWriteRequest {
   table_id : String
   entity_id : String
-  values : Map[String, @realtime_db.Value]
+  values : Map[String, @core.Value]
   source : FeatureSource
   overwrite : Bool
 }
@@ -268,8 +268,8 @@ pub(all) struct FeatureWriteRequest {
 pub(all) struct MaxAggregator {
   _placeholder : Unit
 }
-pub fn MaxAggregator::aggregate(Self, Array[@realtime_db.Value]) -> Result[@realtime_db.Value, FeatureError]
-pub fn MaxAggregator::merge(Self, @realtime_db.Value, @realtime_db.Value) -> Result[@realtime_db.Value, FeatureError]
+pub fn MaxAggregator::aggregate(Self, Array[@core.Value]) -> Result[@core.Value, FeatureError]
+pub fn MaxAggregator::merge(Self, @core.Value, @core.Value) -> Result[@core.Value, FeatureError]
 pub fn MaxAggregator::new() -> Self
 pub impl FeatureAggregator for MaxAggregator
 
@@ -289,8 +289,8 @@ pub impl OnlineStorage for MemoryOnlineStorage
 pub(all) struct MinAggregator {
   _placeholder : Unit
 }
-pub fn MinAggregator::aggregate(Self, Array[@realtime_db.Value]) -> Result[@realtime_db.Value, FeatureError]
-pub fn MinAggregator::merge(Self, @realtime_db.Value, @realtime_db.Value) -> Result[@realtime_db.Value, FeatureError]
+pub fn MinAggregator::aggregate(Self, Array[@core.Value]) -> Result[@core.Value, FeatureError]
+pub fn MinAggregator::merge(Self, @core.Value, @core.Value) -> Result[@core.Value, FeatureError]
 pub fn MinAggregator::new() -> Self
 pub impl FeatureAggregator for MinAggregator
 
@@ -309,8 +309,8 @@ pub impl Eq for StorageType
 pub(all) struct SumAggregator {
   _placeholder : Unit
 }
-pub fn SumAggregator::aggregate(Self, Array[@realtime_db.Value]) -> Result[@realtime_db.Value, FeatureError]
-pub fn SumAggregator::merge(Self, @realtime_db.Value, @realtime_db.Value) -> Result[@realtime_db.Value, FeatureError]
+pub fn SumAggregator::aggregate(Self, Array[@core.Value]) -> Result[@core.Value, FeatureError]
+pub fn SumAggregator::merge(Self, @core.Value, @core.Value) -> Result[@core.Value, FeatureError]
 pub fn SumAggregator::new() -> Self
 pub impl FeatureAggregator for SumAggregator
 
@@ -324,8 +324,8 @@ pub(all) struct WindowConfig {
 
 // Traits
 pub trait FeatureAggregator {
-  fn aggregate(Self, Array[@realtime_db.Value]) -> Result[@realtime_db.Value, FeatureError]
-  fn merge(Self, @realtime_db.Value, @realtime_db.Value) -> Result[@realtime_db.Value, FeatureError]
+  fn aggregate(Self, Array[@core.Value]) -> Result[@core.Value, FeatureError]
+  fn merge(Self, @core.Value, @core.Value) -> Result[@core.Value, FeatureError]
 }
 
 pub trait OfflineStorage {

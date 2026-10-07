@@ -2,7 +2,7 @@
 package "moonbit/realtime_db/src/replication"
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core",
   "moonbitlang/core/debug",
 }
 
@@ -41,28 +41,28 @@ pub(all) struct ConflictDetector {
   version_vector : VersionVector
   strategy : ConflictResolutionStrategy
 }
-pub fn ConflictDetector::detect(Self, String, @realtime_db.Value, Int, String, @realtime_db.Value, Int, String) -> Bool
+pub fn ConflictDetector::detect(Self, String, @core.Value, Int, String, @core.Value, Int, String) -> Bool
 pub fn ConflictDetector::new(ConflictResolutionStrategy) -> Self
-pub fn ConflictDetector::resolve(Self, String, @realtime_db.Value, Int, Int, String, @realtime_db.Value, Int, Int, String) -> ConflictResolutionResult
+pub fn ConflictDetector::resolve(Self, String, @core.Value, Int, Int, String, @core.Value, Int, Int, String) -> ConflictResolutionResult
 
 pub(all) struct ConflictRecord {
   conflict_id : String
   task_id : String
   key : String
-  source_value : @realtime_db.Value
-  target_value : @realtime_db.Value
+  source_value : @core.Value
+  target_value : @core.Value
   source_timestamp : Int
   target_timestamp : Int
   source_version : Int
   target_version : Int
   resolution_strategy : ConflictResolutionStrategy
-  resolved_value : @realtime_db.Value?
+  resolved_value : @core.Value?
   resolved_at : Int
 }
 
 pub(all) struct ConflictResolutionResult {
   key : String
-  resolved_value : @realtime_db.Value
+  resolved_value : @core.Value
   resolution_strategy : ConflictResolutionStrategy
   resolved_at : Int
 }
@@ -85,7 +85,7 @@ pub(all) struct ConflictResolver {
 }
 pub fn ConflictResolver::get_strategy(Self, String) -> ConflictResolutionStrategy
 pub fn ConflictResolver::new(ConflictResolutionStrategy) -> Self
-pub fn ConflictResolver::resolve(Self, String, String, @realtime_db.Value, Int, Int, String, @realtime_db.Value, Int, Int, String) -> ConflictResolutionResult
+pub fn ConflictResolver::resolve(Self, String, String, @core.Value, Int, Int, String, @core.Value, Int, Int, String) -> ConflictResolutionResult
 pub fn ConflictResolver::set_strategy(Self, String, ConflictResolutionStrategy) -> Unit
 
 pub(all) struct NodeInfo {
@@ -134,7 +134,7 @@ pub(all) struct ReplicationLog {
   task_id : String
   operation : String
   key : String
-  value : @realtime_db.Value?
+  value : @core.Value?
   timestamp : Int
   source_cluster : String
   target_cluster : String

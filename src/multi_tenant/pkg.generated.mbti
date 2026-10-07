@@ -2,7 +2,7 @@
 package "moonbit/realtime_db/src/multi_tenant"
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core",
   "moonbitlang/core/debug",
 }
 
@@ -67,7 +67,7 @@ pub(all) struct Column {
   name : String
   column_type : ColumnType
   nullable : Bool
-  default_value : @realtime_db.Value?
+  default_value : @core.Value?
   length : Int?
 }
 

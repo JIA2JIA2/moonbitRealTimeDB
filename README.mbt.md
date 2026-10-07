@@ -18,27 +18,27 @@
 
 ```
 import {
-  "moonbit/realtime_db@0.1.0",
+  "moonbit/realtime_db/src/core@0.1.0",
 }
 ```
 
 ## 快速开始
 
 ```moonbit nocheck
-let db = @realtime_db.DB::new()
+let db = @core.DB::new()
 
 // 基本操作
-db.set("key", @realtime_db.Str("value"))
-let value = db.get("key") // Some(@realtime_db.Str("value"))
+db.set("key", @core.Str("value"))
+let value = db.get("key") // Some(@core.Str("value"))
 
 // 带 TTL 的设置
-db.set("temp", @realtime_db.Int(42), ttl=10)
+db.set("temp", @core.Int(42), ttl=10)
 
 // 订阅
 let _ = db.watch("key", fn(e) {
   println(e.to_string())
 })
-db.set("key", @realtime_db.Str("new")) // 触发回调
+db.set("key", @core.Str("new")) // 触发回调
 
 // 推进时间，清理过期键
 let _ = db.advance(10)

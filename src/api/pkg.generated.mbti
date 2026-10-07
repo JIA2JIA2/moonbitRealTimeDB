@@ -2,9 +2,9 @@
 package "moonbit/realtime_db/src/api"
 
 import {
-  "moonbit/realtime_db",
   "moonbit/realtime_db/src/cluster",
   "moonbit/realtime_db/src/connection",
+  "moonbit/realtime_db/src/core",
   "moonbit/realtime_db/src/feature_store",
   "moonbit/realtime_db/src/graphql",
   "moonbit/realtime_db/src/index",
@@ -33,9 +33,9 @@ pub using @vector_search {type CollectionManager}
 
 pub using @connection {type ConnectionPool}
 
-pub using @realtime_db {type DB}
+pub using @core {type DB}
 
-pub using @realtime_db {type Event}
+pub using @core {type Event}
 
 pub using @feature_store {type FeatureStoreManager}
 
@@ -75,7 +75,7 @@ pub using @timeseries {type TimeSeriesEngine}
 
 pub using @transaction {type TransactionManager}
 
-pub using @realtime_db {type Value}
+pub using @core {type Value}
 
 pub using @vector_search {type VectorWriter}
 

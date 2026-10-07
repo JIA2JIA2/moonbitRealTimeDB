@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit/realtime_db"
+package "moonbit/realtime_db/src/core"
 
 import {
   "moonbitlang/core/debug",

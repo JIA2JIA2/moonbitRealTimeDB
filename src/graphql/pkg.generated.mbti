@@ -2,12 +2,12 @@
 package "moonbit/realtime_db/src/graphql"
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core",
   "moonbitlang/core/debug",
 }
 
 // Values
-pub fn create_dataloader(Int, (Array[String]) -> Array[@realtime_db.Value]) -> DataLoader
+pub fn create_dataloader(Int, (Array[String]) -> Array[@core.Value]) -> DataLoader
 
 pub fn create_executor(GraphQLSchema, GraphQLConfig) -> GraphQLExecutor
 
@@ -22,14 +22,14 @@ pub fn parse_graphql(String) -> Result[GraphQLParseResult, GraphQLErrorEnum]
 // Types and methods
 pub(all) struct DataLoader {
   batch_size : Int
-  batch_fn : (Array[String]) -> Array[@realtime_db.Value]
-  mut cache : Map[String, @realtime_db.Value]
+  batch_fn : (Array[String]) -> Array[@core.Value]
+  mut cache : Map[String, @core.Value]
   mut queue : Array[String]
 }
 pub fn DataLoader::clear(Self) -> Unit
-pub fn DataLoader::load(Self, String) -> @realtime_db.Value?
-pub fn DataLoader::load_many(Self, Array[String]) -> Array[@realtime_db.Value]
-pub fn DataLoader::new(Int, (Array[String]) -> Array[@realtime_db.Value]) -> Self
+pub fn DataLoader::load(Self, String) -> @core.Value?
+pub fn DataLoader::load_many(Self, Array[String]) -> Array[@core.Value]
+pub fn DataLoader::new(Int, (Array[String]) -> Array[@core.Value]) -> Self
 
 pub(all) enum DirectiveLocation {
   Query
@@ -78,8 +78,8 @@ pub(all) struct GraphQLContext {
   request_id : String
   operation_name : String?
   variables : Map[String, GraphQLValue]
-  context_data : Map[String, @realtime_db.Value]
-  db : @realtime_db.DB?
+  context_data : Map[String, @core.Value]
+  db : @core.DB?
   tenant_id : String?
 }
 

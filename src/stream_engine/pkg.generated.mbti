@@ -2,7 +2,7 @@
 package "moonbit/realtime_db/src/stream_engine"
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core",
   "moonbit/realtime_db/src/persistence",
   "moonbitlang/core/debug",
 }
@@ -33,36 +33,36 @@ pub fn init_builtin_aggregates(AggregateProcessor) -> AggregateProcessor
 // Types and methods
 pub(all) struct AggregateProcessor {
   functions : Map[String, &AggregateFunction]
-  window_states : Map[WindowId, @realtime_db.Value]
+  window_states : Map[WindowId, @core.Value]
 }
 pub fn AggregateProcessor::clear_window_state(Self, WindowId) -> Unit
-pub fn AggregateProcessor::compute_aggregate(Self, String, WindowId, @realtime_db.Value) -> Result[@realtime_db.Value, StreamError]
+pub fn AggregateProcessor::compute_aggregate(Self, String, WindowId, @core.Value) -> Result[@core.Value, StreamError]
 pub fn AggregateProcessor::get_function(Self, String) -> &AggregateFunction?
-pub fn AggregateProcessor::get_result(Self, String, WindowId) -> Result[@realtime_db.Value, StreamError]
+pub fn AggregateProcessor::get_result(Self, String, WindowId) -> Result[@core.Value, StreamError]
 pub fn AggregateProcessor::new() -> Self
 pub fn AggregateProcessor::register_function(Self, String, &AggregateFunction) -> Result[Unit, StreamError]
 
 pub(all) struct AggregateResult {
   window_id : WindowId
   fn_name : String
-  result : @realtime_db.Value
+  result : @core.Value
   trigger_time : Int
 }
 
 pub(all) struct AggregateState {
   fn_name : String
-  data : @realtime_db.Value
+  data : @core.Value
   count : Int
 }
 
 pub(all) struct AvgAggregate {
 }
-pub fn AvgAggregate::add(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
-pub fn AvgAggregate::create_initial_state(Self) -> @realtime_db.Value
-pub fn AvgAggregate::get_result(Self, @realtime_db.Value) -> @realtime_db.Value
-pub fn AvgAggregate::merge(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
+pub fn AvgAggregate::add(Self, @core.Value, @core.Value) -> @core.Value
+pub fn AvgAggregate::create_initial_state(Self) -> @core.Value
+pub fn AvgAggregate::get_result(Self, @core.Value) -> @core.Value
+pub fn AvgAggregate::merge(Self, @core.Value, @core.Value) -> @core.Value
 pub fn AvgAggregate::new() -> Self
-pub fn AvgAggregate::remove(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
+pub fn AvgAggregate::remove(Self, @core.Value, @core.Value) -> @core.Value
 pub impl AggregateFunction for AvgAggregate
 
 pub(all) struct CallbackScheduler {
@@ -101,7 +101,7 @@ pub(all) struct CheckpointService {
 pub fn CheckpointService::cleanup_old_checkpoints(Self) -> Unit
 pub fn CheckpointService::create_checkpoint(Self, Map[WindowId, WindowState]) -> Result[CheckpointState, StreamError]
 pub fn CheckpointService::create_exactly_once_checkpoint(Self, Map[WindowId, WindowState], Array[StreamEvent]) -> Result[CheckpointState, StreamError]
-pub fn CheckpointService::create_incremental_checkpoint(Self, Map[String, @realtime_db.Value]) -> Result[CheckpointState, StreamError]
+pub fn CheckpointService::create_incremental_checkpoint(Self, Map[String, @core.Value]) -> Result[CheckpointState, StreamError]
 pub fn CheckpointService::get_all_checkpoints(Self) -> Array[CheckpointState]
 pub fn CheckpointService::get_checkpoint_status(Self, String) -> CheckpointState?
 pub fn CheckpointService::get_latest_checkpoint(Self) -> CheckpointState?
@@ -113,14 +113,14 @@ pub(all) struct CheckpointState {
   checkpoint_id : CheckpointId
   timestamp : Int
   window_states : Map[WindowId, WindowState]
-  aggregate_states : Map[String, @realtime_db.Value]
-  subscription_states : Map[String, @realtime_db.Value]
+  aggregate_states : Map[String, @core.Value]
+  subscription_states : Map[String, @core.Value]
 }
 
 pub(all) struct Condition {
   field : String
   op : Operator
-  target : @realtime_db.Value
+  target : @core.Value
 }
 
 pub(all) struct ConditionEvaluator {
@@ -132,12 +132,12 @@ pub fn ConditionEvaluator::new() -> Self
 
 pub(all) struct CountAggregate {
 }
-pub fn CountAggregate::add(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
-pub fn CountAggregate::create_initial_state(Self) -> @realtime_db.Value
-pub fn CountAggregate::get_result(Self, @realtime_db.Value) -> @realtime_db.Value
-pub fn CountAggregate::merge(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
+pub fn CountAggregate::add(Self, @core.Value, @core.Value) -> @core.Value
+pub fn CountAggregate::create_initial_state(Self) -> @core.Value
+pub fn CountAggregate::get_result(Self, @core.Value) -> @core.Value
+pub fn CountAggregate::merge(Self, @core.Value, @core.Value) -> @core.Value
 pub fn CountAggregate::new() -> Self
-pub fn CountAggregate::remove(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
+pub fn CountAggregate::remove(Self, @core.Value, @core.Value) -> @core.Value
 pub impl AggregateFunction for CountAggregate
 
 pub(all) struct DefaultTrigger {
@@ -148,7 +148,7 @@ pub impl Trigger for DefaultTrigger
 
 pub(all) struct FieldPathParser {
 }
-pub fn FieldPathParser::extract_field(Self, @realtime_db.Value, String) -> @realtime_db.Value?
+pub fn FieldPathParser::extract_field(Self, @core.Value, String) -> @core.Value?
 pub fn FieldPathParser::new() -> Self
 pub fn FieldPathParser::parse_path(Self, String) -> Array[String]
 
@@ -160,8 +160,8 @@ pub(all) struct FilterExpr {
 pub(all) struct FilterParser {
 }
 pub fn FilterParser::new() -> Self
-pub fn FilterParser::parse_condition(Self, String, String, @realtime_db.Value) -> Result[Condition, StreamError]
-pub fn FilterParser::parse_filter_expr(Self, Array[(String, String, @realtime_db.Value)], LogicOp) -> Result[FilterExpr, StreamError]
+pub fn FilterParser::parse_condition(Self, String, String, @core.Value) -> Result[Condition, StreamError]
+pub fn FilterParser::parse_filter_expr(Self, Array[(String, String, @core.Value)], LogicOp) -> Result[FilterExpr, StreamError]
 
 pub(all) struct LateDataHandler {
   policy : LateDataPolicy
@@ -191,16 +191,16 @@ pub fn LogicOp::to_repr(Self) -> @debug.Repr
 
 pub(all) struct MaxAggregate {
 }
-pub fn MaxAggregate::add(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
-pub fn MaxAggregate::create_initial_state(Self) -> @realtime_db.Value
-pub fn MaxAggregate::get_result(Self, @realtime_db.Value) -> @realtime_db.Value
-pub fn MaxAggregate::merge(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
+pub fn MaxAggregate::add(Self, @core.Value, @core.Value) -> @core.Value
+pub fn MaxAggregate::create_initial_state(Self) -> @core.Value
+pub fn MaxAggregate::get_result(Self, @core.Value) -> @core.Value
+pub fn MaxAggregate::merge(Self, @core.Value, @core.Value) -> @core.Value
 pub fn MaxAggregate::new() -> Self
-pub fn MaxAggregate::remove(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
+pub fn MaxAggregate::remove(Self, @core.Value, @core.Value) -> @core.Value
 pub impl AggregateFunction for MaxAggregate
 
 pub(all) struct MemoryStateStore {
-  mut data : Map[String, @realtime_db.Value]
+  mut data : Map[String, @core.Value]
   mut ttl_map : Map[String, Int]
   mut current_time : Int
   memory_limit : Int
@@ -208,11 +208,11 @@ pub(all) struct MemoryStateStore {
 }
 pub fn MemoryStateStore::cleanup_expired(Self) -> Int
 pub fn MemoryStateStore::delete(Self, String) -> Result[Unit, StreamError]
-pub fn MemoryStateStore::get(Self, String) -> Result[@realtime_db.Value, StreamError]
+pub fn MemoryStateStore::get(Self, String) -> Result[@core.Value, StreamError]
 pub fn MemoryStateStore::memory_usage(Self) -> Int
 pub fn MemoryStateStore::new() -> Self
-pub fn MemoryStateStore::put(Self, String, @realtime_db.Value) -> Result[Unit, StreamError]
-pub fn MemoryStateStore::query(Self, String) -> Result[Array[(String, @realtime_db.Value)], StreamError]
+pub fn MemoryStateStore::put(Self, String, @core.Value) -> Result[Unit, StreamError]
+pub fn MemoryStateStore::query(Self, String) -> Result[Array[(String, @core.Value)], StreamError]
 pub fn MemoryStateStore::set_ttl(Self, String, Int) -> Result[Unit, StreamError]
 pub fn MemoryStateStore::size(Self) -> Int
 pub fn MemoryStateStore::update_time(Self, Int) -> Unit
@@ -221,12 +221,12 @@ pub impl StateStore for MemoryStateStore
 
 pub(all) struct MinAggregate {
 }
-pub fn MinAggregate::add(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
-pub fn MinAggregate::create_initial_state(Self) -> @realtime_db.Value
-pub fn MinAggregate::get_result(Self, @realtime_db.Value) -> @realtime_db.Value
-pub fn MinAggregate::merge(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
+pub fn MinAggregate::add(Self, @core.Value, @core.Value) -> @core.Value
+pub fn MinAggregate::create_initial_state(Self) -> @core.Value
+pub fn MinAggregate::get_result(Self, @core.Value) -> @core.Value
+pub fn MinAggregate::merge(Self, @core.Value, @core.Value) -> @core.Value
 pub fn MinAggregate::new() -> Self
-pub fn MinAggregate::remove(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
+pub fn MinAggregate::remove(Self, @core.Value, @core.Value) -> @core.Value
 pub impl AggregateFunction for MinAggregate
 
 pub(all) enum Operator {
@@ -331,7 +331,7 @@ pub fn SnapshotManager::restore_from_snapshot(Self, String, MemoryStateStore) ->
 pub(all) struct StateSnapshot {
   snapshot_id : String
   timestamp : Int
-  data : Map[String, @realtime_db.Value]
+  data : Map[String, @core.Value]
 }
 
 pub(all) struct StateStoreFactory {
@@ -383,7 +383,7 @@ pub fn StreamError::to_string(Self) -> String
 
 pub(all) struct StreamEvent {
   key : String
-  value : @realtime_db.Value
+  value : @core.Value
   event_type : StreamEventType
   timestamp : Int
 }
@@ -430,12 +430,12 @@ pub(all) struct SubscriptionState {
 
 pub(all) struct SumAggregate {
 }
-pub fn SumAggregate::add(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
-pub fn SumAggregate::create_initial_state(Self) -> @realtime_db.Value
-pub fn SumAggregate::get_result(Self, @realtime_db.Value) -> @realtime_db.Value
-pub fn SumAggregate::merge(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
+pub fn SumAggregate::add(Self, @core.Value, @core.Value) -> @core.Value
+pub fn SumAggregate::create_initial_state(Self) -> @core.Value
+pub fn SumAggregate::get_result(Self, @core.Value) -> @core.Value
+pub fn SumAggregate::merge(Self, @core.Value, @core.Value) -> @core.Value
 pub fn SumAggregate::new() -> Self
-pub fn SumAggregate::remove(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
+pub fn SumAggregate::remove(Self, @core.Value, @core.Value) -> @core.Value
 pub impl AggregateFunction for SumAggregate
 
 pub(all) enum TriggerType {
@@ -500,7 +500,7 @@ pub(all) struct WindowState {
   start_time : Int
   end_time : Int
   mut elements : Int
-  mut aggregate_state : @realtime_db.Value?
+  mut aggregate_state : @core.Value?
 }
 
 pub(all) struct WindowStateManager {
@@ -548,18 +548,18 @@ pub type SubscriptionCallback = (StreamEvent) -> Unit
 
 // Traits
 pub trait AggregateFunction {
-  fn create_initial_state(Self) -> @realtime_db.Value
-  fn add(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
-  fn remove(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
-  fn merge(Self, @realtime_db.Value, @realtime_db.Value) -> @realtime_db.Value
-  fn get_result(Self, @realtime_db.Value) -> @realtime_db.Value
+  fn create_initial_state(Self) -> @core.Value
+  fn add(Self, @core.Value, @core.Value) -> @core.Value
+  fn remove(Self, @core.Value, @core.Value) -> @core.Value
+  fn merge(Self, @core.Value, @core.Value) -> @core.Value
+  fn get_result(Self, @core.Value) -> @core.Value
 }
 
 pub trait StateStore {
-  fn get(Self, String) -> Result[@realtime_db.Value, StreamError]
-  fn put(Self, String, @realtime_db.Value) -> Result[Unit, StreamError]
+  fn get(Self, String) -> Result[@core.Value, StreamError]
+  fn put(Self, String, @core.Value) -> Result[Unit, StreamError]
   fn delete(Self, String) -> Result[Unit, StreamError]
-  fn query(Self, String) -> Result[Array[(String, @realtime_db.Value)], StreamError]
+  fn query(Self, String) -> Result[Array[(String, @core.Value)], StreamError]
   fn memory_usage(Self) -> Int
   fn size(Self) -> Int
 }

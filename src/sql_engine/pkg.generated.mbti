@@ -2,7 +2,7 @@
 package "moonbit/realtime_db/src/sql_engine"
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core",
   "moonbitlang/core/debug",
 }
 
@@ -61,7 +61,7 @@ pub(all) struct Column {
   name : String
   column_type : ColumnType
   nullable : Bool
-  default_value : @realtime_db.Value?
+  default_value : @core.Value?
   length : Int?
   alias_name : String?
 }
@@ -164,7 +164,7 @@ pub(all) struct DropTableStatement {
 pub(all) struct ExecutionNode {
   node_type : ExecutionNodeType
   children : Array[ExecutionNode]
-  execute_fn : (Array[@realtime_db.Value]) -> Array[@realtime_db.Value]
+  execute_fn : (Array[@core.Value]) -> Array[@core.Value]
 }
 
 pub(all) enum ExecutionNodeType {
@@ -180,7 +180,7 @@ pub(all) enum ExecutionNodeType {
 
 pub(all) struct ExecutionPlan {
   root : ExecutionNode
-  parameters : Map[String, @realtime_db.Value]
+  parameters : Map[String, @core.Value]
 }
 
 pub(all) struct ExplainStatement {
@@ -250,7 +250,7 @@ pub fn Parser::parse(Self) -> Result[SqlStatement, SqlError]
 pub(all) struct PlanNode {
   node_type : PlanNodeType
   children : Array[PlanNode]
-  properties : Map[String, @realtime_db.Value]
+  properties : Map[String, @core.Value]
 }
 
 pub(all) enum PlanNodeType {
@@ -266,12 +266,12 @@ pub(all) enum PlanNodeType {
 }
 
 pub(all) struct QueryExecutor {
-  mut db : @realtime_db.DB?
+  mut db : @core.DB?
   mut tenant_id : String?
 }
-pub fn QueryExecutor::execute(Self, QueryPlan) -> Result[Array[@realtime_db.Value], SqlError]
+pub fn QueryExecutor::execute(Self, QueryPlan) -> Result[Array[@core.Value], SqlError]
 pub fn QueryExecutor::new() -> Self
-pub fn QueryExecutor::set_db(Self, @realtime_db.DB?) -> Unit
+pub fn QueryExecutor::set_db(Self, @core.DB?) -> Unit
 pub fn QueryExecutor::set_tenant(Self, String?) -> Unit
 
 pub(all) struct QueryOptimizer {
@@ -367,7 +367,7 @@ pub(all) enum SqlStatement {
 
 pub(all) struct SqlValue {
   value_type : ColumnType
-  value : @realtime_db.Value
+  value : @core.Value
   is_null : Bool
 }
 

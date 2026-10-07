@@ -3,6 +3,6 @@
 // 提供实时/离线特征计算、特征版本管理、低延迟查询
 
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core" @realtime_db,
   "moonbit/realtime_db/src/stream_engine",
 }

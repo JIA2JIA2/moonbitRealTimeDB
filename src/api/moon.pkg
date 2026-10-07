@@ -1,5 +1,5 @@
 import {
-  "moonbit/realtime_db",
+  "moonbit/realtime_db/src/core" @realtime_db,
   "moonbit/realtime_db/src/transaction",
   "moonbit/realtime_db/src/persistence",
   "moonbit/realtime_db/src/monitor",
