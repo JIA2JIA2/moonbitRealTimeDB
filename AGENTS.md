@@ -12,7 +12,8 @@ You can browse and install extra skills here:
   alongside it under `src/` (e.g. `src/index`, `src/cluster`, `src/sql_engine`).
   The module root keeps only config and documentation files. The `src/api`
   package is a facade that re-exports the public types of every module via
-  `pub using`. See `STRUCTURE.md` for the full specification.
+  `pub using`. See `README.md` for the full structure specification and
+  development conventions.
 
 - MoonBit packages are organized per directory; each directory contains a
   `moon.pkg` file listing its dependencies. Each package has its files and

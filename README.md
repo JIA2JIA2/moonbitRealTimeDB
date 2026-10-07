@@ -50,33 +50,54 @@ RealTimeDB 是一个高可用实时数据库，基于 MoonBit 语言实现的内
 - **水位线服务**：乱序容忍、迟到数据处理
 - **背压控制**：流量整形、优先级调度
 
+### 扩展模块
+- **分布式集群**：节点管理、分片、路由
+- **多租户**：租户隔离与配额
+- **SQL 引擎**：查询解析、优化与执行
+- **数据湖集成**：湖仓同步
+- **跨集群复制**：副本管理与同步
+- **特征存储**：在线特征读写
+- **GraphQL**：GraphQL 查询服务
+- **版本控制**：快照、分支、合并、时间点查询
+- **时间序列**：降采样、保留策略、连续查询
+- **向量检索**：高维向量存储与最近邻检索
+
 ## 安装
 
-在 `moon.mod` 中添加依赖：
+核心引擎包位于 `src/core`，在 `moon.mod` 中添加依赖：
 
 ```
 import {
-  "moonbit/realtime_db@0.1.0",
+  "moonbit/realtime_db/src/core@0.1.0",
 }
+```
+
+也可以通过统一门面包一次性导入所有模块的公共类型：
+
+```moonbit
+import { "moonbit/realtime_db/src/api" }
+
+let db = @api.DB::new()
+let idx = @api.IndexManager::new()
 ```
 
 ## 快速开始
 
 ```moonbit
-let db = @realtime_db.DB::new()
+let db = @core.DB::new()
 
 // 基本操作
-db.set("key", @realtime_db.Str("value"))
-let value = db.get("key") // Some(@realtime_db.Str("value"))
+db.set("key", @core.Str("value"))
+let value = db.get("key") // Some(@core.Str("value"))
 
 // 带 TTL 的设置
-db.set("temp", @realtime_db.Int(42), ttl=10)
+db.set("temp", @core.Int(42), ttl=10)
 
 // 订阅
 let _ = db.watch("key", fn(e) {
   println(e.to_string())
 })
-db.set("key", @realtime_db.Str("new")) // 触发回调
+db.set("key", @core.Str("new")) // 触发回调
 
 // 推进时间，清理过期键
 let _ = db.advance(10)
@@ -204,23 +225,14 @@ let _ = db.advance(10)
 
 ## 测试
 
-运行测试：
-
 ```bash
-moon test
+moon test           # 运行全部测试（当前 262 个）
+moon coverage analyze > uncovered.log   # 查看未覆盖代码
 ```
 
-测试覆盖：
-- 黑盒测试（`realtime_db_test.mbt`）：公共 API 测试
-- 白盒测试（`realtime_db_wbtest.mbt`）：内部 helper 边界测试
-- 事务测试（`transaction_wbtest.mbt`）：事务模块测试
-- WAL 测试（`wal_wbtest.mbt`）：WAL 模块测试
-- 快照测试（`snapshot_wbtest.mbt`）：快照模块测试
-- 监控测试（`monitor_wbtest.mbt`）：监控模块测试
-- 连接池测试（`connection_pool_wbtest.mbt`）：连接池模块测试
-- 数据管道测试（`perf_pipeline_test.mbt`）：性能管道测试
-- 索引测试（`index_test.mbt`）：二级索引测试
-- 流引擎测试（`stream_engine_test.mbt`）：流引擎测试
+测试按包就近放置：核心引擎测试在 `src/core/realtime_db_test.mbt`（黑盒）与
+`src/core/realtime_db_wbtest.mbt`（白盒）；各功能模块在自己的目录下以
+`{module}_test.mbt` / `{module}_wbtest.mbt` 命名。
 
 ## 架构设计
 
@@ -254,7 +266,7 @@ moonbitRealTimeDB/
 
 ### 统一 API 入口
 
-`src/api/` 包重导出所有模块的公共类型，提供单一导入入口：
+`src/api/` 包通过 `pub using` 重导出所有模块的公共类型，提供单一导入入口：
 
 ```moonbit
 import { "moonbit/realtime_db/src/api" }
@@ -263,7 +275,8 @@ let db = @api.DB::new()
 let idx = @api.IndexManager::new()
 ```
 
-详见 [STRUCTURE.md](STRUCTURE.md) 代码结构规范。
+> 门面包仅重导出核心类型与各模块的主 Manager 类型，避免跨模块同名类型
+> （如 `Snapshot`、`Pipeline`）冲突。需要更多类型时按需直接导入对应模块。
 
 ### 设计原则
 
@@ -271,6 +284,75 @@ let idx = @api.IndexManager::new()
 2. **逻辑时钟**：TTL 基于逻辑时钟，用 advance 推进时间、expire_now 清理过期键
 3. **事件驱动**：所有数据变更都通过事件通知订阅者
 4. **WAL 优先**：所有写操作先写入 WAL，再更新内存
+
+## 开发规范
+
+### 包与文件组织
+
+MoonBit 采用「每个目录一个包」。模块根目录只放工程配置与文档，全部代码
+位于 `src/` 下：`src/core` 为核心引擎（无内部依赖），其余为功能模块，
+`src/api` 为门面，`src/cmd/main` 为可执行 CLI。
+
+| 文件名 | 用途 |
+|--------|------|
+| `moon.pkg` | 包定义与依赖声明（每个包必需） |
+| `{module}_types.mbt` | 公共类型与错误定义 |
+| `{module}_*.mbt` | 功能实现 |
+| `{module}_test.mbt` | 黑盒单元测试 |
+| `{module}_wbtest.mbt` | 白盒单元测试（可选） |
+| `pkg.generated.mbti` | 自动生成的接口文件，勿手改 |
+
+命名约定：目录/文件名用 snake_case 并与包名末段一致（如 `multi_tenant`）；
+类型 PascalCase（`TenantManager`）；函数 snake_case（`create_tenant`）；
+构造函数 `Type::new()`，工厂函数 `create_xxx()`。
+
+### moon.pkg 依赖约定
+
+模块内依赖一律写完整 `src` 路径。依赖核心包时显式指定别名 `@realtime_db`，
+使各模块代码中的 `@realtime_db.Value` 等引用保持统一：
+
+```moonbit
+import {
+  "moonbit/realtime_db/src/core" @realtime_db,
+  "moonbit/realtime_db/src/persistence",
+}
+```
+
+无依赖的包（如 `src/core`）保留空 `moon.pkg`。
+
+### 代码风格
+
+代码按 block 组织，每个 block 以 `///|` 分隔，block 之间顺序无关：
+
+```moonbit
+///|
+/// 类型文档注释
+pub(all) struct MyType {
+  /// 字段文档
+  field : String
+}
+
+///|
+/// 函数文档注释
+pub fn MyType::my_method(self : MyType, param : String) -> Result[String, MyError] {
+  // 实现
+}
+```
+
+### 常用命令
+
+```bash
+moon check          # 类型检查（CI 门禁，要求 0 error / 0 warning）
+moon fmt            # 格式化代码（moon fmt --check 只检查不改动）
+moon test           # 运行测试
+moon info           # 重新生成 pkg.generated.mbti
+moon build          # 构建
+moon run src/cmd/main -- "help"   # 运行 CLI（每条命令作为一个带引号参数）
+```
+
+改动后收尾流程：`moon info && moon fmt`，检查 `.mbti` 差异是否符合预期，
+再跑 `moon test`。影响快照输出时用 `moon test --update` 刷新快照。
+需求/设计/任务文档位于 `.codeartsdoer/specs/{module}/`。
 
 ## 性能指标
 
