@@ -23,7 +23,7 @@ pub fn VectorWriter::insert_single(
   tenant_id : String,
   primary_key : String,
   vector : Array[Double],
-  _metadata : Map[String, @realtime_db.Value],
+  metadata : Map[String, @realtime_db.Value],
 ) -> Unit {
   let meta = self.collection_manager.get_collection(collection_name, tenant_id)
   if meta is None {
@@ -33,10 +33,10 @@ pub fn VectorWriter::insert_single(
     Some(m) => m
     None => return ()
   }
-  if vector.length() != m.dimension {
+  if primary_key.length() == 0 {
     return ()
   }
-  if primary_key.length() == 0 {
+  if vector.length() != m.dimension {
     return ()
   }
   for v in vector {
@@ -44,7 +44,16 @@ pub fn VectorWriter::insert_single(
       return ()
     }
   }
-  self.collection_manager.increment_record_count(collection_name, tenant_id, 1)
+  let is_new = self.collection_manager.upsert_record(
+    collection_name,
+    tenant_id,
+    VectorRecord::{ primary_key, vector, metadata, version: 1, updated_at: 0, },
+  )
+  if is_new {
+    self.collection_manager.increment_record_count(
+      collection_name, tenant_id, 1,
+    )
+  }
   ()
 }
 

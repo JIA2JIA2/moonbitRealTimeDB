@@ -33,6 +33,7 @@ pub impl Eq for ChangeEventType
 pub struct CollectionManager {
   collections : Map[String, VectorCollectionMeta]
   tenant_collections : Map[String, Array[String]]
+  records : Map[String, Map[String, VectorRecord]]
   mut next_id : Int
 }
 pub fn CollectionManager::create_collection(Self, String, Int, DistanceMetric, IndexStrategy, Array[String], String) -> Unit
@@ -41,9 +42,20 @@ pub fn CollectionManager::get_collection(Self, String, String) -> VectorCollecti
 pub fn CollectionManager::has_collection(Self, String, String) -> Bool
 pub fn CollectionManager::increment_record_count(Self, String, String, Int) -> Unit
 pub fn CollectionManager::list_collections(Self, String) -> Array[VectorCollectionMeta]
+pub fn CollectionManager::list_records(Self, String, String) -> Array[VectorRecord]
 pub fn CollectionManager::new() -> Self
+pub fn CollectionManager::upsert_record(Self, String, String, VectorRecord) -> Bool
 pub fn CollectionManager::validate_dimension(Int) -> Unit
 pub fn CollectionManager::validate_metric(DistanceMetric) -> Bool
+
+pub struct DistanceCalculator {
+}
+pub fn DistanceCalculator::cosine_similarity(Array[Double], Array[Double]) -> Double
+pub fn DistanceCalculator::euclidean_distance(Array[Double], Array[Double]) -> Double
+pub fn DistanceCalculator::inner_product(Array[Double], Array[Double]) -> Double
+pub fn DistanceCalculator::manhattan_distance(Array[Double], Array[Double]) -> Double
+pub fn DistanceCalculator::new() -> Self
+pub fn DistanceCalculator::normalize_score(Double, DistanceMetric) -> Double
 
 pub(all) enum DistanceMetric {
   Cosine
@@ -119,6 +131,20 @@ pub fn IndexStrategy::equal(Self, Self) -> Bool
 pub fn IndexStrategy::not_equal(Self, Self) -> Bool
 pub fn IndexStrategy::to_repr(Self) -> @debug.Repr
 pub impl Eq for IndexStrategy
+
+pub struct SearchEngine {
+  collection_manager : CollectionManager
+  distance_calculator : DistanceCalculator
+}
+pub fn SearchEngine::new(CollectionManager) -> Self
+pub fn SearchEngine::search_approximate(Self, String, String, Array[Double], Int) -> Array[SearchHit]
+pub fn SearchEngine::search_exact(Self, String, String, Array[Double], Int) -> Array[SearchHit]
+
+pub struct SearchHit {
+  primary_key : String
+  score : Double
+  metadata : Map[String, @core.Value]
+}
 
 pub(all) enum SearchMode {
   Exact
