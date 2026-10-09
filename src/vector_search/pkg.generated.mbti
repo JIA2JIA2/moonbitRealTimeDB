@@ -34,16 +34,19 @@ pub struct CollectionManager {
   collections : Map[String, VectorCollectionMeta]
   tenant_collections : Map[String, Array[String]]
   records : Map[String, Map[String, VectorRecord]]
+  hnsw_indexes : Map[String, HNSWIndex]
   mut next_id : Int
 }
 pub fn CollectionManager::create_collection(Self, String, Int, DistanceMetric, IndexStrategy, Array[String], String) -> Unit
 pub fn CollectionManager::delete_collection(Self, String, String) -> Unit
 pub fn CollectionManager::get_collection(Self, String, String) -> VectorCollectionMeta?
+pub fn CollectionManager::get_record(Self, String, String, String) -> VectorRecord?
 pub fn CollectionManager::has_collection(Self, String, String) -> Bool
 pub fn CollectionManager::increment_record_count(Self, String, String, Int) -> Unit
 pub fn CollectionManager::list_collections(Self, String) -> Array[VectorCollectionMeta]
 pub fn CollectionManager::list_records(Self, String, String) -> Array[VectorRecord]
 pub fn CollectionManager::new() -> Self
+pub fn CollectionManager::search_index(Self, String, String, Array[Double], Int) -> Array[(String, Double)]?
 pub fn CollectionManager::upsert_record(Self, String, String, VectorRecord) -> Bool
 pub fn CollectionManager::validate_dimension(Int) -> Unit
 pub fn CollectionManager::validate_metric(DistanceMetric) -> Bool
@@ -88,6 +91,7 @@ pub(all) struct HNSWConfig {
   max_layers : Int
 }
 pub fn HNSWConfig::default() -> Self
+pub fn HNSWConfig::validate(Self) -> Result[Unit, String]
 
 pub struct HNSWIndex {
   config : HNSWConfig

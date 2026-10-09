@@ -26,6 +26,29 @@ pub fn SearchEngine::new(
 }
 
 ///|
+/// 检索前的统一参数校验，返回集合元数据；任何输入不合法时返回 None
+fn SearchEngine::validate_query(
+  self : SearchEngine,
+  collection_name : String,
+  tenant_id : String,
+  query_vector : Array[Double],
+  top_k : Int,
+) -> VectorCollectionMeta? {
+  let meta = match
+    self.collection_manager.get_collection(collection_name, tenant_id) {
+    Some(m) => m
+    None => return None
+  }
+  if top_k <= 0 || top_k > 1000 {
+    return None
+  }
+  if query_vector.length() == 0 || query_vector.length() != meta.dimension {
+    return None
+  }
+  Some(meta)
+}
+
+///|
 /// 精确检索：按集合配置的距离度量全量扫描所有记录，返回归一化分数
 /// 最高的 top_k 条结果（分数越大越相似）。
 pub fn SearchEngine::search_exact(
@@ -36,18 +59,12 @@ pub fn SearchEngine::search_exact(
   top_k : Int,
 ) -> Array[SearchHit] {
   let meta = match
-    self.collection_manager.get_collection(collection_name, tenant_id) {
+    self.validate_query(collection_name, tenant_id, query_vector, top_k) {
     Some(m) => m
     None => return Array(capacity=0)
   }
-  if top_k <= 0 || top_k > 1000 {
-    return Array(capacity=0)
-  }
   let metric = meta.distance_metric
   let dimension = meta.dimension
-  if query_vector.length() == 0 || query_vector.length() != dimension {
-    return Array(capacity=0)
-  }
   let records = self.collection_manager.list_records(collection_name, tenant_id)
   let hits : Array[SearchHit] = Array(capacity=0)
   for record in records {
@@ -79,7 +96,10 @@ pub fn SearchEngine::search_exact(
 }
 
 ///|
-/// 近似检索：近似索引尚未实现，暂时退化为精确检索
+/// 近似检索：优先走集合的 HNSW 索引，索引不可用时回退精确检索。
+///
+/// HNSW 返回的是内部图距离（越小越近），这里先还原为各度量的原始值，
+/// 再复用精确检索的归一化逻辑，保证两种路径的 score 语义一致（越大越相似）。
 pub fn SearchEngine::search_approximate(
   self : SearchEngine,
   collection_name : String,
@@ -87,5 +107,39 @@ pub fn SearchEngine::search_approximate(
   query_vector : Array[Double],
   top_k : Int,
 ) -> Array[SearchHit] {
-  self.search_exact(collection_name, tenant_id, query_vector, top_k)
+  let meta = match
+    self.validate_query(collection_name, tenant_id, query_vector, top_k) {
+    Some(m) => m
+    None => return Array(capacity=0)
+  }
+  let metric = meta.distance_metric
+  let pairs = match
+    self.collection_manager.search_index(
+      collection_name, tenant_id, query_vector, top_k,
+    ) {
+    Some(p) => p
+    None =>
+      return self.search_exact(collection_name, tenant_id, query_vector, top_k)
+  }
+  let hits : Array[SearchHit] = Array(capacity=0)
+  for (primary_key, graph_distance) in pairs {
+    let raw = match metric {
+      Cosine => 1.0 - graph_distance
+      InnerProduct => -graph_distance
+      Euclidean | Manhattan => graph_distance
+    }
+    let metadata = match
+      self.collection_manager.get_record(
+        collection_name, tenant_id, primary_key,
+      ) {
+      Some(record) => record.metadata
+      None => Map([])
+    }
+    hits.push(SearchHit::{
+      primary_key,
+      score: DistanceCalculator::normalize_score(raw, metric),
+      metadata,
+    })
+  }
+  hits
 }

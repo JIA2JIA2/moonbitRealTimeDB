@@ -72,10 +72,16 @@ fn ensure_layer(neighbors : Array[Array[String]], layer : Int) -> Unit {
 
 ///|
 /// 生成随机层级（指数分布，层级越高概率越小）
-fn HNSWIndex::random_level(_m : Int) -> Int {
-  // 简化实现：返回固定层级用于测试
-  // 实际应用中应该使用随机数生成器
-  4
+fn HNSWIndex::random_level(self : HNSWIndex) -> Int {
+  // 简化实现：确定性返回固定层级，实际应用应使用指数分布随机数生成器。
+  // 无论采用何种采样，层级都必须受 max_layers 约束。
+  let level = 4
+  let max_level = self.config.max_layers - 1
+  if level > max_level {
+    max_level
+  } else {
+    level
+  }
 }
 
 ///|
@@ -199,6 +205,10 @@ pub fn HNSWIndex::insert(
   vector : Array[Double],
   metric : DistanceMetric,
 ) -> Result[Unit, String] {
+  match self.config.validate() {
+    Ok(_) => ()
+    Err(msg) => return Err(msg)
+  }
   if self.nodes.contains(id) {
     return Err("Node already exists")
   }
@@ -206,7 +216,7 @@ pub fn HNSWIndex::insert(
     return Err("Empty vector")
   }
   // 随机分配层级
-  let level = HNSWIndex::random_level(self.config.m)
+  let level = self.random_level()
   let node = HNSWNode::{ id, vector, level, neighbors: empty_neighbors(level), }
   // 如果是第一个节点，直接作为入口点
   if self.entry_level == -1 {
@@ -288,6 +298,9 @@ pub fn HNSWIndex::search_top_k(
   metric : DistanceMetric,
 ) -> Array[(String, Double)] {
   if self.entry_level == -1 || k <= 0 {
+    return Array(capacity=0)
+  }
+  if self.config.validate() is Err(_) {
     return Array(capacity=0)
   }
   let ef = if self.config.ef_search > k { self.config.ef_search } else { k }

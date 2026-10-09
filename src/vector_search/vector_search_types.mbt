@@ -359,6 +359,24 @@ pub fn HNSWConfig::default() -> HNSWConfig {
 }
 
 ///|
+/// 校验 HNSW 配置
+pub fn HNSWConfig::validate(self : HNSWConfig) -> Result[Unit, String] {
+  if self.m < 1 {
+    return Err("m must be positive")
+  }
+  if self.ef_construction < 1 {
+    return Err("ef_construction must be positive")
+  }
+  if self.ef_search < 1 {
+    return Err("ef_search must be positive")
+  }
+  if self.max_layers < 1 {
+    return Err("max_layers must be positive")
+  }
+  Ok(())
+}
+
+///|
 /// HNSW 节点
 pub(all) struct HNSWNode {
   /// 主键

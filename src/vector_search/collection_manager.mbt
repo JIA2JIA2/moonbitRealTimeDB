@@ -7,6 +7,7 @@ pub struct CollectionManager {
   collections : Map[String, VectorCollectionMeta]
   tenant_collections : Map[String, Array[String]]
   records : Map[String, Map[String, VectorRecord]]
+  hnsw_indexes : Map[String, HNSWIndex]
   mut next_id : Int
 }
 
@@ -16,6 +17,7 @@ pub fn CollectionManager::new() -> CollectionManager {
     collections: Map([], capacity=0),
     tenant_collections: Map([], capacity=0),
     records: Map([], capacity=0),
+    hnsw_indexes: Map([], capacity=0),
     next_id: 0,
   }
 }
@@ -48,6 +50,11 @@ pub fn CollectionManager::create_collection(
     created_at: 0,
   }
   self.collections.set(key, meta)
+  // Approximate 策略的集合从创建起就持有空 HNSW 索引，
+  // 后续写入由 VectorWriter 逐条同步
+  if index_strategy is Approximate {
+    self.hnsw_indexes.set(key, HNSWIndex::new(HNSWConfig::default()))
+  }
   let tenant_list = match self.tenant_collections.get(tenant_id) {
     Some(list) => list
     None => {
@@ -73,6 +80,7 @@ pub fn CollectionManager::delete_collection(
   }
   self.collections.remove(key)
   self.records.remove(key)
+  self.hnsw_indexes.remove(key)
   match self.tenant_collections.get(tenant_id) {
     Some(list) => {
       let new_list = list.filter(fn(name) { name != collection_name })
@@ -201,6 +209,17 @@ pub fn CollectionManager::upsert_record(
         version: next_version,
         updated_at: record.updated_at,
       })
+      match self.collections.get(key) {
+        Some(meta) =>
+          self.sync_upsert_to_index(
+            key,
+            meta,
+            primary_key,
+            record.vector,
+            is_new,
+          )
+        None => ()
+      }
       is_new
     }
     None => {
@@ -214,6 +233,11 @@ pub fn CollectionManager::upsert_record(
         updated_at: record.updated_at,
       })
       self.records.set(key, store)
+      match self.collections.get(key) {
+        Some(meta) =>
+          self.sync_upsert_to_index(key, meta, primary_key, record.vector, true)
+        None => ()
+      }
       true
     }
   }
@@ -236,5 +260,75 @@ pub fn CollectionManager::list_records(
       out
     }
     None => Array(capacity=0)
+  }
+}
+
+///|
+/// 按主键获取单条向量记录
+pub fn CollectionManager::get_record(
+  self : CollectionManager,
+  collection_name : String,
+  tenant_id : String,
+  primary_key : String,
+) -> VectorRecord? {
+  let key = tenant_id + ":" + collection_name
+  match self.records.get(key) {
+    Some(store) => store.get(primary_key)
+    None => None
+  }
+}
+
+///|
+/// 将已写入的记录同步到集合的 HNSW 索引。
+/// 主键已存在时先删旧节点再插入；入口点字段是值类型，修改后必须整体写回。
+fn CollectionManager::sync_upsert_to_index(
+  self : CollectionManager,
+  key : String,
+  meta : VectorCollectionMeta,
+  primary_key : String,
+  vector : Array[Double],
+  is_new : Bool,
+) -> Unit {
+  if meta.index_strategy is Exact {
+    return ()
+  }
+  match self.hnsw_indexes.get(key) {
+    Some(index) => {
+      if !is_new {
+        let _ = index.delete(primary_key, meta.distance_metric)
+      }
+      match index.insert(primary_key, vector, meta.distance_metric) {
+        Ok(_) => self.hnsw_indexes.set(key, index)
+        Err(_) => ()
+      }
+    }
+    None => ()
+  }
+}
+
+///|
+/// 使用 HNSW 索引执行近似检索，返回 (主键, 图距离)，距离越小越相似。
+///
+/// 非 Approximate 集合或索引不存在时返回 None，由调用方回退精确检索。
+pub fn CollectionManager::search_index(
+  self : CollectionManager,
+  collection_name : String,
+  tenant_id : String,
+  query_vector : Array[Double],
+  top_k : Int,
+) -> Array[(String, Double)]? {
+  let key = tenant_id + ":" + collection_name
+  match self.collections.get(key) {
+    Some(meta) => {
+      if meta.index_strategy is Exact {
+        return None
+      }
+      match self.hnsw_indexes.get(key) {
+        Some(index) =>
+          Some(index.search_top_k(query_vector, top_k, meta.distance_metric))
+        None => None
+      }
+    }
+    None => None
   }
 }

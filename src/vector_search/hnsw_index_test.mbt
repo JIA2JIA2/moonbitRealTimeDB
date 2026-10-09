@@ -19,7 +19,6 @@ test "hnsw_insert_and_retrieve" {
   assert_true(results.length() >= 1)
   // vec1 应该是第一个结果
   assert_eq(results[0].0, "vec1")
-  println("HNSW insert and search test passed")
 }
 
 ///|
@@ -43,7 +42,6 @@ test "hnsw_delete" {
   assert_true(!index.contains("vec1"))
   // 验证 vec2 存在
   assert_true(index.contains("vec2"))
-  println("HNSW delete test passed")
 }
 
 ///|
@@ -54,7 +52,6 @@ test "hnsw_empty_index_search" {
   let query : Array[Double] = [1.0, 0.0]
   let results = index.search_top_k(query, 5, @vector_search.Cosine)
   assert_eq(results.length(), 0)
-  println("HNSW empty index search test passed")
 }
 
 ///|
@@ -67,7 +64,6 @@ test "hnsw_duplicate_insert" {
   // 重复插入应该返回错误
   let result = index.insert("vec1", vector, @vector_search.Cosine)
   assert_true(result is Err(_))
-  println("HNSW duplicate insert test passed")
 }
 
 ///|
@@ -84,7 +80,6 @@ test "hnsw_config_validation" {
   assert_eq(index.config.ef_construction, 50)
   assert_eq(index.config.ef_search, 25)
   assert_eq(index.config.max_layers, 4)
-  println("HNSW config validation test passed")
 }
 
 ///|
@@ -101,7 +96,6 @@ test "hnsw_clear" {
   assert_eq(index.size(), 0)
   assert_eq(index.entry_level, -1)
   assert_eq(index.entry_point, "")
-  println("HNSW clear test passed")
 }
 
 ///|
@@ -173,6 +167,45 @@ test "hnsw_basic_insert_search" {
   // 验证结果 - 至少找到1个
   assert_true(results.length() >= 1)
   assert_eq(results[0].0, "a")
+}
 
-  println("HNSW basic insert and search test passed")
+///|
+test "hnsw_level_clamped_by_max_layers" {
+  // 随机层级必须受 max_layers 约束：max_layers=2 时最高只允许 level 1
+  let config = @vector_search.HNSWConfig::{
+    m: 8,
+    ef_construction: 50,
+    ef_search: 25,
+    max_layers: 2,
+  }
+  let index = @vector_search.HNSWIndex::new(config)
+  let result = index.insert("a", [1.0, 0.0], @vector_search.Cosine)
+  assert_true(result is Ok(_))
+  match index.get("a") {
+    Some(node) => assert_true(node.level <= 1)
+    None => assert_true(false)
+  }
+  assert_eq(index.entry_level, 1)
+}
+
+///|
+test "hnsw_config_validate" {
+  let valid = @vector_search.HNSWConfig::default()
+  assert_true(valid.validate() is Ok(_))
+  let bad = @vector_search.HNSWConfig::{
+    m: 0,
+    ef_construction: 50,
+    ef_search: 25,
+    max_layers: 4,
+  }
+  assert_true(bad.validate() is Err(_))
+  // 非法配置下插入必须报错而不是 panic
+  let index = @vector_search.HNSWIndex::new(bad)
+  let result = index.insert("a", [1.0, 0.0], @vector_search.Cosine)
+  assert_true(result is Err(_))
+  // 非法配置下检索安全返回空
+  assert_eq(
+    index.search_top_k([1.0, 0.0], 1, @vector_search.Cosine).length(),
+    0,
+  )
 }
