@@ -317,3 +317,108 @@ pub(all) enum FilterExpr {
 
 ///|
 pub extend FilterExpr with Debug::{to_repr}
+
+///|
+/// 索引类型枚举
+pub(all) enum IndexType {
+  HNSW
+  IVF
+} derive(Debug)
+
+///|
+pub impl Eq for IndexType with fn equal(self, other) -> Bool {
+  match (self, other) {
+    (HNSW, HNSW) => true
+    (IVF, IVF) => true
+    _ => false
+  }
+}
+
+///|
+pub extend IndexType with Eq::{equal, not_equal}
+
+///|
+pub extend IndexType with Debug::{to_repr}
+
+///|
+/// HNSW 配置
+pub(all) struct HNSWConfig {
+  /// 每个节点最大连接数（建议 16~64）
+  m : Int
+  /// 构建时候选列表大小（建议 100~200）
+  ef_construction : Int
+  /// 检索时候选列表大小（建议 50~100）
+  ef_search : Int
+  /// 最大层数
+  max_layers : Int
+}
+
+///|
+pub fn HNSWConfig::default() -> HNSWConfig {
+  HNSWConfig::{ m: 16, ef_construction: 100, ef_search: 50, max_layers: 8, }
+}
+
+///|
+/// HNSW 节点
+pub(all) struct HNSWNode {
+  /// 主键
+  id : String
+  /// 向量数据
+  vector : Array[Double]
+  /// 所在层级（0 为底层）
+  level : Int
+  /// 各层邻居列表（按层索引）
+  neighbors : Array[Array[String]]
+}
+
+///|
+/// IVF 配置
+pub(all) struct IVFConfig {
+  /// 聚类数量（建议 sqrt(N) ~ N/10）
+  n_list : Int
+  /// 检索时探测聚类数（建议 1~256）
+  n_probe : Int
+  /// 距离度量
+  metric : DistanceMetric
+}
+
+///|
+pub fn IVFConfig::default() -> IVFConfig {
+  IVFConfig::{ n_list: 1000, n_probe: 64, metric: Cosine, }
+}
+
+///|
+/// 索引配置（联合配置）
+pub(all) struct IndexConfig {
+  /// 索引类型
+  index_type : IndexType
+  /// HNSW 配置
+  hnsw_config : HNSWConfig?
+  /// IVF 配置
+  ivf_config : IVFConfig?
+}
+
+///|
+pub fn IndexConfig::new_hnsw(config : HNSWConfig) -> IndexConfig {
+  IndexConfig::{
+    index_type: HNSW,
+    hnsw_config: Some(config),
+    ivf_config: None,
+  }
+}
+
+///|
+pub fn IndexConfig::new_ivf(config : IVFConfig) -> IndexConfig {
+  IndexConfig::{ index_type: IVF, hnsw_config: None, ivf_config: Some(config), }
+}
+
+///|
+/// 订阅者
+pub(all) struct Subscriber {
+  /// 订阅 ID
+  subscription_id : String
+  /// 回调函数
+  callback : (ChangeEvent) -> Unit
+  /// 是否被隔离
+  isolated : Bool
+}

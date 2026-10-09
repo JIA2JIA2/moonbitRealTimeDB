@@ -81,6 +81,45 @@ pub(all) enum FilterExpr {
 } derive(@debug.Debug)
 pub fn FilterExpr::to_repr(Self) -> @debug.Repr
 
+pub(all) struct HNSWConfig {
+  m : Int
+  ef_construction : Int
+  ef_search : Int
+  max_layers : Int
+}
+pub fn HNSWConfig::default() -> Self
+
+pub struct HNSWIndex {
+  config : HNSWConfig
+  mut nodes : Map[String, HNSWNode]
+  mut layers : Array[Array[String]]
+  mut entry_point : String
+  mut entry_level : Int
+}
+pub fn HNSWIndex::all_ids(Self) -> Array[String]
+pub fn HNSWIndex::clear(Self) -> Unit
+pub fn HNSWIndex::contains(Self, String) -> Bool
+pub fn HNSWIndex::delete(Self, String, DistanceMetric) -> Result[Unit, String]
+pub fn HNSWIndex::get(Self, String) -> HNSWNode?
+pub fn HNSWIndex::insert(Self, String, Array[Double], DistanceMetric) -> Result[Unit, String]
+pub fn HNSWIndex::new(HNSWConfig) -> Self
+pub fn HNSWIndex::search_top_k(Self, Array[Double], Int, DistanceMetric) -> Array[(String, Double)]
+pub fn HNSWIndex::size(Self) -> Int
+
+pub(all) struct HNSWNode {
+  id : String
+  vector : Array[Double]
+  level : Int
+  neighbors : Array[Array[String]]
+}
+
+pub(all) struct IVFConfig {
+  n_list : Int
+  n_probe : Int
+  metric : DistanceMetric
+}
+pub fn IVFConfig::default() -> Self
+
 pub(all) struct ImportTaskProgress {
   task_id : String
   status : ImportTaskStatus
@@ -101,6 +140,14 @@ pub fn ImportTaskStatus::equal(Self, Self) -> Bool
 pub fn ImportTaskStatus::not_equal(Self, Self) -> Bool
 pub fn ImportTaskStatus::to_repr(Self) -> @debug.Repr
 pub impl Eq for ImportTaskStatus
+
+pub(all) struct IndexConfig {
+  index_type : IndexType
+  hnsw_config : HNSWConfig?
+  ivf_config : IVFConfig?
+}
+pub fn IndexConfig::new_hnsw(HNSWConfig) -> Self
+pub fn IndexConfig::new_ivf(IVFConfig) -> Self
 
 pub(all) enum IndexStatus {
   Created
@@ -132,6 +179,15 @@ pub fn IndexStrategy::not_equal(Self, Self) -> Bool
 pub fn IndexStrategy::to_repr(Self) -> @debug.Repr
 pub impl Eq for IndexStrategy
 
+pub(all) enum IndexType {
+  HNSW
+  IVF
+} derive(@debug.Debug)
+pub fn IndexType::equal(Self, Self) -> Bool
+pub fn IndexType::not_equal(Self, Self) -> Bool
+pub fn IndexType::to_repr(Self) -> @debug.Repr
+pub impl Eq for IndexType
+
 pub struct SearchEngine {
   collection_manager : CollectionManager
   distance_calculator : DistanceCalculator
@@ -162,6 +218,12 @@ pub(all) struct SearchResult {
   distance_metric : DistanceMetric
   search_mode : SearchMode
   scanned_count : Int
+}
+
+pub(all) struct Subscriber {
+  subscription_id : String
+  callback : (ChangeEvent) -> Unit
+  isolated : Bool
 }
 
 pub(all) struct VectorCollectionMeta {
