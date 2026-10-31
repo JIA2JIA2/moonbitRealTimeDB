@@ -88,8 +88,32 @@ fn execute_simple(
     projected.push(value)
   }
   let deduped = apply_distinct(projected, select.distinct)
+  apply_offset(deduped, select.offset)
   apply_limit(deduped, select.limit)
   Ok(deduped)
+}
+
+///|
+/// OFFSET：跳过前 offset 行，在 LIMIT 之前应用。
+fn apply_offset(rows : Array[@realtime_db.Value], offset : Int32?) -> Unit {
+  match offset {
+    Some(value) =>
+      if value > 0 && value < rows.length() {
+        let kept : Array[@realtime_db.Value] = []
+        let mut index = value
+        while index < rows.length() {
+          kept.push(rows[index])
+          index = index + 1
+        }
+        rows.truncate(0)
+        for row in kept {
+          rows.push(row)
+        }
+      } else if value >= rows.length() {
+        rows.truncate(0)
+      }
+    None => ()
+  }
 }
 
 ///|
@@ -167,6 +191,7 @@ fn execute_grouped(
     projected.push(pair.0)
   }
   let deduped = apply_distinct(projected, select.distinct)
+  apply_offset(deduped, select.offset)
   apply_limit(deduped, select.limit)
   Ok(deduped)
 }

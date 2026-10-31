@@ -661,6 +661,21 @@ fn Parser::parse_select(self : Parser) -> Result[SqlStatement, SqlError] {
     )
   }
 
+  // 解析 OFFSET 子句
+  let mut offset : Int32? = None
+  if self.is_keyword("OFFSET") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    offset = Some(
+      match self.parse_number() {
+        Ok(n) => n
+        Err(e) => return Err(e)
+      },
+    )
+  }
+
   Ok(
     Select(SelectStatement::{
       select_items,
@@ -671,7 +686,7 @@ fn Parser::parse_select(self : Parser) -> Result[SqlStatement, SqlError] {
       having,
       order_by,
       limit,
-      offset: None,
+      offset,
     }),
   )
 }
