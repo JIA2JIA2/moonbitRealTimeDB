@@ -152,7 +152,7 @@ test "aggregate_expression_in_projection" {
 ///|
 test "unsupported_function_returns_not_implemented" {
   let db = users_db()
-  let result = run_sql(db, "SELECT UPPER(name) FROM users")
+  let result = run_sql(db, "SELECT MEDIAN(name) FROM users")
   match result {
     Ok(_) => assert_true(false)
     Err(error) =>

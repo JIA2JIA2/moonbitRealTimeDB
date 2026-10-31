@@ -867,7 +867,143 @@ fn Parser::parse_comparison_expr(self : Parser) -> Result[Expression, SqlError] 
       return Ok(BinaryOp(BinaryOpExpr::{ operator: op, left, right, }))
     }
   }
+  // IS [NOT] NULL
+  if self.is_keyword("IS") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    let mut negated = false
+    if self.is_keyword("NOT") {
+      negated = true
+      match self.advance() {
+        Ok(_) => ()
+        Err(e) => return Err(e)
+      }
+    }
+    if !self.is_keyword("NULL") {
+      return Err(Syntax_Error)
+    }
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    if negated {
+      return Ok(UnaryOp(UnaryOpExpr::{ operator: IsNotNull, operand: left, }))
+    }
+    return Ok(UnaryOp(UnaryOpExpr::{ operator: IsNull, operand: left, }))
+  }
+
+  // [NOT] LIKE / IN / BETWEEN
+  let mut negated = false
+  if self.is_keyword("NOT") {
+    negated = true
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+  }
+  if self.is_keyword("LIKE") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    let right = match self.parse_additive_expr() {
+      Ok(e) => e
+      Err(e) => return Err(e)
+    }
+    let operator = if negated { NotLike } else { Like }
+    return Ok(BinaryOp(BinaryOpExpr::{ operator, left, right, }))
+  }
+  if self.is_keyword("IN") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    if !self.is_value("(") {
+      return Err(Syntax_Error)
+    }
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    let items = match self.parse_expression_list() {
+      Ok(items) => items
+      Err(e) => return Err(e)
+    }
+    if !self.is_value(")") {
+      return Err(Syntax_Error)
+    }
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    let operator = if negated { NotIn } else { In }
+    return Ok(BinaryOp(BinaryOpExpr::{ operator, left, right: List(items), }))
+  }
+  if self.is_keyword("BETWEEN") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    let low = match self.parse_additive_expr() {
+      Ok(e) => e
+      Err(e) => return Err(e)
+    }
+    if !self.is_keyword("AND") {
+      return Err(Syntax_Error)
+    }
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    let high = match self.parse_additive_expr() {
+      Ok(e) => e
+      Err(e) => return Err(e)
+    }
+    let bounds : Array[Expression] = [low, high]
+    let between = BinaryOp(BinaryOpExpr::{
+      operator: Between,
+      left,
+      right: List(bounds),
+    })
+    if negated {
+      return Ok(UnaryOp(UnaryOpExpr::{ operator: Not, operand: between, }))
+    }
+    return Ok(between)
+  }
+  if negated {
+    return Err(Syntax_Error)
+  }
   Ok(left)
+}
+
+///|
+/// 解析逗号分隔的表达式列表（用于 IN 的值列表）
+fn Parser::parse_expression_list(
+  self : Parser,
+) -> Result[Array[Expression], SqlError] {
+  let items : Array[Expression] = []
+  if self.is_value(")") {
+    return Ok(items)
+  }
+  let mut has_more = true
+  while has_more {
+    let expr = match self.parse_expression() {
+      Ok(e) => e
+      Err(e) => return Err(e)
+    }
+    items.push(expr)
+    if self.is_value(",") {
+      match self.advance() {
+        Ok(_) => ()
+        Err(e) => return Err(e)
+      }
+    } else {
+      has_more = false
+    }
+  }
+  Ok(items)
 }
 
 ///|

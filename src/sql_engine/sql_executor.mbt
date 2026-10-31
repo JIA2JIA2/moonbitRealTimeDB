@@ -257,7 +257,7 @@ fn eval_group_expression(
   rows : Array[@realtime_db.Value],
 ) -> Result[@realtime_db.Value, SqlError] {
   match expr {
-    FunctionCall(call) => eval_aggregate(call, rows)
+    FunctionCall(call) => eval_group_function(call, representative, rows)
     BinaryOp(op) =>
       match op.operator {
         And | Or => {
@@ -705,7 +705,12 @@ fn eval_expression(
       Ok(@realtime_db.Arr(values))
     }
     Wildcard => Err(Invalid_Operator)
-    FunctionCall(_) => Err(Not_Implemented("function calls are not supported"))
+    FunctionCall(call) =>
+      if is_aggregate_name(call.function_name) {
+        Err(Not_Implemented("aggregate function requires GROUP BY context"))
+      } else {
+        eval_scalar_function(call, row)
+      }
     Subquery(_) => Err(Not_Implemented("subqueries are not supported"))
     Case(_) => Err(Not_Implemented("CASE expressions are not supported"))
   }
@@ -781,6 +786,11 @@ fn eval_binary_values(
       }
     LessThan | LessThanOrEqual | GreaterThan | GreaterThanOrEqual =>
       relational(operator, left, right)
+    Like => like_values(left, right, false)
+    NotLike => like_values(left, right, true)
+    In => membership(left, right, false)
+    NotIn => membership(left, right, true)
+    Between => between_values(left, right)
     _ => Err(Not_Implemented("operator is not supported"))
   }
 }
@@ -1027,4 +1037,220 @@ fn sort_rows(
     sorted.push(pair.0)
   }
   Ok(sorted)
+}
+
+///|
+/// 行上下文中的标量函数求值。
+fn eval_scalar_function(
+  call : FunctionCallExpr,
+  row : @realtime_db.Value,
+) -> Result[@realtime_db.Value, SqlError] {
+  let arguments : Array[@realtime_db.Value] = []
+  for argument in call.arguments {
+    let value = match eval_expression(argument, row) {
+      Ok(value) => value
+      Err(error) => return Err(error)
+    }
+    arguments.push(value)
+  }
+  apply_scalar_function(call.function_name, arguments)
+}
+
+///|
+/// 分组上下文中的函数求值：聚合走组内全部行，标量函数逐组求值其参数。
+fn eval_group_function(
+  call : FunctionCallExpr,
+  representative : @realtime_db.Value,
+  rows : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, SqlError] {
+  if is_aggregate_name(call.function_name) {
+    eval_aggregate(call, rows)
+  } else {
+    let arguments : Array[@realtime_db.Value] = []
+    for argument in call.arguments {
+      let value = match eval_group_expression(argument, representative, rows) {
+        Ok(value) => value
+        Err(error) => return Err(error)
+      }
+      arguments.push(value)
+    }
+    apply_scalar_function(call.function_name, arguments)
+  }
+}
+
+///|
+/// 标量函数分发。
+fn apply_scalar_function(
+  name : String,
+  arguments : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, SqlError] {
+  match name.to_upper() {
+    "UPPER" => string_unary(arguments, true)
+    "LOWER" => string_unary(arguments, false)
+    "LENGTH" => length_function(arguments)
+    "ABS" => abs_function(arguments)
+    "COALESCE" => coalesce_function(arguments)
+    _ => Err(Not_Implemented("function " + name + " is not supported"))
+  }
+}
+
+///|
+fn string_unary(
+  arguments : Array[@realtime_db.Value],
+  to_upper_case : Bool,
+) -> Result[@realtime_db.Value, SqlError] {
+  if arguments.length() != 1 {
+    return Err(Invalid_Value)
+  }
+  match arguments[0] {
+    @realtime_db.Str(text) =>
+      if to_upper_case {
+        Ok(@realtime_db.Str(text.to_upper()))
+      } else {
+        Ok(@realtime_db.Str(text.to_lower()))
+      }
+    _ => Err(Type_Mismatch)
+  }
+}
+
+///|
+fn length_function(
+  arguments : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, SqlError] {
+  if arguments.length() != 1 {
+    return Err(Invalid_Value)
+  }
+  match arguments[0] {
+    @realtime_db.Str(text) => Ok(@realtime_db.Int(text.length()))
+    @realtime_db.Arr(items) => Ok(@realtime_db.Int(items.length()))
+    @realtime_db.Map(fields) => Ok(@realtime_db.Int(fields.length()))
+    _ => Err(Type_Mismatch)
+  }
+}
+
+///|
+fn abs_function(
+  arguments : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, SqlError] {
+  if arguments.length() != 1 {
+    return Err(Invalid_Value)
+  }
+  match arguments[0] {
+    @realtime_db.Int(value) =>
+      Ok(@realtime_db.Int(if value < 0 { -value } else { value }))
+    @realtime_db.Float(value) =>
+      Ok(@realtime_db.Float(if value < 0.0 { -value } else { value }))
+    _ => Err(Type_Mismatch)
+  }
+}
+
+///|
+fn coalesce_function(
+  arguments : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, SqlError] {
+  if arguments.length() == 0 {
+    return Err(Invalid_Value)
+  }
+  for value in arguments {
+    if !(value is @realtime_db.Null) {
+      return Ok(value)
+    }
+  }
+  Ok(@realtime_db.Null)
+}
+
+///|
+fn like_values(
+  left : @realtime_db.Value,
+  right : @realtime_db.Value,
+  negate : Bool,
+) -> Result[@realtime_db.Value, SqlError] {
+  match (left, right) {
+    (@realtime_db.Str(text), @realtime_db.Str(pattern)) => {
+      let matched = like_match(text, pattern)
+      Ok(@realtime_db.Bool(if negate { !matched } else { matched }))
+    }
+    _ => Err(Type_Mismatch)
+  }
+}
+
+///|
+/// LIKE 匹配：% 匹配任意长度，_ 匹配单个字符。
+fn like_match(text : String, pattern : String) -> Bool {
+  like_match_at(text, 0, pattern, 0)
+}
+
+///|
+fn like_match_at(
+  text : String,
+  text_index : Int32,
+  pattern : String,
+  pattern_index : Int32,
+) -> Bool {
+  if pattern_index >= pattern.length() {
+    return text_index >= text.length()
+  }
+  let token = pattern.get_char(pattern_index).unwrap()
+  if token == '%' {
+    let mut index = text_index
+    while index <= text.length() {
+      if like_match_at(text, index, pattern, pattern_index + 1) {
+        return true
+      }
+      index = index + 1
+    }
+    false
+  } else if token == '_' {
+    text_index < text.length() &&
+    like_match_at(text, text_index + 1, pattern, pattern_index + 1)
+  } else {
+    text_index < text.length() &&
+    text.get_char(text_index).unwrap() == token &&
+    like_match_at(text, text_index + 1, pattern, pattern_index + 1)
+  }
+}
+
+///|
+fn membership(
+  left : @realtime_db.Value,
+  right : @realtime_db.Value,
+  negate : Bool,
+) -> Result[@realtime_db.Value, SqlError] {
+  match right {
+    @realtime_db.Arr(items) => {
+      let mut found = false
+      for item in items {
+        match compare_ordered(left, item) {
+          Ok(order) => if order == 0 { found = true }
+          Err(_) => ()
+        }
+      }
+      Ok(@realtime_db.Bool(if negate { !found } else { found }))
+    }
+    _ => Err(Type_Mismatch)
+  }
+}
+
+///|
+fn between_values(
+  left : @realtime_db.Value,
+  right : @realtime_db.Value,
+) -> Result[@realtime_db.Value, SqlError] {
+  match right {
+    @realtime_db.Arr(bounds) => {
+      if bounds.length() != 2 {
+        return Err(Invalid_Value)
+      }
+      let low_order = match compare_ordered(left, bounds[0]) {
+        Ok(order) => order
+        Err(error) => return Err(error)
+      }
+      let high_order = match compare_ordered(left, bounds[1]) {
+        Ok(order) => order
+        Err(error) => return Err(error)
+      }
+      Ok(@realtime_db.Bool(low_order >= 0 && high_order <= 0))
+    }
+    _ => Err(Type_Mismatch)
+  }
 }
