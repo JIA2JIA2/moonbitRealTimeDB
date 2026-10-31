@@ -308,9 +308,25 @@ test "test_cleanup_expired_data" {
   let config = @timeseries.TimeSeriesConfig::default()
   let engine = @timeseries.TimeSeriesEngine::new(config)
 
-  // 清理过期数据
+  // 空引擎：无可清理数据
+  assert_eq(engine.cleanup_expired_data(), 0)
+
+  // 数据驱动水位 = 最大时间戳 10000，保留期 30 天（2592000s）
+  let _ = engine.create_metric("cpu", Map([]))
+  let _ = engine.write_data_point("cpu", 10000, 1.0) // 水位时间，保留
+  let _ = engine.write_data_point("cpu", 10000 - 2592001, 2.0) // 超过保留期，清理
+  let _ = engine.write_data_point("cpu", 10000 - 100, 3.0) // 保留期内，保留
+
   let cleaned = engine.cleanup_expired_data()
-  assert_true(cleaned >= 0)
+  assert_eq(cleaned, 1)
+
+  // 幂等：过期数据点已被真正移除（写回生效），再次清理无新增
+  assert_eq(engine.cleanup_expired_data(), 0)
+
+  // 显式指定基准时间：水位推进到 10000 + 2592000 + 1 后剩余数据全部过期
+  let _ = engine.write_data_point("cpu", 10000, 9.0)
+  let cleaned2 = engine.cleanup_expired_data(current_time=10000 + 2592000 + 1)
+  assert_eq(cleaned2, 3)
 }
 
 ///|

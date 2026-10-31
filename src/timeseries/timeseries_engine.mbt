@@ -549,30 +549,65 @@ pub fn TimeSeriesEngine::execute_continuous_queries(
 }
 
 ///|
-/// 清理过期数据
-pub fn TimeSeriesEngine::cleanup_expired_data(self : TimeSeriesEngine) -> Int {
+/// 清理过期数据。
+///
+/// 以 current_time 为基准删除超过保留期
+/// （default_retention_seconds，<=0 视为永久保留）的数据点；
+/// 未指定 current_time 时取引擎内全部数据点中的最大时间戳作为
+/// 数据驱动的水位时间（无数据则为 0，不会清理任何数据）。
+///
+/// 注意：修改必须显式写回 self.metrics，仅对迭代得到的 struct
+/// 拷贝赋值不会生效。
+pub fn TimeSeriesEngine::cleanup_expired_data(
+  self : TimeSeriesEngine,
+  current_time? : Int,
+) -> Int {
+  let retention_seconds = self.config.default_retention_seconds
+  if retention_seconds <= 0 {
+    return 0
+  }
+  let now = match current_time {
+    Some(t) => t
+    None => self.data_watermark()
+  }
   let mut cleaned_count = 0
-
-  for (_, metric) in self.metrics {
-    // 获取保留策略
-    let retention_seconds = self.config.default_retention_seconds
-
-    // 过滤过期数据
-    let current_time = 0 // 使用实际时间
+  for metric_name, metric in self.metrics {
+    if metric.data_points.length() == 0 {
+      continue
+    }
     let valid_data : Array[DataPoint] = []
-
+    let mut removed = false
     for dp in metric.data_points {
-      if current_time - dp.timestamp <= retention_seconds {
+      if now - dp.timestamp <= retention_seconds {
         valid_data.push(dp)
       } else {
         cleaned_count = cleaned_count + 1
+        removed = true
       }
     }
-
-    metric.data_points = valid_data
+    if removed {
+      self.metrics.set(
+        metric_name,
+        { ..metric, data_points: valid_data },
+      )
+    }
   }
-
   cleaned_count
+}
+
+///|
+/// 计算数据驱动的水位时间：全部度量数据点中的最大时间戳。
+/// 无任何数据时返回 0。
+fn TimeSeriesEngine::data_watermark(self : TimeSeriesEngine) -> Int {
+  let mut max_ts = 0
+  for _, metric in self.metrics {
+    for dp in metric.data_points {
+      if dp.timestamp > max_ts {
+        max_ts = dp.timestamp
+      }
+    }
+  }
+  max_ts
 }
 
 ///|

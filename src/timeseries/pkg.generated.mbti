@@ -139,7 +139,7 @@ pub(all) struct TimeSeriesEngine {
   mut next_query_id : Int
 }
 pub fn TimeSeriesEngine::batch_write_data_points(Self, String, Array[DataPoint]) -> Result[Unit, TimeSeriesError]
-pub fn TimeSeriesEngine::cleanup_expired_data(Self) -> Int
+pub fn TimeSeriesEngine::cleanup_expired_data(Self, current_time? : Int) -> Int
 pub fn TimeSeriesEngine::create_continuous_query(Self, String, String, String, Int, AggregationType, Int) -> Result[String, TimeSeriesError]
 pub fn TimeSeriesEngine::create_downsample_policy(Self, String, DownsamplePrecision, AggregationType, Int) -> Result[String, TimeSeriesError]
 pub fn TimeSeriesEngine::create_metric(Self, String, Map[String, String]) -> Result[String, TimeSeriesError]
