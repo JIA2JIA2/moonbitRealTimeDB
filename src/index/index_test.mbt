@@ -695,3 +695,29 @@ test "test_defragmenter" {
   assert_eq(st.total_runs, 1)
   assert_eq(st.indices_processed, 1)
 }
+
+///|
+test "test_btree_cross_type_keys_do_not_merge" {
+  // 回归：Int(1) 与 Str("1") 一旦比较为相等，会被 B+ 树视为同一键而互相覆盖
+  let idx = @index.BTreeIndex::new("test_btree_cross_type")
+  assert_true(idx.insert(@realtime_db.Int(1), "int_key"))
+  assert_true(idx.insert(@realtime_db.Str("1"), "str_key"))
+  assert_eq(idx.size(), 2)
+
+  let int_rows = idx.query(@realtime_db.Int(1))
+  assert_eq(int_rows.length(), 1)
+  assert_eq(int_rows[0], "int_key")
+
+  let str_rows = idx.query(@realtime_db.Str("1"))
+  assert_eq(str_rows.length(), 1)
+  assert_eq(str_rows[0], "str_key")
+
+  // 跨类型区间在统一的类型序上依然可比较
+  let between = idx.range_query(
+    Some(@realtime_db.Str("1")),
+    Some(@realtime_db.Int(1)),
+    Some(true),
+    Some(true),
+  )
+  assert_eq(between.length(), 2)
+}

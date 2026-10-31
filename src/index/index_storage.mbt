@@ -170,8 +170,32 @@ pub(all) struct BatchUpdateResult {
 }
 
 ///|
+/// 值类型的稳定排序等级。
+/// B+ 树要求键集合上的全序，不同变体不能比较出"相等"，
+/// 否则插入/查找/区间查询会因歧义而错乱。
+fn value_type_rank(v : @realtime_db.Value) -> Int32 {
+  match v {
+    @realtime_db.Str(_) => 0
+    @realtime_db.Int(_) => 1
+    @realtime_db.Float(_) => 2
+    @realtime_db.Bool(_) => 3
+    @realtime_db.Null => 4
+    @realtime_db.Arr(_) => 5
+    @realtime_db.Map(_) => 6
+  }
+}
+
+///|
 /// 值比较辅助函数：-1/0/1
+/// 先按类型等级比较，类型相同时再按值比较，保证跨类型比较结果稳定且非零。
 fn compare_values(a : @realtime_db.Value, b : @realtime_db.Value) -> Int32 {
+  let rank_a = value_type_rank(a)
+  let rank_b = value_type_rank(b)
+  if rank_a < rank_b {
+    return -1
+  } else if rank_a > rank_b {
+    return 1
+  }
   match (a, b) {
     (@realtime_db.Int(ai), @realtime_db.Int(bi)) =>
       if ai < bi {
