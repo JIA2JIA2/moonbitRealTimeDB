@@ -339,6 +339,8 @@ pub(all) enum SqlStatement {
 pub(all) struct SelectStatement {
   /// 选择列
   select_items : Array[SelectItem]
+  /// 是否 DISTINCT 去重
+  distinct : Bool
   /// 表名
   from : String?
   /// WHERE 条件

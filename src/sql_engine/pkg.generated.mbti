@@ -319,6 +319,7 @@ pub(all) struct SelectItem {
 
 pub(all) struct SelectStatement {
   select_items : Array[SelectItem]
+  distinct : Bool
   from : String?
   where_condition : Expression?
   group_by : Array[Expression]?

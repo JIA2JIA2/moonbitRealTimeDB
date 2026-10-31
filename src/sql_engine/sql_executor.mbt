@@ -87,8 +87,9 @@ fn execute_simple(
     }
     projected.push(value)
   }
-  apply_limit(projected, select.limit)
-  Ok(projected)
+  let deduped = apply_distinct(projected, select.distinct)
+  apply_limit(deduped, select.limit)
+  Ok(deduped)
 }
 
 ///|
@@ -165,8 +166,9 @@ fn execute_grouped(
   for pair in sorted {
     projected.push(pair.0)
   }
-  apply_limit(projected, select.limit)
-  Ok(projected)
+  let deduped = apply_distinct(projected, select.distinct)
+  apply_limit(deduped, select.limit)
+  Ok(deduped)
 }
 
 ///|
@@ -1252,5 +1254,49 @@ fn between_values(
       Ok(@realtime_db.Bool(low_order >= 0 && high_order <= 0))
     }
     _ => Err(Type_Mismatch)
+  }
+}
+
+///|
+/// DISTINCT 去重：按投影行的类型化字段值判定相等。
+fn apply_distinct(
+  rows : Array[@realtime_db.Value],
+  distinct : Bool,
+) -> Array[@realtime_db.Value] {
+  if !distinct {
+    return rows
+  }
+  let seen : Map[String, Bool] = Map([])
+  let unique : Array[@realtime_db.Value] = []
+  for row in rows {
+    let key = row_key(row)
+    if !seen.contains(key) {
+      seen.set(key, true)
+      unique.push(row)
+    }
+  }
+  unique
+}
+
+///|
+/// 行的稳定表示：Map 按字段名排序后拼接，避免 Map 迭代顺序影响去重。
+fn row_key(row : @realtime_db.Value) -> String {
+  match row {
+    @realtime_db.Map(fields) => {
+      let names : Array[String] = []
+      for name, _ in fields.copy() {
+        names.push(name)
+      }
+      names.sort_by(fn(a, b) { compare_string(a, b) })
+      let parts : Array[String] = []
+      for name in names {
+        match fields.get(name) {
+          Some(value) => parts.push(name + "=" + group_value_key(value))
+          None => ()
+        }
+      }
+      parts.join("|")
+    }
+    _ => row.to_string()
   }
 }

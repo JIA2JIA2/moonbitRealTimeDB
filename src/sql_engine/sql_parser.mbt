@@ -543,6 +543,16 @@ fn Parser::parse_select(self : Parser) -> Result[SqlStatement, SqlError] {
     Err(e) => return Err(e)
   }
 
+  // 解析 DISTINCT
+  let mut distinct = false
+  if self.is_keyword("DISTINCT") {
+    distinct = true
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+  }
+
   // 解析选择列
   let select_items = match self.parse_select_items() {
     Ok(items) => items
@@ -654,6 +664,7 @@ fn Parser::parse_select(self : Parser) -> Result[SqlStatement, SqlError] {
   Ok(
     Select(SelectStatement::{
       select_items,
+      distinct,
       from,
       where_condition,
       group_by,
@@ -740,7 +751,7 @@ fn Parser::parse_or_expr(self : Parser) -> Result[Expression, SqlError] {
 ///|
 /// 解析 AND 表达式
 fn Parser::parse_and_expr(self : Parser) -> Result[Expression, SqlError] {
-  let mut left = match self.parse_comparison_expr() {
+  let mut left = match self.parse_not_expr() {
     Ok(e) => e
     Err(e) => return Err(e)
   }
@@ -749,13 +760,30 @@ fn Parser::parse_and_expr(self : Parser) -> Result[Expression, SqlError] {
       Ok(_) => ()
       Err(e) => return Err(e)
     }
-    let right = match self.parse_comparison_expr() {
+    let right = match self.parse_not_expr() {
       Ok(e) => e
       Err(e) => return Err(e)
     }
     left = BinaryOp(BinaryOpExpr::{ operator: And, left, right, })
   }
   Ok(left)
+}
+
+///|
+/// 解析前缀 NOT（优先级低于比较，高于 AND）
+fn Parser::parse_not_expr(self : Parser) -> Result[Expression, SqlError] {
+  if self.is_keyword("NOT") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    let operand = match self.parse_not_expr() {
+      Ok(e) => e
+      Err(e) => return Err(e)
+    }
+    return Ok(UnaryOp(UnaryOpExpr::{ operator: Not, operand, }))
+  }
+  self.parse_comparison_expr()
 }
 
 ///|
@@ -1370,6 +1398,7 @@ fn Parser::parse_explain(self : Parser) -> SqlStatement {
   Explain(ExplainStatement::{
     statement: Select(SelectStatement::{
       select_items: [],
+      distinct: false,
       from: None,
       where_condition: None,
       group_by: None,
