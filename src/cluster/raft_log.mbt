@@ -7,8 +7,8 @@
 pub(all) struct RaftLog {
   /// 日志条目数组
   mut entries : Array[LogEntry]
-  /// 起始索引
-  start_index : Int
+  /// 起始索引（快照压缩后前移，故为可变）
+  mut start_index : Int
   /// 最后索引
   mut last_index : Int
   /// 最后任期
@@ -187,21 +187,37 @@ pub fn RaftLog::clear(self : RaftLog) -> Unit {
 
 ///|
 /// 创建快照
+///
+/// 将 [start_index, index] 区间标记为已快照并从日志中移除，
+/// 保留 index 之后的新日志（start_index 前移到 index + 1）。
+/// 修复前误调用 truncate(index + 1)：删除的是 index 之后的
+/// 最新日志、保留旧日志，方向正好相反。
 pub fn RaftLog::create_snapshot(
   self : RaftLog,
   index : Int,
   _data : @realtime_db.Value,
 ) -> Unit {
-  if index <= self.last_index {
-    self.snapshot_index = index
-    match self.get_entry(index) {
-      Some(entry) => self.snapshot_term = entry.term
-      None => ()
-    }
-
-    // 截断日志
-    self.truncate(index + 1)
+  if index < self.start_index || index > self.last_index {
+    return
   }
+  match self.get_entry(index) {
+    Some(entry) => self.snapshot_term = entry.term
+    None => ()
+  }
+  self.snapshot_index = index
+  let prefix = index - self.start_index + 1
+  if prefix >= self.entries.length() {
+    self.entries = []
+  } else {
+    let remaining : Array[LogEntry] = []
+    let mut i = prefix
+    while i < self.entries.length() {
+      remaining.push(self.entries[i])
+      i = i + 1
+    }
+    self.entries = remaining
+  }
+  self.start_index = index + 1
 }
 
 ///|

@@ -392,7 +392,7 @@ pub fn RaftError::not_equal(Self, Self) -> Bool
 
 pub(all) struct RaftLog {
   mut entries : Array[LogEntry]
-  start_index : Int
+  mut start_index : Int
   mut last_index : Int
   mut last_term : Int
   mut commit_index : Int
