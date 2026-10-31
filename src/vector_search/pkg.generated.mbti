@@ -99,6 +99,7 @@ pub struct HNSWIndex {
   mut layers : Array[Array[String]]
   mut entry_point : String
   mut entry_level : Int
+  mut rng_state : Int
 }
 pub fn HNSWIndex::all_ids(Self) -> Array[String]
 pub fn HNSWIndex::clear(Self) -> Unit

@@ -185,7 +185,9 @@ test "hnsw_level_clamped_by_max_layers" {
     Some(node) => assert_true(node.level <= 1)
     None => assert_true(false)
   }
-  assert_eq(index.entry_level, 1)
+  // 入口层级与首节点层级一致（修复前所有节点固定落在顶层，
+  // 多层结构名存实亡；现在层级按几何分布随机采样）
+  assert_eq(index.entry_level, index.get("a").unwrap().level)
 }
 
 ///|
@@ -208,4 +210,89 @@ test "hnsw_config_validate" {
     index.search_top_k([1.0, 0.0], 1, @vector_search.Cosine).length(),
     0,
   )
+}
+
+///|
+/// 确定性伪随机向量生成器（xorshift32），生成 dim 维均匀分布向量
+fn test_vector(seed : Int, dim : Int) -> Array[Double] {
+  let v : Array[Double] = Array(capacity=dim)
+  let mut x = if seed == 0 { 1 } else { seed }
+  let mut j = 0
+  while j < dim {
+    x = x ^ (x << 13)
+    x = x ^ (x >>> 17)
+    x = x ^ (x << 5)
+    v.push((x & 0x7fffffff).to_double() / 2147483647.0 - 0.5)
+    j = j + 1
+  }
+  v
+}
+
+///|
+/// 守门员测试：100 个节点（超过 m=8，邻居饱和场景）下，近似
+/// Top-10 与全量扫描的精确 Top-10 平均召回率必须 >= 0.9。
+/// 这是后续所有 HNSW 改动的召回率回归底线。
+test "hnsw_recall_against_exact" {
+  let config = @vector_search.HNSWConfig::{
+    m: 8,
+    ef_construction: 40,
+    ef_search: 64,
+    max_layers: 6,
+  }
+  let index = @vector_search.HNSWIndex::new(config)
+  let dim = 4
+  let n = 100
+  let mut i = 0
+  while i < n {
+    let _ = index.insert("v_\{i}", test_vector(i + 1, dim), @vector_search.Euclidean)
+    i = i + 1
+  }
+  assert_eq(index.size(), n)
+  let k = 10
+  let mut total_recall = 0.0
+  let mut q = 0
+  while q < 20 {
+    let query = test_vector(100000 + q, dim)
+    // 精确 Top-K：全量扫描
+    let exact : Array[(String, Double)] = Array(capacity=n)
+    let mut t = 0
+    while t < n {
+      let key = "v_\{t}"
+      match index.get(key) {
+        Some(node) =>
+          exact.push(
+            (
+              key,
+              @vector_search.DistanceCalculator::euclidean_distance(
+                query,
+                node.vector,
+              ),
+            ),
+          )
+        None => ()
+      }
+      t = t + 1
+    }
+    exact.sort_by(fn(a, b) { a.1.compare(b.1) })
+    let exact_keys : Array[String] = Array(capacity=k)
+    let mut e = 0
+    while e < k && e < exact.length() {
+      exact_keys.push(exact[e].0)
+      e = e + 1
+    }
+    // 近似 Top-K
+    let approx = index.search_top_k(query, k, @vector_search.Euclidean)
+    let mut hits = 0
+    for (id, _) in approx {
+      if exact_keys.contains(id) {
+        hits = hits + 1
+      }
+    }
+    total_recall = total_recall +
+      hits.to_double() /
+      exact_keys.length().to_double()
+    q = q + 1
+  }
+  let avg_recall = total_recall / 20.0
+  assert_true(avg_recall >= 0.9)
 }

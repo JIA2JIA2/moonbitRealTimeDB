@@ -14,6 +14,8 @@ pub struct HNSWIndex {
   mut entry_point : String
   /// 入口点层级
   mut entry_level : Int
+  /// 伪随机数发生器状态（xorshift32，非零种子）
+  mut rng_state : Int
 }
 
 ///|
@@ -24,6 +26,7 @@ pub fn HNSWIndex::new(config : HNSWConfig) -> HNSWIndex {
     layers: Array(capacity=config.max_layers),
     entry_point: "",
     entry_level: -1,
+    rng_state: 0x2545F491,
   }
 }
 
@@ -71,21 +74,49 @@ fn ensure_layer(neighbors : Array[Array[String]], layer : Int) -> Unit {
 }
 
 ///|
-/// 生成随机层级（指数分布，层级越高概率越小）
-fn HNSWIndex::random_level(self : HNSWIndex) -> Int {
-  // 简化实现：确定性返回固定层级，实际应用应使用指数分布随机数生成器。
-  // 无论采用何种采样，层级都必须受 max_layers 约束。
-  let level = 4
-  let max_level = self.config.max_layers - 1
-  if level > max_level {
-    max_level
-  } else {
-    level
-  }
+/// xorshift32 伪随机数（返回 [0, 2^31) 内的非负整数）。
+/// MoonBit 无内置随机源，用确定性 PRNG 保证可复现。
+fn HNSWIndex::next_rand(self : HNSWIndex) -> Int {
+  let mut x = self.rng_state
+  x = x ^ (x << 13)
+  x = x ^ (x >>> 17)
+  x = x ^ (x << 5)
+  let r = x & 0x7fffffff
+  // 种子不能退化为 0（xorshift 的不动点）
+  self.rng_state = if r == 0 { 1 } else { r }
+  r
 }
 
 ///|
-/// 贪心搜索：在指定层从入口点出发，收集访问过的候选并返回最近的 ef 个
+/// 生成随机层级（几何分布，层级越高概率越小）。
+///
+/// 按 HNSW 论文的 mL = 1/ln(M) 采样：以 1/M 的概率逐层上升，
+/// 等价于 floor(-ln(uniform) * mL) 的几何分布，且受 max_layers
+/// 约束。修复前固定返回 4：所有节点都落在同一层，多层结构
+/// 名存实亡，内存与插入成本放大 max_layers 倍。
+fn HNSWIndex::random_level(self : HNSWIndex) -> Int {
+  let m = self.config.m
+  let max_level = self.config.max_layers - 1
+  let p = 1.0 / m.to_double()
+  let mut level = 0
+  while level < max_level {
+    let r = self.next_rand().to_double() / 2147483647.0
+    if r < p {
+      level = level + 1
+    } else {
+      break
+    }
+  }
+  level
+}
+
+///|
+/// 束搜索：在指定层从入口点出发，维护候选池与最近 ef 个结果，
+/// 当候选池中最近的点都比结果集中第 ef 远的点更远时收敛。
+/// 返回按距离升序的 (id, 距离) 列表，至多 ef 个。
+///
+/// 修复前为纯贪心：每轮只扩展当前最优点，best 的邻居全部更远时
+/// 立即终止（错过其他分支，召回率显著下降），且无终止上限。
 fn HNSWIndex::search_layer(
   self : HNSWIndex,
   query : Array[Double],
@@ -102,49 +133,60 @@ fn HNSWIndex::search_layer(
     Some(n) => n
     None => return Array(capacity=0)
   }
-  // 候选池（收集所有访问过的节点）
-  let candidates : Array[(String, Double)] = Array(capacity=ef)
+  let entry_dist = metric_distance(query, entry_node.vector, metric)
+  // 待扩展候选池：(距离, id)
+  let pool : Array[(Double, String)] = Array(capacity=0)
+  pool.push((entry_dist, entry))
+  // 最近 ef 个结果，保持按距离升序
+  let top : Array[(Double, String)] = Array(capacity=ef)
+  top.push((entry_dist, entry))
   let visited = Set([], capacity=0)
-  let mut best = entry
-  let mut best_dist = metric_distance(query, entry_node.vector, metric)
-  candidates.push((entry, best_dist))
   visited.add(entry)
-  // 贪心搜索：每轮走向当前最近节点的更近邻居
-  let mut changed = true
-  while changed {
-    changed = false
-    let current = best
+  while pool.length() > 0 {
+    // 取出候选池中距离最小的节点
+    let mut best_idx = 0
+    let mut i = 1
+    while i < pool.length() {
+      if pool[i].0 < pool[best_idx].0 {
+        best_idx = i
+      }
+      i = i + 1
+    }
+    let (dist, current) = pool.remove(best_idx)
+    // 收敛：候选最近点已比结果集中第 ef 远更远
+    if top.length() >= ef && dist > top[top.length() - 1].0 {
+      break
+    }
     let current_node = match self.nodes.get(current) {
       Some(n) => n
-      None => break
+      None => continue
     }
-    if layer < current_node.neighbors.length() {
-      for neighbor_id in current_node.neighbors[layer] {
-        if visited.contains(neighbor_id) {
-          continue
-        }
-        visited.add(neighbor_id)
-        // 删除后遗留的悬空邻居直接跳过
-        let neighbor_node = match self.nodes.get(neighbor_id) {
-          Some(n) => n
-          None => continue
-        }
-        let dist = metric_distance(query, neighbor_node.vector, metric)
-        candidates.push((neighbor_id, dist))
-        if dist < best_dist {
-          best = neighbor_id
-          best_dist = dist
-          changed = true
+    if layer >= current_node.neighbors.length() {
+      continue
+    }
+    for neighbor_id in current_node.neighbors[layer] {
+      if visited.contains(neighbor_id) {
+        continue
+      }
+      visited.add(neighbor_id)
+      // 删除后遗留的悬空邻居直接跳过
+      let neighbor_node = match self.nodes.get(neighbor_id) {
+        Some(n) => n
+        None => continue
+      }
+      let nd = metric_distance(query, neighbor_node.vector, metric)
+      pool.push((nd, neighbor_id))
+      // 维护有序的最近 ef 结果集
+      if top.length() < ef || nd < top[top.length() - 1].0 {
+        top.push((nd, neighbor_id))
+        top.sort_by(fn(a, b) { a.0.compare(b.0) })
+        if top.length() > ef {
+          top.truncate(ef)
         }
       }
     }
   }
-  // 距离升序，取前 ef 个
-  candidates.sort_by(fn(a, b) { a.1.compare(b.1) })
-  if candidates.length() > ef {
-    candidates.truncate(ef)
-  }
-  candidates
+  top.map(fn(p) { (p.1, p.0) })
 }
 
 ///|
@@ -241,6 +283,12 @@ pub fn HNSWIndex::insert(
     }
     l = l - 1
   }
+  // 先把新节点写入节点表再建立双向连接：
+  // connect_at_layer 剪枝时需要在 nodes 表中查询新节点的向量，
+  // 否则邻居饱和（>m）时新节点的反向边会被静默剪掉——图越大
+  // 越严重，此后插入的节点近乎不可达（系统性漏检）。
+  // neighbors 为数组引用，后续逐层更新通过共享引用同步生效。
+  self.nodes.set(id, node)
   // 在 min(level, entry_level) 及以下各层建立双向连接
   let max_l = if level < self.entry_level { level } else { self.entry_level }
   l = 0

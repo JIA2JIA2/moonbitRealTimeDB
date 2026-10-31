@@ -121,6 +121,13 @@ pub fn SearchEngine::search_approximate(
     None =>
       return self.search_exact(collection_name, tenant_id, query_vector, top_k)
   }
+  // 结果不足 top_k 时回退精确检索（宁可牺牲性能也不返回残缺结果）。
+  // HNSW 的图割裂、贪心早停或删除后悬空邻居都可能漏检，静默返回
+  // 残缺结果会让调用方无从察觉。集合本身记录数不足时，精确检索
+  // 也只返回现有记录，回退不会引入额外开销差异。
+  if pairs.length() < top_k {
+    return self.search_exact(collection_name, tenant_id, query_vector, top_k)
+  }
   let hits : Array[SearchHit] = Array(capacity=0)
   for (primary_key, graph_distance) in pairs {
     let raw = match metric {
