@@ -10,13 +10,13 @@ pub struct StreamResult {
   /// 是否完成
   mut completed : Bool
   /// 总记录数
-  mut total_records : Int
+  mut total_records : Int32
   /// 成功记录数
-  mut success_count : Int
+  mut success_count : Int32
   /// 失败记录数
-  mut failed_count : Int
+  mut failed_count : Int32
   /// P99 延迟（微秒）
-  mut latency_p99 : Int
+  mut latency_p99 : Int32
 }
 
 ///|
@@ -44,7 +44,7 @@ pub fn StreamResult::set_completed(
 /// 设置总记录数
 pub fn StreamResult::set_total_records(
   self : StreamResult,
-  total : Int,
+  total : Int32,
 ) -> Unit {
   self.total_records = total
 }
@@ -53,7 +53,7 @@ pub fn StreamResult::set_total_records(
 /// 设置 P99 延迟
 pub fn StreamResult::set_latency_p99(
   self : StreamResult,
-  latency_us : Int,
+  latency_us : Int32,
 ) -> Unit {
   self.latency_p99 = latency_us
 }
@@ -78,24 +78,24 @@ pub fn StreamResult::completed(self : StreamResult) -> Bool {
 
 ///|
 /// 获取总记录数
-pub fn StreamResult::total_records(self : StreamResult) -> Int {
+pub fn StreamResult::total_records(self : StreamResult) -> Int32 {
   self.total_records
 }
 
 ///|
 /// 获取成功记录数
-pub fn StreamResult::success_count(self : StreamResult) -> Int {
+pub fn StreamResult::success_count(self : StreamResult) -> Int32 {
   self.success_count
 }
 
 ///|
 /// 获取失败记录数
-pub fn StreamResult::failed_count(self : StreamResult) -> Int {
+pub fn StreamResult::failed_count(self : StreamResult) -> Int32 {
   self.failed_count
 }
 
 ///|
 /// 获取 P99 延迟
-pub fn StreamResult::latency_p99(self : StreamResult) -> Int {
+pub fn StreamResult::latency_p99(self : StreamResult) -> Int32 {
   self.latency_p99
 }

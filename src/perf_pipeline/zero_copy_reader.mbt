@@ -9,11 +9,11 @@
 // 指向原始存储区域的引用，避免数据拷贝。
 pub struct DataReference {
   /// 数据指针（模拟）
-  ptr : Int
+  ptr : Int32
   /// 数据长度
-  len : Int
+  len : Int32
   /// 版本号
-  version : Int
+  version : Int32
   /// 是否有效
   mut valid : Bool
 }
@@ -28,12 +28,16 @@ pub struct ZeroCopyReader {
   /// 内存池引用
   mut mempool : MemoryPool?
   /// 引用计数
-  mut ref_count : Int
+  mut ref_count : Int32
 }
 
 ///|
 /// 创建数据引用
-pub fn DataReference::new(ptr : Int, len : Int, version : Int) -> DataReference {
+pub fn DataReference::new(
+  ptr : Int32,
+  len : Int32,
+  version : Int32,
+) -> DataReference {
   { ptr, len, version, valid: true, }
 }
 
@@ -45,19 +49,19 @@ pub fn DataReference::is_valid(self : DataReference) -> Bool {
 
 ///|
 /// 获取数据指针
-pub fn DataReference::ptr(self : DataReference) -> Int {
+pub fn DataReference::ptr(self : DataReference) -> Int32 {
   self.ptr
 }
 
 ///|
 /// 获取数据长度
-pub fn DataReference::len(self : DataReference) -> Int {
+pub fn DataReference::len(self : DataReference) -> Int32 {
   self.len
 }
 
 ///|
 /// 获取版本号
-pub fn DataReference::version(self : DataReference) -> Int {
+pub fn DataReference::version(self : DataReference) -> Int32 {
   self.version
 }
 
@@ -154,7 +158,7 @@ pub fn ZeroCopyReader::check_valid(
 
 ///|
 /// 获取引用计数
-pub fn ZeroCopyReader::ref_count(self : ZeroCopyReader) -> Int {
+pub fn ZeroCopyReader::ref_count(self : ZeroCopyReader) -> Int32 {
   self.ref_count
 }
 

@@ -14,11 +14,11 @@ pub(all) struct ShardManager {
   /// 分片状态映射：分片ID -> 分片状态
   mut shard_states : Map[String, ShardStatus]
   /// 副本因子
-  replica_factor : Int
+  replica_factor : Int32
   /// 分片总数
-  total_shards : Int
+  total_shards : Int32
   /// 版本号
-  mut version : Int
+  mut version : Int32
 }
 
 ///|
@@ -176,7 +176,7 @@ pub fn ShardManager::get_active_shards(self : ShardManager) -> Array[ShardInfo] 
 
 ///|
 /// 获取分片数量
-pub fn ShardManager::shard_count(self : ShardManager) -> Int {
+pub fn ShardManager::shard_count(self : ShardManager) -> Int32 {
   self.shards.length()
 }
 
@@ -271,7 +271,7 @@ pub fn ShardManager::get_primary_shard(
 
 ///|
 /// 获取版本号
-pub fn ShardManager::get_version(self : ShardManager) -> Int {
+pub fn ShardManager::get_version(self : ShardManager) -> Int32 {
   self.version
 }
 
@@ -292,7 +292,7 @@ pub(all) struct RoutingTableService {
 /// 创建路由表服务
 pub fn RoutingTableService::new(
   shard_manager : ShardManager,
-  total_shards : Int,
+  total_shards : Int32,
 ) -> RoutingTableService {
   {
     routing_table: RoutingTable::new(),
@@ -368,7 +368,7 @@ pub fn RoutingTableService::get_routing_table(
 
 ///|
 /// 获取路由表版本
-pub fn RoutingTableService::get_version(self : RoutingTableService) -> Int {
+pub fn RoutingTableService::get_version(self : RoutingTableService) -> Int32 {
   self.routing_table.get_version()
 }
 
@@ -392,7 +392,7 @@ pub fn create_shard_manager(
 /// 创建路由表服务
 pub fn create_routing_table_service(
   shard_manager : ShardManager,
-  total_shards : Int,
+  total_shards : Int32,
 ) -> RoutingTableService {
   RoutingTableService::new(shard_manager, total_shards)
 }

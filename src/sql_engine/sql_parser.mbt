@@ -43,9 +43,9 @@ pub(all) struct Token {
   /// 标记值
   value : String
   /// 行号
-  line : Int
+  line : Int32
   /// 列号
-  column : Int
+  column : Int32
 }
 
 ///|
@@ -54,11 +54,11 @@ pub(all) struct Lexer {
   /// SQL 文本
   text : String
   /// 当前位置
-  mut position : Int
+  mut position : Int32
   /// 当前行
-  mut line : Int
+  mut line : Int32
   /// 当前列
-  mut column : Int
+  mut column : Int32
   /// 当前标记
   mut current_token : Token?
 }
@@ -601,7 +601,7 @@ fn Parser::parse_select(self : Parser) -> Result[SqlStatement, SqlError] {
   }
 
   // 解析 LIMIT 子句
-  let mut limit : Int? = None
+  let mut limit : Int32? = None
   if self.is_keyword("LIMIT") {
     match self.advance() {
       Ok(_) => ()
@@ -727,7 +727,7 @@ fn Parser::parse_identifier(self : Parser) -> Result[String, SqlError] {
 
 ///|
 /// 解析数字
-fn Parser::parse_number(self : Parser) -> Result[Int, SqlError] {
+fn Parser::parse_number(self : Parser) -> Result[Int32, SqlError] {
   match self.current_token {
     Some(token) =>
       if token.token_type == NumberLiteral {

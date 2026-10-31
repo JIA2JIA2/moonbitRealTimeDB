@@ -34,8 +34,8 @@ pub fn PipelineMonitor::new(
 /// - duration_ms: 耗时（毫秒）
 pub fn PipelineMonitor::record_throughput(
   self : PipelineMonitor,
-  count : Int,
-  duration_ms : Int,
+  count : Int32,
+  duration_ms : Int32,
 ) -> Unit {
   if duration_ms > 0 {
     let throughput = count.to_double() / (duration_ms.to_double() / 1000.0)
@@ -47,7 +47,7 @@ pub fn PipelineMonitor::record_throughput(
 /// 记录 P99 延迟（微秒）
 pub fn PipelineMonitor::record_latency(
   self : PipelineMonitor,
-  latency_us : Int,
+  latency_us : Int32,
 ) -> Unit {
   self.metrics.set_latency_p99(latency_us)
 }
@@ -56,7 +56,7 @@ pub fn PipelineMonitor::record_latency(
 /// 设置缓冲区使用率（百分比）
 pub fn PipelineMonitor::set_buffer_usage(
   self : PipelineMonitor,
-  usage : Int,
+  usage : Int32,
 ) -> Unit {
   self.metrics.set_buffer_usage(usage)
 
@@ -142,7 +142,7 @@ pub fn PipelineMonitor::metrics(self : PipelineMonitor) -> PipelineMetrics {
 
 ///|
 /// 获取告警次数
-pub fn PipelineMonitor::alert_count(self : PipelineMonitor) -> Int {
+pub fn PipelineMonitor::alert_count(self : PipelineMonitor) -> Int32 {
   self.alerts.length()
 }
 

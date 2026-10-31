@@ -6,11 +6,11 @@
 /// 并行导入配置结构
 pub struct ParallelImportConfig {
   /// 并行度（1~16）
-  mut parallelism : Int
+  mut parallelism : Int32
   /// 分片大小（100~10000）
-  mut shard_size : Int
+  mut shard_size : Int32
   /// 分片超时时间（毫秒）
-  mut shard_timeout : Int
+  mut shard_timeout : Int32
 }
 
 ///|
@@ -44,7 +44,7 @@ pub fn ParallelImportConfig::validate(
 /// 设置并行度
 pub fn ParallelImportConfig::set_parallelism(
   self : ParallelImportConfig,
-  parallelism : Int,
+  parallelism : Int32,
 ) -> Unit {
   self.parallelism = parallelism
 }
@@ -53,7 +53,7 @@ pub fn ParallelImportConfig::set_parallelism(
 /// 设置分片大小
 pub fn ParallelImportConfig::set_shard_size(
   self : ParallelImportConfig,
-  size : Int,
+  size : Int32,
 ) -> Unit {
   self.shard_size = size
 }
@@ -62,7 +62,7 @@ pub fn ParallelImportConfig::set_shard_size(
 /// 设置分片超时时间
 pub fn ParallelImportConfig::set_shard_timeout(
   self : ParallelImportConfig,
-  timeout : Int,
+  timeout : Int32,
 ) -> Unit {
   self.shard_timeout = timeout
 }

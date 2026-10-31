@@ -34,11 +34,11 @@ pub(all) struct ShardAllocator {
   /// 分配策略
   mut strategy : AllocationStrategy
   /// 副本因子
-  replica_factor : Int
+  replica_factor : Int32
   /// 分片总数
-  total_shards : Int
+  total_shards : Int32
   /// 轮询索引
-  mut round_robin_index : Int
+  mut round_robin_index : Int32
 }
 
 ///|
@@ -197,22 +197,22 @@ fn ShardAllocator::select_by_label_match(
 /// 一致性哈希算法
 pub(all) struct ConsistentHash {
   /// 虚拟节点数
-  virtual_nodes : Int
+  virtual_nodes : Int32
   /// 哈希环
-  mut hash_ring : Map[Int, String]
+  mut hash_ring : Map[Int32, String]
   /// 节点映射
-  mut node_map : Map[String, Array[Int]]
+  mut node_map : Map[String, Array[Int32]]
   /// 总分片数
-  total_shards : Int
+  total_shards : Int32
 }
 
 ///|
 /// 默认虚拟节点数
-pub const DEFAULT_VIRTUAL_NODES : Int = 100
+pub const DEFAULT_VIRTUAL_NODES : Int32 = 100
 
 ///|
 /// 创建一致性哈希
-pub fn ConsistentHash::new(total_shards : Int) -> ConsistentHash {
+pub fn ConsistentHash::new(total_shards : Int32) -> ConsistentHash {
   {
     virtual_nodes: DEFAULT_VIRTUAL_NODES,
     hash_ring: Map([]),
@@ -224,8 +224,8 @@ pub fn ConsistentHash::new(total_shards : Int) -> ConsistentHash {
 ///|
 /// 指定虚拟节点数创建一致性哈希
 pub fn ConsistentHash::with_virtual_nodes(
-  total_shards : Int,
-  virtual_nodes : Int,
+  total_shards : Int32,
+  virtual_nodes : Int32,
 ) -> ConsistentHash {
   { virtual_nodes, hash_ring: Map([]), node_map: Map([]), total_shards, }
 }
@@ -236,7 +236,7 @@ pub fn ConsistentHash::add_node(
   self : ConsistentHash,
   node_id : String,
 ) -> Unit {
-  let virtual_hashes : Array[Int] = []
+  let virtual_hashes : Array[Int32] = []
 
   for i in 0..<self.virtual_nodes {
     let hash = self.hash(node_id.to_string() + "_" + i.to_string())
@@ -299,7 +299,7 @@ pub fn ConsistentHash::get_node(self : ConsistentHash, key : String) -> String? 
 /// 获取分片对应的所有节点（包括副本）
 pub fn ConsistentHash::get_nodes_for_shard(
   self : ConsistentHash,
-  shard_id : Int,
+  shard_id : Int32,
 ) -> Array[String] {
   let _ = shard_id
   let result : Array[String] = []
@@ -313,7 +313,7 @@ pub fn ConsistentHash::get_nodes_for_shard(
 
 ///|
 /// 哈希函数（FNV-1a 思想的简化版，限制在正 Int 范围内避免溢出）
-fn ConsistentHash::hash(self : ConsistentHash, key : String) -> Int {
+fn ConsistentHash::hash(self : ConsistentHash, key : String) -> Int32 {
   let _ = self
   let mut hash = 5381
   for b in key.to_array() {
@@ -324,7 +324,7 @@ fn ConsistentHash::hash(self : ConsistentHash, key : String) -> Int {
 
 ///|
 /// 分片键映射函数
-pub fn map_key_to_shard(key : String, total_shards : Int) -> Int {
+pub fn map_key_to_shard(key : String, total_shards : Int32) -> Int32 {
   let mut hash = 5381
   for b in key.to_array() {
     hash = ((hash ^ b.to_int()) * 3) & 0x1FFFFFFF
@@ -343,6 +343,6 @@ pub fn create_shard_allocator(
 
 ///|
 /// 创建一致性哈希
-pub fn create_consistent_hash(total_shards : Int) -> ConsistentHash {
+pub fn create_consistent_hash(total_shards : Int32) -> ConsistentHash {
   ConsistentHash::new(total_shards)
 }

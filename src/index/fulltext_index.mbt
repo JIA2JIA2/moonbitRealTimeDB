@@ -25,9 +25,9 @@ pub(all) struct FulltextIndex {
   /// 根节点
   mut root : TrieNode
   /// 条目总数（按数据键计数）
-  mut total_entries : Int
+  mut total_entries : Int32
   /// 内存占用估算
-  mut memory_bytes : Int
+  mut memory_bytes : Int32
 }
 
 ///|
@@ -72,7 +72,7 @@ pub fn FulltextIndex::insert(
 fn trie_insert(
   node : TrieNode,
   chars : Array[Char],
-  idx : Int,
+  idx : Int32,
   key : String,
 ) -> Bool {
   if idx >= chars.length() {
@@ -122,7 +122,7 @@ pub fn FulltextIndex::delete(
 fn trie_delete(
   node : TrieNode,
   chars : Array[Char],
-  idx : Int,
+  idx : Int32,
   key : String,
 ) -> Bool {
   if idx >= chars.length() {
@@ -227,12 +227,12 @@ fn trie_collect(node : TrieNode, result : Array[String]) -> Unit {
 }
 
 ///|
-pub fn FulltextIndex::memory_usage(self : FulltextIndex) -> Int {
+pub fn FulltextIndex::memory_usage(self : FulltextIndex) -> Int32 {
   self.memory_bytes
 }
 
 ///|
-pub fn FulltextIndex::size(self : FulltextIndex) -> Int {
+pub fn FulltextIndex::size(self : FulltextIndex) -> Int32 {
   self.total_entries
 }
 
@@ -251,12 +251,12 @@ pub fn FulltextIndex::index_type(self : FulltextIndex) -> IndexType {
 
 ///|
 /// 获取 Trie 节点数（用于测试与统计）
-pub fn FulltextIndex::node_count(self : FulltextIndex) -> Int {
+pub fn FulltextIndex::node_count(self : FulltextIndex) -> Int32 {
   trie_count_nodes(self.root)
 }
 
 ///|
-fn trie_count_nodes(node : TrieNode) -> Int {
+fn trie_count_nodes(node : TrieNode) -> Int32 {
   let mut count = 1
   for _, child in node.children {
     count = count + trie_count_nodes(child)

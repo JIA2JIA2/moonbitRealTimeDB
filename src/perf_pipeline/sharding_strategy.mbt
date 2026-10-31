@@ -6,31 +6,31 @@
 /// 分片结构
 pub struct Shard {
   /// 分片 ID
-  id : Int
+  id : Int32
   /// 分片数据
   data : Array[(String, @realtime_db.Value)]
   /// 分片偏移
-  offset : Int
+  offset : Int32
   /// 分片大小
-  size : Int
+  size : Int32
 }
 
 ///|
 /// 分片策略结构
 pub struct ShardingStrategy {
   /// 分片大小
-  mut shard_size : Int
+  mut shard_size : Int32
   /// 分片数量
-  mut shard_count : Int
+  mut shard_count : Int32
 }
 
 ///|
 /// 创建分片
 pub fn Shard::new(
-  id : Int,
+  id : Int32,
   data : Array[(String, @realtime_db.Value)],
-  offset : Int,
-  size : Int,
+  offset : Int32,
+  size : Int32,
 ) -> Shard {
   { id, data, offset, size, }
 }
@@ -43,13 +43,13 @@ pub fn Shard::data(self : Shard) -> Array[(String, @realtime_db.Value)] {
 
 ///|
 /// 获取分片大小
-pub fn Shard::size(self : Shard) -> Int {
+pub fn Shard::size(self : Shard) -> Int32 {
   self.size
 }
 
 ///|
 /// 创建分片策略
-pub fn ShardingStrategy::new(shard_size : Int) -> ShardingStrategy {
+pub fn ShardingStrategy::new(shard_size : Int32) -> ShardingStrategy {
   { shard_size, shard_count: 0, }
 }
 
@@ -104,8 +104,8 @@ pub fn ShardingStrategy::split_data(
 // 返回分片数量。
 pub fn ShardingStrategy::calculate_shard_count(
   self : ShardingStrategy,
-  total_records : Int,
-) -> Int {
+  total_records : Int32,
+) -> Int32 {
   if total_records <= self.shard_size {
     return 1
   }
@@ -119,7 +119,7 @@ pub fn ShardingStrategy::calculate_shard_count(
 
 ///|
 /// 获取分片数量
-pub fn ShardingStrategy::shard_count(self : ShardingStrategy) -> Int {
+pub fn ShardingStrategy::shard_count(self : ShardingStrategy) -> Int32 {
   self.shard_count
 }
 
@@ -127,7 +127,7 @@ pub fn ShardingStrategy::shard_count(self : ShardingStrategy) -> Int {
 /// 设置分片大小
 pub fn ShardingStrategy::set_shard_size(
   self : ShardingStrategy,
-  size : Int,
+  size : Int32,
 ) -> Unit {
   self.shard_size = size
 }

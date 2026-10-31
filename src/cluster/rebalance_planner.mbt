@@ -12,9 +12,9 @@ pub(all) struct RebalancePlan {
   /// 状态
   mut status : String
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 完成时间
-  completed_at : Int
+  completed_at : Int32
 }
 
 ///|
@@ -33,13 +33,13 @@ pub(all) struct MigrationTask {
   /// 进度（0.0-1.0）
   mut progress : Double
   /// 已迁移数据量
-  migrated_bytes : Int
+  migrated_bytes : Int32
   /// 总数据量
-  total_bytes : Int
+  total_bytes : Int32
   /// 开始时间
-  mut started_at : Int
+  mut started_at : Int32
   /// 完成时间
-  mut completed_at : Int
+  mut completed_at : Int32
 }
 
 ///|

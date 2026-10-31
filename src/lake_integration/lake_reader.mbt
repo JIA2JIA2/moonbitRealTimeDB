@@ -21,7 +21,7 @@ pub(all) struct LakeReadConfig {
   /// 是否启用分区裁剪
   partition_pruning : Bool
   /// 批处理大小
-  batch_size : Int
+  batch_size : Int32
 }
 
 ///|
@@ -177,9 +177,9 @@ pub(all) struct LakeMetadata {
   /// 数据湖格式
   format : LakeFormat
   /// 行数
-  row_count : Int
+  row_count : Int32
   /// 大小（字节）
-  size_bytes : Int
+  size_bytes : Int32
   /// Schema
   schema : @multi_tenant.TableSchema?
   /// 分区信息
@@ -194,9 +194,9 @@ pub(all) struct PartitionInfo {
   /// 分区值
   partition_value : String
   /// 行数
-  row_count : Int
+  row_count : Int32
   /// 大小
-  size_bytes : Int
+  size_bytes : Int32
 }
 
 ///|

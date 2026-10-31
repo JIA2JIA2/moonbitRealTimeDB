@@ -28,9 +28,9 @@ pub(all) struct CompositeIndex {
   /// 键到值的映射
   mut key_to_values : Map[String, Array[@realtime_db.Value]]
   /// 条目总数（按数据键计数）
-  mut total_entries : Int
+  mut total_entries : Int32
   /// 内存占用估算
-  mut memory_bytes : Int
+  mut memory_bytes : Int32
 }
 
 ///|
@@ -176,12 +176,12 @@ pub fn CompositeIndex::prefix_query(
 }
 
 ///|
-pub fn CompositeIndex::memory_usage(self : CompositeIndex) -> Int {
+pub fn CompositeIndex::memory_usage(self : CompositeIndex) -> Int32 {
   self.memory_bytes
 }
 
 ///|
-pub fn CompositeIndex::size(self : CompositeIndex) -> Int {
+pub fn CompositeIndex::size(self : CompositeIndex) -> Int32 {
   self.total_entries
 }
 
@@ -209,7 +209,7 @@ pub fn CompositeIndex::index_type(self : CompositeIndex) -> IndexType {
 pub fn CompositeIndex::composite_query(
   self : CompositeIndex,
   conditions : Array[@realtime_db.Value?],
-  limit : Int?,
+  limit : Int32?,
 ) -> Array[String] {
   if conditions.length() == 0 {
     return []
@@ -273,14 +273,14 @@ fn intersect_arrays(a : Array[String], b : Array[String]) -> Array[String] {
 /// 检查是否支持最左前缀匹配
 pub fn CompositeIndex::supports_prefix_match(
   self : CompositeIndex,
-  field_count : Int,
+  field_count : Int32,
 ) -> Bool {
   field_count > 0 && field_count <= self.sub_indices.length()
 }
 
 ///|
 /// 获取字段数量
-pub fn CompositeIndex::field_count(self : CompositeIndex) -> Int {
+pub fn CompositeIndex::field_count(self : CompositeIndex) -> Int32 {
   self.field_paths.length()
 }
 

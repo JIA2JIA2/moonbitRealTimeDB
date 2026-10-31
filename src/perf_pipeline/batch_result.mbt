@@ -8,11 +8,11 @@
 /// 包含成功数、失败数及失败记录。
 pub struct BatchResult {
   /// 成功记录数
-  mut success_count : Int
+  mut success_count : Int32
   /// 失败记录数
-  mut failed_count : Int
+  mut failed_count : Int32
   /// 失败记录列表（索引，错误原因）
-  failed_records : Array[(Int, String)]
+  failed_records : Array[(Int32, String)]
 }
 
 ///|
@@ -31,7 +31,7 @@ pub fn BatchResult::add_success(self : BatchResult) -> Unit {
 /// 添加失败记录
 pub fn BatchResult::add_failure(
   self : BatchResult,
-  index : Int,
+  index : Int32,
   reason : String,
 ) -> Unit {
   self.failed_count = self.failed_count + 1
@@ -50,18 +50,20 @@ pub fn BatchResult::merge(self : BatchResult, other : BatchResult) -> Unit {
 
 ///|
 /// 获取成功记录数
-pub fn BatchResult::success_count(self : BatchResult) -> Int {
+pub fn BatchResult::success_count(self : BatchResult) -> Int32 {
   self.success_count
 }
 
 ///|
 /// 获取失败记录数
-pub fn BatchResult::failed_count(self : BatchResult) -> Int {
+pub fn BatchResult::failed_count(self : BatchResult) -> Int32 {
   self.failed_count
 }
 
 ///|
 /// 获取失败记录列表
-pub fn BatchResult::failed_records(self : BatchResult) -> Array[(Int, String)] {
+pub fn BatchResult::failed_records(
+  self : BatchResult,
+) -> Array[(Int32, String)] {
   self.failed_records
 }

@@ -7,7 +7,7 @@ import {
 }
 
 // Values
-pub fn create_dataloader(Int, (Array[String]) -> Array[@core.Value]) -> DataLoader
+pub fn create_dataloader(Int32, (Array[String]) -> Array[@core.Value]) -> DataLoader
 
 pub fn create_executor(GraphQLSchema, GraphQLConfig) -> GraphQLExecutor
 
@@ -21,7 +21,7 @@ pub fn parse_graphql(String) -> Result[GraphQLParseResult, GraphQLErrorEnum]
 
 // Types and methods
 pub(all) struct DataLoader {
-  batch_size : Int
+  batch_size : Int32
   batch_fn : (Array[String]) -> Array[@core.Value]
   mut cache : Map[String, @core.Value]
   mut queue : Array[String]
@@ -29,7 +29,7 @@ pub(all) struct DataLoader {
 pub fn DataLoader::clear(Self) -> Unit
 pub fn DataLoader::load(Self, String) -> @core.Value?
 pub fn DataLoader::load_many(Self, Array[String]) -> Array[@core.Value]
-pub fn DataLoader::new(Int, (Array[String]) -> Array[@core.Value]) -> Self
+pub fn DataLoader::new(Int32, (Array[String]) -> Array[@core.Value]) -> Self
 
 pub(all) enum DirectiveLocation {
   Query
@@ -52,24 +52,24 @@ pub(all) struct GraphQLArg {
 
 pub(all) struct GraphQLCache {
   mut cache : Map[String, GraphQLValue]
-  max_size : Int
-  ttl : Int
-  mut hit_count : Int
-  mut query_count : Int
+  max_size : Int32
+  ttl : Int32
+  mut hit_count : Int32
+  mut query_count : Int32
 }
 pub fn GraphQLCache::clear(Self) -> Unit
 pub fn GraphQLCache::get(Self, String) -> GraphQLValue?
 pub fn GraphQLCache::hit_rate(Self) -> Double
-pub fn GraphQLCache::new(Int, Int) -> Self
+pub fn GraphQLCache::new(Int32, Int32) -> Self
 pub fn GraphQLCache::set(Self, String, GraphQLValue) -> Unit
 
 pub(all) struct GraphQLConfig {
   enable_dataloader : Bool
   enable_cache : Bool
-  cache_size : Int
-  cache_ttl : Int
-  max_query_depth : Int
-  max_field_count : Int
+  cache_size : Int32
+  cache_ttl : Int32
+  max_query_depth : Int32
+  max_field_count : Int32
   enable_subscription : Bool
 }
 pub fn GraphQLConfig::default() -> Self
@@ -92,8 +92,8 @@ pub(all) struct GraphQLDirective {
 
 pub(all) struct GraphQLError {
   message : String
-  line : Int?
-  column : Int?
+  line : Int32?
+  column : Int32?
   path : Array[String]?
   extensions : Map[String, GraphQLValue]
 }
@@ -105,7 +105,7 @@ pub(all) enum GraphQLErrorEnum {
   MissingArgument(String)
   InternalError(String)
 }
-pub fn GraphQLErrorEnum::code(Self) -> Int
+pub fn GraphQLErrorEnum::code(Self) -> Int32
 pub fn GraphQLErrorEnum::equal(Self, Self) -> Bool
 pub fn GraphQLErrorEnum::message(Self) -> String
 pub fn GraphQLErrorEnum::not_equal(Self, Self) -> Bool
@@ -165,9 +165,9 @@ pub(all) struct GraphQLParseResult {
 
 pub(all) struct GraphQLParser {
   text : String
-  mut position : Int
-  mut line : Int
-  mut column : Int
+  mut position : Int32
+  mut line : Int32
+  mut column : Int32
 }
 pub fn GraphQLParser::new(String) -> Self
 pub fn GraphQLParser::parse(Self) -> Result[GraphQLParseResult, GraphQLErrorEnum]
@@ -202,12 +202,12 @@ pub fn GraphQLService::start(Self) -> Unit
 pub fn GraphQLService::stop(Self) -> Unit
 
 pub(all) struct GraphQLStats {
-  total_queries : Int
-  total_mutations : Int
-  total_subscriptions : Int
+  total_queries : Int32
+  total_mutations : Int32
+  total_subscriptions : Int32
   avg_latency_ms : Double
-  p99_latency_ms : Int
-  error_count : Int
+  p99_latency_ms : Int32
+  error_count : Int32
   cache_hit_rate : Double
 }
 
@@ -219,7 +219,7 @@ pub(all) enum GraphQLType {
 }
 
 pub(all) enum GraphQLValue {
-  IntValue(Int)
+  IntValue(Int32)
   FloatValue(Double)
   StringValue(String)
   BoolValue(Bool)

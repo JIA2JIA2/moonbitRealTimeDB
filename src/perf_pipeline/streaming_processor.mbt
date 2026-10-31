@@ -15,7 +15,7 @@ pub struct StreamingProcessor {
   /// 内存池引用
   mempool : MemoryPool?
   /// 缓冲区
-  buffer : Array[(@realtime_db.Value, Int)]
+  buffer : Array[(@realtime_db.Value, Int32)]
   /// 背压控制器
   backpressure : BackpressureController?
   /// 配置
@@ -42,7 +42,7 @@ pub fn StreamingProcessor::new(
 /// 被接纳的批次按并发度上限从队首消费。
 pub fn StreamingProcessor::stream_write(
   self : StreamingProcessor,
-  records : Array[(@realtime_db.Value, Int)],
+  records : Array[(@realtime_db.Value, Int32)],
 ) -> StreamResult {
   let result = StreamResult::new()
   result.set_total_records(records.length())
@@ -126,8 +126,8 @@ pub fn StreamingProcessor::stream_write(
 /// 返回成功处理的条数。
 fn StreamingProcessor::process_batch(
   self : StreamingProcessor,
-  batch_size : Int,
-) -> Int {
+  batch_size : Int32,
+) -> Int32 {
   let mut processed = 0
   let mut i = 0
   while i < batch_size {
@@ -151,8 +151,8 @@ fn StreamingProcessor::process_batch(
 /// 单条失败重试最多 retry_count 次，返回成功时的重试次数，全部失败返回 -1。
 fn StreamingProcessor::process_with_retry(
   self : StreamingProcessor,
-  record : (@realtime_db.Value, Int),
-) -> Int {
+  record : (@realtime_db.Value, Int32),
+) -> Int32 {
   let mut retries = 0
   while retries < self.config.retry_count {
     match self.process_record(record) {
@@ -169,7 +169,7 @@ fn StreamingProcessor::process_with_retry(
 /// 记录为 (值, TTL 秒)；当前管道阶段不直接落库，仅做可处理性占位。
 fn StreamingProcessor::process_record(
   self : StreamingProcessor,
-  record : (@realtime_db.Value, Int),
+  record : (@realtime_db.Value, Int32),
 ) -> Result[Unit, String] {
   ignore(self)
   let (value, ttl) = record
@@ -182,7 +182,7 @@ fn StreamingProcessor::process_record(
 
 ///|
 /// 获取缓冲区使用率
-pub fn StreamingProcessor::buffer_usage(self : StreamingProcessor) -> Int {
+pub fn StreamingProcessor::buffer_usage(self : StreamingProcessor) -> Int32 {
   if self.config.buffer_size <= 0 {
     return 100 // 无容量配置视为满载，拒绝写入而非除零 panic
   }
@@ -191,7 +191,7 @@ pub fn StreamingProcessor::buffer_usage(self : StreamingProcessor) -> Int {
 
 ///|
 /// 获取飞行中记录数（当前缓冲区待处理记录）
-pub fn StreamingProcessor::in_flight(self : StreamingProcessor) -> Int {
+pub fn StreamingProcessor::in_flight(self : StreamingProcessor) -> Int32 {
   self.buffer.length()
 }
 

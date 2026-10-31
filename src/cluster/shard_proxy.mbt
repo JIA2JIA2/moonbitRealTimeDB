@@ -17,7 +17,7 @@ pub(all) struct QueryRouter {
 /// 创建查询路由器
 pub fn QueryRouter::new(
   routing_service : RoutingTableService,
-  total_shards : Int,
+  total_shards : Int32,
 ) -> QueryRouter {
   {
     routing_service,
@@ -265,7 +265,7 @@ pub fn ShardProxy::set_strong_consistency(
 /// 创建查询路由器
 pub fn create_query_router(
   routing_service : RoutingTableService,
-  total_shards : Int,
+  total_shards : Int32,
 ) -> QueryRouter {
   QueryRouter::new(routing_service, total_shards)
 }

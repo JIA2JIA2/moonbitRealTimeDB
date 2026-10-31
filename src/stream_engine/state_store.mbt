@@ -25,10 +25,10 @@ pub trait StateStore {
   ]
 
   /// 获取内存占用
-  fn memory_usage(self : Self) -> Int
+  fn memory_usage(self : Self) -> Int32
 
   /// 获取条目数
-  fn size(self : Self) -> Int
+  fn size(self : Self) -> Int32
 }
 
 ///|
@@ -37,18 +37,18 @@ pub(all) struct MemoryStateStore {
   /// 状态映射
   mut data : Map[String, @realtime_db.Value]
   /// TTL 映射
-  mut ttl_map : Map[String, Int]
+  mut ttl_map : Map[String, Int32]
   /// 当前时间
-  mut current_time : Int
+  mut current_time : Int32
   /// 内存限制
-  memory_limit : Int
+  memory_limit : Int32
   /// 是否启用溢出
   enable_overflow : Bool
 }
 
 ///|
 /// 默认内存限制
-pub const DEFAULT_MEMORY_LIMIT : Int = 100 * 1024 * 1024 // 100MB
+pub const DEFAULT_MEMORY_LIMIT : Int32 = 100 * 1024 * 1024 // 100MB
 
 ///|
 /// 创建内存状态存储
@@ -59,7 +59,7 @@ pub fn MemoryStateStore::new() -> MemoryStateStore {
 ///|
 /// 配置创建内存状态存储
 pub fn MemoryStateStore::with_config(
-  memory_limit : Int,
+  memory_limit : Int32,
   enable_overflow : Bool,
 ) -> MemoryStateStore {
   {
@@ -133,7 +133,7 @@ pub impl StateStore for MemoryStateStore with fn query(
 ///|
 pub impl StateStore for MemoryStateStore with fn memory_usage(
   self : MemoryStateStore,
-) -> Int {
+) -> Int32 {
   let mut total = 0
   for (key, _value) in self.data {
     total = total + key.length() + 64 // 估算每个条目
@@ -142,7 +142,7 @@ pub impl StateStore for MemoryStateStore with fn memory_usage(
 }
 
 ///|
-pub impl StateStore for MemoryStateStore with fn size(self : MemoryStateStore) -> Int {
+pub impl StateStore for MemoryStateStore with fn size(self : MemoryStateStore) -> Int32 {
   self.data.length()
 }
 
@@ -161,7 +161,7 @@ pub extend MemoryStateStore with StateStore::{
 pub fn MemoryStateStore::set_ttl(
   self : MemoryStateStore,
   key : String,
-  ttl_seconds : Int,
+  ttl_seconds : Int32,
 ) -> Result[Unit, StreamError] {
   let expire_time = self.current_time + ttl_seconds
   self.ttl_map.set(key, expire_time)
@@ -170,7 +170,7 @@ pub fn MemoryStateStore::set_ttl(
 
 ///|
 /// 清理过期状态
-pub fn MemoryStateStore::cleanup_expired(self : MemoryStateStore) -> Int {
+pub fn MemoryStateStore::cleanup_expired(self : MemoryStateStore) -> Int32 {
   let expired : Array[String] = []
   for (key, expire_time) in self.ttl_map {
     if expire_time <= self.current_time {
@@ -190,7 +190,7 @@ pub fn MemoryStateStore::cleanup_expired(self : MemoryStateStore) -> Int {
 /// 更新当前时间
 pub fn MemoryStateStore::update_time(
   self : MemoryStateStore,
-  current_time : Int,
+  current_time : Int32,
 ) -> Unit {
   self.current_time = current_time
 }
@@ -201,7 +201,7 @@ pub(all) struct StateSnapshot {
   /// 快照 ID
   snapshot_id : String
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
   /// 状态数据
   data : Map[String, @realtime_db.Value]
 }
@@ -212,11 +212,11 @@ pub(all) struct SnapshotManager {
   /// 快照映射
   mut snapshots : Map[String, StateSnapshot]
   /// 最大快照数
-  max_snapshots : Int
+  max_snapshots : Int32
   /// 快照间隔
-  snapshot_interval : Int
+  snapshot_interval : Int32
   /// 下一个快照编号（单调递增，保证 ID 永不重复）
-  mut next_id : Int
+  mut next_id : Int32
   /// 按创建顺序记录的快照 ID（用于确定性地淘汰最旧快照）
   mut id_order : Array[String]
 }
@@ -224,8 +224,8 @@ pub(all) struct SnapshotManager {
 ///|
 /// 创建快照管理器
 pub fn SnapshotManager::new(
-  max_snapshots : Int,
-  snapshot_interval : Int,
+  max_snapshots : Int32,
+  snapshot_interval : Int32,
 ) -> SnapshotManager {
   {
     snapshots: Map([]),
@@ -329,7 +329,7 @@ pub fn StateStoreFactory::create_memory_store() -> MemoryStateStore {
 ///|
 /// 创建带配置的状态存储
 pub fn StateStoreFactory::create_memory_store_with_config(
-  memory_limit : Int,
+  memory_limit : Int32,
   enable_overflow : Bool,
 ) -> MemoryStateStore {
   MemoryStateStore::with_config(memory_limit, enable_overflow)
@@ -338,8 +338,8 @@ pub fn StateStoreFactory::create_memory_store_with_config(
 ///|
 /// 创建快照管理器
 pub fn StateStoreFactory::create_snapshot_manager(
-  max_snapshots : Int,
-  snapshot_interval : Int,
+  max_snapshots : Int32,
+  snapshot_interval : Int32,
 ) -> SnapshotManager {
   SnapshotManager::new(max_snapshots, snapshot_interval)
 }

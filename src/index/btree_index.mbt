@@ -32,14 +32,14 @@ pub(all) struct BTreeIndex {
   mut root : BTreeNode?
   mut first_leaf : BTreeNode?
   /// 索引的数据键总数
-  mut total_entries : Int
-  mut height : Int
-  order : Int
-  mut memory_bytes : Int
+  mut total_entries : Int32
+  mut height : Int32
+  order : Int32
+  mut memory_bytes : Int32
 }
 
 ///|
-pub let default_order : Int = 32
+pub let default_order : Int32 = 32
 
 ///|
 pub fn BTreeIndex::new(name : String) -> BTreeIndex {
@@ -47,7 +47,7 @@ pub fn BTreeIndex::new(name : String) -> BTreeIndex {
 }
 
 ///|
-pub fn BTreeIndex::with_order(name : String, order : Int) -> BTreeIndex {
+pub fn BTreeIndex::with_order(name : String, order : Int32) -> BTreeIndex {
   {
     name,
     root: None,
@@ -433,12 +433,12 @@ pub fn BTreeIndex::prefix_query(
 }
 
 ///|
-pub fn BTreeIndex::memory_usage(self : BTreeIndex) -> Int {
+pub fn BTreeIndex::memory_usage(self : BTreeIndex) -> Int32 {
   self.memory_bytes
 }
 
 ///|
-pub fn BTreeIndex::size(self : BTreeIndex) -> Int {
+pub fn BTreeIndex::size(self : BTreeIndex) -> Int32 {
   self.total_entries
 }
 
@@ -458,12 +458,12 @@ pub fn BTreeIndex::index_type(self : BTreeIndex) -> IndexType {
 }
 
 ///|
-pub fn BTreeIndex::height(self : BTreeIndex) -> Int {
+pub fn BTreeIndex::height(self : BTreeIndex) -> Int32 {
   self.height
 }
 
 ///|
-pub fn BTreeIndex::node_count(self : BTreeIndex) -> Int {
+pub fn BTreeIndex::node_count(self : BTreeIndex) -> Int32 {
   match self.root {
     Some(root) => 1 + self.count_nodes(root)
     None => 0
@@ -471,7 +471,7 @@ pub fn BTreeIndex::node_count(self : BTreeIndex) -> Int {
 }
 
 ///|
-fn BTreeIndex::count_nodes(self : BTreeIndex, node : BTreeNode) -> Int {
+fn BTreeIndex::count_nodes(self : BTreeIndex, node : BTreeNode) -> Int32 {
   let _ = self
   let mut count = 0
   for child in node.children {

@@ -32,7 +32,7 @@ fn SearchEngine::validate_query(
   collection_name : String,
   tenant_id : String,
   query_vector : Array[Double],
-  top_k : Int,
+  top_k : Int32,
 ) -> VectorCollectionMeta? {
   let meta = match
     self.collection_manager.get_collection(collection_name, tenant_id) {
@@ -58,7 +58,7 @@ pub fn SearchEngine::search_exact(
   collection_name : String,
   tenant_id : String,
   query_vector : Array[Double],
-  top_k : Int,
+  top_k : Int32,
   filter? : FilterExpr,
 ) -> Array[SearchHit] {
   self.search_exact_impl(
@@ -73,7 +73,7 @@ fn SearchEngine::search_exact_impl(
   collection_name : String,
   tenant_id : String,
   query_vector : Array[Double],
-  top_k : Int,
+  top_k : Int32,
   filter : FilterExpr?,
 ) -> Array[SearchHit] {
   let meta = match
@@ -91,10 +91,7 @@ fn SearchEngine::search_exact_impl(
     }
     // 元数据过滤：不匹配的记录跳过
     match filter {
-      Some(f) =>
-        if !f.evaluate(record.metadata) {
-          continue
-        }
+      Some(f) => if !f.evaluate(record.metadata) { continue }
       None => ()
     }
     let raw = match metric {
@@ -135,7 +132,7 @@ pub fn SearchEngine::search_approximate(
   collection_name : String,
   tenant_id : String,
   query_vector : Array[Double],
-  top_k : Int,
+  top_k : Int32,
   filter? : FilterExpr,
 ) -> Array[SearchHit] {
   self.search_approximate_impl(
@@ -150,7 +147,7 @@ fn SearchEngine::search_approximate_impl(
   collection_name : String,
   tenant_id : String,
   query_vector : Array[Double],
-  top_k : Int,
+  top_k : Int32,
   filter : FilterExpr?,
 ) -> Array[SearchHit] {
   let meta = match
@@ -163,7 +160,11 @@ fn SearchEngine::search_approximate_impl(
   let fetch_k = match filter {
     Some(_) => {
       let expanded = top_k * 4
-      if expanded > 1000 { 1000 } else { expanded }
+      if expanded > 1000 {
+        1000
+      } else {
+        expanded
+      }
     }
     None => top_k
   }
@@ -195,10 +196,7 @@ fn SearchEngine::search_approximate_impl(
     }
     // 元数据过滤：不匹配的记录跳过
     match filter {
-      Some(f) =>
-        if !f.evaluate(metadata) {
-          continue
-        }
+      Some(f) => if !f.evaluate(metadata) { continue }
       None => ()
     }
     let raw = match metric {

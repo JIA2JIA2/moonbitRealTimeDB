@@ -42,36 +42,36 @@ pub extend RaftNodeState with Debug::{to_repr}
 /// Raft 状态结构体
 pub(all) struct RaftState {
   /// 当前任期
-  mut current_term : Int
+  mut current_term : Int32
   /// 投票给谁
   mut voted_for : String?
   /// 当前状态
   mut state : RaftNodeState
   /// 提交索引
-  mut commit_index : Int
+  mut commit_index : Int32
   /// 最后应用索引
-  mut last_applied : Int
+  mut last_applied : Int32
   /// 日志索引
-  mut last_log_index : Int
+  mut last_log_index : Int32
   /// 日志任期
-  mut last_log_term : Int
+  mut last_log_term : Int32
   /// 选举超时最小（毫秒）
-  election_timeout_min_ms : Int
+  election_timeout_min_ms : Int32
   /// 选举超时最大（毫秒）
-  election_timeout_max_ms : Int
+  election_timeout_max_ms : Int32
   /// 上次心跳时间
-  mut last_heartbeat : Int
+  mut last_heartbeat : Int32
   /// 上次投票时间
-  mut last_vote_time : Int
+  mut last_vote_time : Int32
   /// 投票计数
-  mut vote_count : Int
+  mut vote_count : Int32
 }
 
 ///|
 /// 创建 Raft 状态
 pub fn RaftState::new(
-  election_timeout_min_ms : Int,
-  election_timeout_max_ms : Int,
+  election_timeout_min_ms : Int32,
+  election_timeout_max_ms : Int32,
 ) -> RaftState {
   {
     current_term: 0,
@@ -91,7 +91,7 @@ pub fn RaftState::new(
 
 ///|
 /// 获取当前任期
-pub fn RaftState::current_term(self : RaftState) -> Int {
+pub fn RaftState::current_term(self : RaftState) -> Int32 {
   self.current_term
 }
 
@@ -105,7 +105,7 @@ pub fn RaftState::increment_term(self : RaftState) -> Unit {
 
 ///|
 /// 设置任期
-pub fn RaftState::set_term(self : RaftState, term : Int) -> Unit {
+pub fn RaftState::set_term(self : RaftState, term : Int32) -> Unit {
   if term > self.current_term {
     self.current_term = term
     self.voted_for = None
@@ -166,7 +166,7 @@ pub fn RaftState::become_leader(self : RaftState) -> Unit {
 
 ///|
 /// 转换为 Follower
-pub fn RaftState::become_follower(self : RaftState, term : Int) -> Unit {
+pub fn RaftState::become_follower(self : RaftState, term : Int32) -> Unit {
   self.set_term(term)
   self.state = Follower
   self.voted_for = None
@@ -196,14 +196,14 @@ pub fn RaftState::has_voted(self : RaftState) -> Bool {
 
 ///|
 /// 增加投票计数
-pub fn RaftState::increment_vote_count(self : RaftState) -> Int {
+pub fn RaftState::increment_vote_count(self : RaftState) -> Int32 {
   self.vote_count = self.vote_count + 1
   self.vote_count
 }
 
 ///|
 /// 获取投票计数
-pub fn RaftState::vote_count(self : RaftState) -> Int {
+pub fn RaftState::vote_count(self : RaftState) -> Int32 {
   self.vote_count
 }
 
@@ -221,7 +221,7 @@ pub fn RaftState::update_heartbeat(self : RaftState) -> Unit {
 
 ///|
 /// 获取上次心跳时间
-pub fn RaftState::last_heartbeat(self : RaftState) -> Int {
+pub fn RaftState::last_heartbeat(self : RaftState) -> Int32 {
   self.last_heartbeat
 }
 
@@ -229,22 +229,22 @@ pub fn RaftState::last_heartbeat(self : RaftState) -> Int {
 /// 检查是否超时
 pub fn RaftState::is_timeout(
   self : RaftState,
-  current_time : Int,
-  random_timeout : Int,
+  current_time : Int32,
+  random_timeout : Int32,
 ) -> Bool {
   current_time - self.last_heartbeat > random_timeout
 }
 
 ///|
 /// 获取随机选举超时
-pub fn RaftState::get_random_election_timeout(self : RaftState) -> Int {
+pub fn RaftState::get_random_election_timeout(self : RaftState) -> Int32 {
   // 简化实现：返回固定值
   self.election_timeout_min_ms
 }
 
 ///|
 /// 更新提交索引
-pub fn RaftState::update_commit_index(self : RaftState, index : Int) -> Unit {
+pub fn RaftState::update_commit_index(self : RaftState, index : Int32) -> Unit {
   if index > self.commit_index {
     self.commit_index = index
   }
@@ -252,7 +252,7 @@ pub fn RaftState::update_commit_index(self : RaftState, index : Int) -> Unit {
 
 ///|
 /// 获取提交索引
-pub fn RaftState::commit_index(self : RaftState) -> Int {
+pub fn RaftState::commit_index(self : RaftState) -> Int32 {
   self.commit_index
 }
 
@@ -260,8 +260,8 @@ pub fn RaftState::commit_index(self : RaftState) -> Int {
 /// 更新日志索引
 pub fn RaftState::update_log_index(
   self : RaftState,
-  index : Int,
-  term : Int,
+  index : Int32,
+  term : Int32,
 ) -> Unit {
   if index > self.last_log_index {
     self.last_log_index = index
@@ -271,13 +271,13 @@ pub fn RaftState::update_log_index(
 
 ///|
 /// 获取最后日志索引
-pub fn RaftState::last_log_index(self : RaftState) -> Int {
+pub fn RaftState::last_log_index(self : RaftState) -> Int32 {
   self.last_log_index
 }
 
 ///|
 /// 获取最后日志任期
-pub fn RaftState::last_log_term(self : RaftState) -> Int {
+pub fn RaftState::last_log_term(self : RaftState) -> Int32 {
   self.last_log_term
 }
 
@@ -285,8 +285,8 @@ pub fn RaftState::last_log_term(self : RaftState) -> Int {
 /// 比较日志是否更新
 pub fn RaftState::is_log_up_to_date(
   self : RaftState,
-  last_log_index : Int,
-  last_log_term : Int,
+  last_log_index : Int32,
+  last_log_term : Int32,
 ) -> Bool {
   if last_log_term > self.last_log_term {
     return true
@@ -301,8 +301,8 @@ pub fn RaftState::is_log_up_to_date(
 ///|
 /// 创建 Raft 状态
 pub fn create_raft_state(
-  election_timeout_min_ms : Int,
-  election_timeout_max_ms : Int,
+  election_timeout_min_ms : Int32,
+  election_timeout_max_ms : Int32,
 ) -> RaftState {
   RaftState::new(election_timeout_min_ms, election_timeout_max_ms)
 }

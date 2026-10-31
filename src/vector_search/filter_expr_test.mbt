@@ -25,17 +25,13 @@ fn upsert_vec(
   vector : Array[Double],
   metadata : Map[String, @realtime_db.Value],
 ) -> Bool {
-  mgr.upsert_record(
-    col,
-    tenant,
-    @vector_search.VectorRecord::{
-      primary_key: key,
-      vector,
-      metadata,
-      version: 1,
-      updated_at: 0,
-    },
-  )
+  mgr.upsert_record(col, tenant, @vector_search.VectorRecord::{
+    primary_key: key,
+    vector,
+    metadata,
+    version: 1,
+    updated_at: 0,
+  })
 }
 
 ///|
@@ -44,23 +40,17 @@ test "filter_expr_eq" {
     ("cat", @realtime_db.Str("news")),
     ("rank", @realtime_db.Int(7)),
   ])
-  assert_true(
-    @vector_search.Eq("cat", @realtime_db.Str("news")).evaluate(meta),
-  )
+  assert_true(@vector_search.Eq("cat", @realtime_db.Str("news")).evaluate(meta))
   assert_false(
     @vector_search.Eq("cat", @realtime_db.Str("sports")).evaluate(meta),
   )
   // 类型不匹配一律不命中
-  assert_false(
-    @vector_search.Eq("rank", @realtime_db.Str("7")).evaluate(meta),
-  )
+  assert_false(@vector_search.Eq("rank", @realtime_db.Str("7")).evaluate(meta))
   assert_false(
     @vector_search.Eq("rank", @realtime_db.Float(7.0)).evaluate(meta),
   )
   // 字段缺失不命中
-  assert_false(
-    @vector_search.Eq("missing", @realtime_db.Int(0)).evaluate(meta),
-  )
+  assert_false(@vector_search.Eq("missing", @realtime_db.Int(0)).evaluate(meta))
 }
 
 ///|
@@ -87,10 +77,7 @@ test "filter_expr_numeric_range" {
 
 ///|
 test "filter_expr_exists" {
-  let meta = test_meta([
-    ("a", @realtime_db.Int(1)),
-    ("n", @realtime_db.Null),
-  ])
+  let meta = test_meta([("a", @realtime_db.Int(1)), ("n", @realtime_db.Null)])
   assert_true(@vector_search.Exists("a").evaluate(meta))
   // Null 值字段也算存在
   assert_true(@vector_search.Exists("n").evaluate(meta))
@@ -162,11 +149,17 @@ test "search_exact_with_metadata_filter" {
     2,
     @vector_search.Cosine,
     @vector_search.Exact,
+    None,
     Array(capacity=0),
     "t1",
   )
   let _ = upsert_vec(
-    mgr, "col", "t1", "a1", [1.0, 0.0], test_meta([("cat", @realtime_db.Str("a"))]),
+    mgr,
+    "col",
+    "t1",
+    "a1",
+    [1.0, 0.0],
+    test_meta([("cat", @realtime_db.Str("a"))]),
   )
   let _ = upsert_vec(
     mgr,
@@ -177,7 +170,12 @@ test "search_exact_with_metadata_filter" {
     test_meta([("cat", @realtime_db.Str("a")), ("score", @realtime_db.Int(90))]),
   )
   let _ = upsert_vec(
-    mgr, "col", "t1", "b1", [0.0, 1.0], test_meta([("cat", @realtime_db.Str("b"))]),
+    mgr,
+    "col",
+    "t1",
+    "b1",
+    [0.0, 1.0],
+    test_meta([("cat", @realtime_db.Str("b"))]),
   )
   let _ = upsert_vec(
     mgr,
@@ -190,7 +188,10 @@ test "search_exact_with_metadata_filter" {
   let engine = @vector_search.SearchEngine::new(mgr)
   // 只保留 cat=a：4 条记录过滤后剩 2 条
   let hits = engine.search_exact(
-    "col", "t1", [1.0, 0.0], 4,
+    "col",
+    "t1",
+    [1.0, 0.0],
+    4,
     filter=@vector_search.Eq("cat", @realtime_db.Str("a")),
   )
   assert_eq(hits.length(), 2)
@@ -199,7 +200,10 @@ test "search_exact_with_metadata_filter" {
   }
   // 复合过滤：cat=a 且 score >= 90，仅 a2 命中
   let hits2 = engine.search_exact(
-    "col", "t1", [1.0, 0.0], 4,
+    "col",
+    "t1",
+    [1.0, 0.0],
+    4,
     filter=@vector_search.And([
       @vector_search.Eq("cat", @realtime_db.Str("a")),
       @vector_search.Gte("score", 90.0),
@@ -209,7 +213,10 @@ test "search_exact_with_metadata_filter" {
   assert_eq(hits2[0].primary_key, "a2")
   // 完全不命中返回空数组
   let hits3 = engine.search_exact(
-    "col", "t1", [1.0, 0.0], 4,
+    "col",
+    "t1",
+    [1.0, 0.0],
+    4,
     filter=@vector_search.Eq("cat", @realtime_db.Str("zzz")),
   )
   assert_eq(hits3.length(), 0)
@@ -224,6 +231,7 @@ test "search_approximate_with_metadata_filter" {
     2,
     @vector_search.Cosine,
     @vector_search.Approximate,
+    None,
     Array(capacity=0),
     "t1",
   )
@@ -232,11 +240,19 @@ test "search_approximate_with_metadata_filter" {
   while i < 6 {
     let offset = i.to_double() * 0.01
     let _ = upsert_vec(
-      mgr, "col", "t1", "a\{i}", [1.0 - offset, offset],
+      mgr,
+      "col",
+      "t1",
+      "a\{i}",
+      [1.0 - offset, offset],
       test_meta([("cat", @realtime_db.Str("a"))]),
     )
     let _ = upsert_vec(
-      mgr, "col", "t1", "b\{i}", [offset, 1.0 - offset],
+      mgr,
+      "col",
+      "t1",
+      "b\{i}",
+      [offset, 1.0 - offset],
       test_meta([("cat", @realtime_db.Str("b"))]),
     )
     i = i + 1
@@ -244,7 +260,10 @@ test "search_approximate_with_metadata_filter" {
   let engine = @vector_search.SearchEngine::new(mgr)
   // over-fetch 路径：top_k=2 → fetch_k=8（12 条记录足够），过滤后截断
   let hits = engine.search_approximate(
-    "col", "t1", [1.0, 0.0], 2,
+    "col",
+    "t1",
+    [1.0, 0.0],
+    2,
     filter=@vector_search.Eq("cat", @realtime_db.Str("a")),
   )
   assert_eq(hits.length(), 2)
@@ -254,7 +273,10 @@ test "search_approximate_with_metadata_filter" {
   // 回退路径：top_k=10 → fetch_k=40 超过记录总数 12，回退精确检索，
   // 返回全部 6 条 cat=a 命中
   let hits2 = engine.search_approximate(
-    "col", "t1", [1.0, 0.0], 10,
+    "col",
+    "t1",
+    [1.0, 0.0],
+    10,
     filter=@vector_search.Eq("cat", @realtime_db.Str("a")),
   )
   assert_eq(hits2.length(), 6)

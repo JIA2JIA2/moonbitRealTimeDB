@@ -11,17 +11,17 @@ import {
 
 // Types and methods
 pub struct Lsn {
-  value : Int
+  value : Int32
 }
-pub fn Lsn::new(Int) -> Self
-pub fn Lsn::value(Self) -> Int
+pub fn Lsn::new(Int32) -> Self
+pub fn Lsn::value(Self) -> Int32
 
 pub(all) enum Operation {
   Set(String, @core.Value)
   Delete(String)
-  Begin(Int)
-  Commit(Int)
-  Rollback(Int)
+  Begin(Int32)
+  Commit(Int32)
+  Rollback(Int32)
 }
 pub fn Operation::to_string(Self) -> String
 
@@ -29,57 +29,57 @@ pub struct Snapshot {
   metadata : SnapshotMetadata
   data : Map[String, String]
 }
-pub fn Snapshot::create(Map[String, String], Int) -> Self
+pub fn Snapshot::create(Map[String, String], Int32) -> Self
 pub fn Snapshot::data(Self) -> Map[String, String]
 pub fn Snapshot::load(Map[String, String], SnapshotMetadata) -> Self
 pub fn Snapshot::metadata(Self) -> SnapshotMetadata
 
 pub struct SnapshotMetadata {
-  create_time : Int
-  size : Int
+  create_time : Int32
+  size : Int32
   checksum : String
-  version : Int
+  version : Int32
 }
 pub fn SnapshotMetadata::checksum(Self) -> String
-pub fn SnapshotMetadata::create_time(Self) -> Int
-pub fn SnapshotMetadata::new(Int, Int, String, Int) -> Self
-pub fn SnapshotMetadata::size(Self) -> Int
-pub fn SnapshotMetadata::version(Self) -> Int
+pub fn SnapshotMetadata::create_time(Self) -> Int32
+pub fn SnapshotMetadata::new(Int32, Int32, String, Int32) -> Self
+pub fn SnapshotMetadata::size(Self) -> Int32
+pub fn SnapshotMetadata::version(Self) -> Int32
 
 pub struct SnapshotScheduler {
-  interval : Int
-  mut last_snapshot_time : Int
-  max_retention : Int
+  interval : Int32
+  mut last_snapshot_time : Int32
+  max_retention : Int32
   snapshots : Array[String]
 }
-pub fn SnapshotScheduler::max_retention(Self) -> Int
-pub fn SnapshotScheduler::new(Int, Int) -> Self
-pub fn SnapshotScheduler::record_snapshot(Self, String, Int) -> Unit
-pub fn SnapshotScheduler::should_snapshot(Self, Int) -> Bool
+pub fn SnapshotScheduler::max_retention(Self) -> Int32
+pub fn SnapshotScheduler::new(Int32, Int32) -> Self
+pub fn SnapshotScheduler::record_snapshot(Self, String, Int32) -> Unit
+pub fn SnapshotScheduler::should_snapshot(Self, Int32) -> Bool
 pub fn SnapshotScheduler::snapshots(Self) -> Array[String]
 
 pub struct WAL {
   file_path : String
-  mut current_lsn : Int
+  mut current_lsn : Int32
   mut buffer : Array[WalEntry]
   persisted : Array[WalEntry]
-  buffer_threshold : Int
+  buffer_threshold : Int32
 }
-pub fn WAL::append(Self, Operation, timestamp? : Int, tx_id? : Int) -> Lsn
-pub fn WAL::append_and_flush(Self, Operation, timestamp? : Int, tx_id? : Int) -> Lsn
-pub fn WAL::buffer_size(Self) -> Int
-pub fn WAL::current_lsn(Self) -> Int
-pub fn WAL::new(String, Int) -> Self
-pub fn WAL::persisted_size(Self) -> Int
-pub fn WAL::replay(Self, (Operation, Int?) -> Unit) -> Unit
+pub fn WAL::append(Self, Operation, timestamp? : Int32, tx_id? : Int32) -> Lsn
+pub fn WAL::append_and_flush(Self, Operation, timestamp? : Int32, tx_id? : Int32) -> Lsn
+pub fn WAL::buffer_size(Self) -> Int32
+pub fn WAL::current_lsn(Self) -> Int32
+pub fn WAL::new(String, Int32) -> Self
+pub fn WAL::persisted_size(Self) -> Int32
+pub fn WAL::replay(Self, (Operation, Int32?) -> Unit) -> Unit
 pub fn WAL::should_flush(Self) -> Bool
-pub fn WAL::sync(Self) -> Int
+pub fn WAL::sync(Self) -> Int32
 
 pub struct WalEntry {
   lsn : Lsn
   operation : Operation
-  timestamp : Int
-  tx_id : Int?
+  timestamp : Int32
+  tx_id : Int32?
 }
 pub fn WalEntry::to_string(Self) -> String
 

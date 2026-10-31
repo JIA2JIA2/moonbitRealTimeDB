@@ -16,7 +16,7 @@ pub(all) struct ChangeEvent {
   collection_name : String
   primary_key : String
   change_type : ChangeEventType
-  occurred_at : Int
+  occurred_at : Int32
 }
 
 pub(all) enum ChangeEventType {
@@ -35,20 +35,21 @@ pub struct CollectionManager {
   tenant_collections : Map[String, Array[String]]
   records : Map[String, Map[String, VectorRecord]]
   hnsw_indexes : Map[String, HNSWIndex]
-  mut next_id : Int
+  ivf_indexes : Map[String, IVFIndex]
+  mut next_id : Int32
 }
-pub fn CollectionManager::create_collection(Self, String, Int, DistanceMetric, IndexStrategy, Array[String], String) -> Unit
+pub fn CollectionManager::create_collection(Self, String, Int32, DistanceMetric, IndexStrategy, IndexConfig?, Array[String], String) -> Unit
 pub fn CollectionManager::delete_collection(Self, String, String) -> Unit
 pub fn CollectionManager::get_collection(Self, String, String) -> VectorCollectionMeta?
 pub fn CollectionManager::get_record(Self, String, String, String) -> VectorRecord?
 pub fn CollectionManager::has_collection(Self, String, String) -> Bool
-pub fn CollectionManager::increment_record_count(Self, String, String, Int) -> Unit
+pub fn CollectionManager::increment_record_count(Self, String, String, Int32) -> Unit
 pub fn CollectionManager::list_collections(Self, String) -> Array[VectorCollectionMeta]
 pub fn CollectionManager::list_records(Self, String, String) -> Array[VectorRecord]
 pub fn CollectionManager::new() -> Self
-pub fn CollectionManager::search_index(Self, String, String, Array[Double], Int) -> Array[(String, Double)]?
+pub fn CollectionManager::search_index(Self, String, String, Array[Double], Int32) -> Array[(String, Double)]?
 pub fn CollectionManager::upsert_record(Self, String, String, VectorRecord) -> Bool
-pub fn CollectionManager::validate_dimension(Int) -> Unit
+pub fn CollectionManager::validate_dimension(Int32) -> Unit
 pub fn CollectionManager::validate_metric(DistanceMetric) -> Bool
 
 pub struct DistanceCalculator {
@@ -86,10 +87,10 @@ pub fn FilterExpr::evaluate(Self, Map[String, @core.Value]) -> Bool
 pub fn FilterExpr::to_repr(Self) -> @debug.Repr
 
 pub(all) struct HNSWConfig {
-  m : Int
-  ef_construction : Int
-  ef_search : Int
-  max_layers : Int
+  m : Int32
+  ef_construction : Int32
+  ef_search : Int32
+  max_layers : Int32
 }
 pub fn HNSWConfig::default() -> Self
 pub fn HNSWConfig::validate(Self) -> Result[Unit, String]
@@ -99,8 +100,8 @@ pub struct HNSWIndex {
   mut nodes : Map[String, HNSWNode]
   mut layers : Array[Array[String]]
   mut entry_point : String
-  mut entry_level : Int
-  mut rng_state : Int
+  mut entry_level : Int32
+  mut rng_state : Int32
 }
 pub fn HNSWIndex::all_ids(Self) -> Array[String]
 pub fn HNSWIndex::clear(Self) -> Unit
@@ -109,29 +110,45 @@ pub fn HNSWIndex::delete(Self, String, DistanceMetric) -> Result[Unit, String]
 pub fn HNSWIndex::get(Self, String) -> HNSWNode?
 pub fn HNSWIndex::insert(Self, String, Array[Double], DistanceMetric) -> Result[Unit, String]
 pub fn HNSWIndex::new(HNSWConfig) -> Self
-pub fn HNSWIndex::search_top_k(Self, Array[Double], Int, DistanceMetric) -> Array[(String, Double)]
-pub fn HNSWIndex::size(Self) -> Int
+pub fn HNSWIndex::search_top_k(Self, Array[Double], Int32, DistanceMetric) -> Array[(String, Double)]
+pub fn HNSWIndex::size(Self) -> Int32
 
 pub(all) struct HNSWNode {
   id : String
   vector : Array[Double]
-  level : Int
+  level : Int32
   neighbors : Array[Array[String]]
 }
 
 pub(all) struct IVFConfig {
-  n_list : Int
-  n_probe : Int
+  n_list : Int32
+  n_probe : Int32
   metric : DistanceMetric
 }
 pub fn IVFConfig::default() -> Self
+pub fn IVFConfig::validate(Self) -> Result[Unit, String]
+
+pub struct IVFIndex {
+  config : IVFConfig
+  mut centroids : Array[Array[Double]]
+  mut buckets : Array[IvfBucket]
+  dimension : Int32
+  mut trained : Bool
+}
+pub fn IVFIndex::dimension(Self) -> Int32
+pub fn IVFIndex::insert(Self, VectorRecord) -> Result[Unit, String]
+pub fn IVFIndex::is_trained(Self) -> Bool
+pub fn IVFIndex::new(IVFConfig, Int32) -> Self
+pub fn IVFIndex::search_top_k(Self, Array[Double], Int32) -> Array[(String, Double)]
+pub fn IVFIndex::size(Self) -> Int32
+pub fn IVFIndex::train(Self, Array[Array[Double]]) -> Result[Unit, String]
 
 pub(all) struct ImportTaskProgress {
   task_id : String
   status : ImportTaskStatus
-  total_records : Int
-  success_count : Int
-  failure_count : Int
+  total_records : Int32
+  success_count : Int32
+  failure_count : Int32
   error_message : String
 }
 
@@ -169,11 +186,11 @@ pub impl Eq for IndexStatus
 
 pub(all) struct IndexStatusReport {
   index_type : String
-  indexed_count : Int
-  build_progress : Int
+  indexed_count : Int32
+  build_progress : Int32
   is_ready : Bool
-  last_optimized_at : Int
-  memory_bytes : Int
+  last_optimized_at : Int32
+  memory_bytes : Int32
 }
 
 pub(all) enum IndexStrategy {
@@ -194,13 +211,19 @@ pub fn IndexType::not_equal(Self, Self) -> Bool
 pub fn IndexType::to_repr(Self) -> @debug.Repr
 pub impl Eq for IndexType
 
+pub(all) struct IvfBucket {
+  centroid : Array[Double]
+  records : Array[VectorRecord]
+  mut count : Int32
+}
+
 pub struct SearchEngine {
   collection_manager : CollectionManager
   distance_calculator : DistanceCalculator
 }
 pub fn SearchEngine::new(CollectionManager) -> Self
-pub fn SearchEngine::search_approximate(Self, String, String, Array[Double], Int, filter? : FilterExpr) -> Array[SearchHit]
-pub fn SearchEngine::search_exact(Self, String, String, Array[Double], Int, filter? : FilterExpr) -> Array[SearchHit]
+pub fn SearchEngine::search_approximate(Self, String, String, Array[Double], Int32, filter? : FilterExpr) -> Array[SearchHit]
+pub fn SearchEngine::search_exact(Self, String, String, Array[Double], Int32, filter? : FilterExpr) -> Array[SearchHit]
 
 pub struct SearchHit {
   primary_key : String
@@ -223,7 +246,7 @@ pub(all) struct SearchResult {
   metadata : Map[String, @core.Value]
   distance_metric : DistanceMetric
   search_mode : SearchMode
-  scanned_count : Int
+  scanned_count : Int32
 }
 
 pub(all) struct Subscriber {
@@ -234,21 +257,22 @@ pub(all) struct Subscriber {
 
 pub(all) struct VectorCollectionMeta {
   collection_name : String
-  dimension : Int
+  dimension : Int32
   distance_metric : DistanceMetric
   index_strategy : IndexStrategy
+  index_config : IndexConfig?
   filterable_fields : Array[String]
-  record_count : Int
+  record_count : Int32
   tenant_id : String
-  created_at : Int
+  created_at : Int32
 }
 
 pub(all) struct VectorRecord {
   primary_key : String
   vector : Array[Double]
   metadata : Map[String, @core.Value]
-  version : Int
-  updated_at : Int
+  version : Int32
+  updated_at : Int32
 }
 
 pub(all) enum VectorSearchError {
@@ -282,8 +306,8 @@ pub(all) struct VectorSearchMetrics {
   search_latency_p50 : Double
   search_latency_p95 : Double
   search_latency_p99 : Double
-  index_memory_bytes : Int
-  collection_record_count : Int
+  index_memory_bytes : Int32
+  collection_record_count : Int32
   index_healthy : Bool
   import_throughput : Double
 }

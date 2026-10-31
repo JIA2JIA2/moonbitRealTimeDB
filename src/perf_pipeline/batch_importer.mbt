@@ -67,7 +67,7 @@ pub fn BatchImporter::set_mempool(
 pub fn BatchImporter::import_batch(
   self : BatchImporter,
   data : Array[(String, @realtime_db.Value)],
-  ttl : Int?,
+  ttl : Int32?,
 ) -> BatchResult {
   let result = BatchResult::new()
 

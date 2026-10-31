@@ -86,19 +86,21 @@ pub(all) struct VectorCollectionMeta {
   /// 集合名称
   collection_name : String
   /// 向量维度
-  dimension : Int
+  dimension : Int32
   /// 距离度量
   distance_metric : DistanceMetric
   /// 索引策略
   index_strategy : IndexStrategy
+  /// 索引配置
+  index_config : IndexConfig?
   /// 可过滤字段列表
   filterable_fields : Array[String]
   /// 记录数
-  record_count : Int
+  record_count : Int32
   /// 租户 ID
   tenant_id : String
   /// 创建时间戳
-  created_at : Int
+  created_at : Int32
 }
 
 ///|
@@ -111,9 +113,9 @@ pub(all) struct VectorRecord {
   /// 元数据
   metadata : Map[String, @realtime_db.Value]
   /// 版本号
-  version : Int
+  version : Int32
   /// 更新时间戳
-  updated_at : Int
+  updated_at : Int32
 }
 
 ///|
@@ -130,7 +132,7 @@ pub(all) struct SearchResult {
   /// 检索模式
   search_mode : SearchMode
   /// 扫描记录数
-  scanned_count : Int
+  scanned_count : Int32
 }
 
 ///|
@@ -145,9 +147,9 @@ pub(all) struct VectorSearchMetrics {
   /// 检索延迟 P99
   search_latency_p99 : Double
   /// 索引内存占用（字节）
-  index_memory_bytes : Int
+  index_memory_bytes : Int32
   /// 集合记录数
-  collection_record_count : Int
+  collection_record_count : Int32
   /// 索引健康状态
   index_healthy : Bool
   /// 批量导入吞吐（条/秒）
@@ -193,15 +195,15 @@ pub(all) struct IndexStatusReport {
   /// 索引类型
   index_type : String
   /// 已索引记录数
-  indexed_count : Int
+  indexed_count : Int32
   /// 构建进度（0~100）
-  build_progress : Int
+  build_progress : Int32
   /// 是否就绪
   is_ready : Bool
   /// 最近优化时间戳
-  last_optimized_at : Int
+  last_optimized_at : Int32
   /// 内存占用（字节）
-  memory_bytes : Int
+  memory_bytes : Int32
 }
 
 ///|
@@ -244,7 +246,7 @@ pub(all) struct ChangeEvent {
   /// 变更类型
   change_type : ChangeEventType
   /// 发生时间戳
-  occurred_at : Int
+  occurred_at : Int32
 }
 
 ///|
@@ -288,11 +290,11 @@ pub(all) struct ImportTaskProgress {
   /// 任务状态
   status : ImportTaskStatus
   /// 总记录数
-  total_records : Int
+  total_records : Int32
   /// 成功记录数
-  success_count : Int
+  success_count : Int32
   /// 失败记录数
-  failure_count : Int
+  failure_count : Int32
   /// 错误信息
   error_message : String
 }
@@ -344,13 +346,13 @@ pub extend IndexType with Debug::{to_repr}
 /// HNSW 配置
 pub(all) struct HNSWConfig {
   /// 每个节点最大连接数（建议 16~64）
-  m : Int
+  m : Int32
   /// 构建时候选列表大小（建议 100~200）
-  ef_construction : Int
+  ef_construction : Int32
   /// 检索时候选列表大小（建议 50~100）
-  ef_search : Int
+  ef_search : Int32
   /// 最大层数
-  max_layers : Int
+  max_layers : Int32
 }
 
 ///|
@@ -384,7 +386,7 @@ pub(all) struct HNSWNode {
   /// 向量数据
   vector : Array[Double]
   /// 所在层级（0 为底层）
-  level : Int
+  level : Int32
   /// 各层邻居列表（按层索引）
   neighbors : Array[Array[String]]
 }
@@ -393,9 +395,9 @@ pub(all) struct HNSWNode {
 /// IVF 配置
 pub(all) struct IVFConfig {
   /// 聚类数量（建议 sqrt(N) ~ N/10）
-  n_list : Int
+  n_list : Int32
   /// 检索时探测聚类数（建议 1~256）
-  n_probe : Int
+  n_probe : Int32
   /// 距离度量
   metric : DistanceMetric
 }
@@ -403,6 +405,17 @@ pub(all) struct IVFConfig {
 ///|
 pub fn IVFConfig::default() -> IVFConfig {
   IVFConfig::{ n_list: 1000, n_probe: 64, metric: Cosine, }
+}
+
+///|
+pub fn IVFConfig::validate(self : IVFConfig) -> Result[Unit, String] {
+  if self.n_list < 1 {
+    return Err("n_list must be positive")
+  }
+  if self.n_probe < 1 || self.n_probe > self.n_list {
+    return Err("nprobe must be in [1, n_list]")
+  }
+  Ok(())
 }
 
 ///|

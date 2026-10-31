@@ -9,11 +9,11 @@ pub struct ParallelResult {
   /// 分片结果列表
   shard_results : Array[BatchResult]
   /// 总成功数
-  mut total_success : Int
+  mut total_success : Int32
   /// 总失败数
-  mut total_failed : Int
+  mut total_failed : Int32
   /// 分片数量
-  mut shard_count : Int
+  mut shard_count : Int32
 }
 
 ///|
@@ -69,7 +69,7 @@ pub fn ParallelImporter::new(
 pub fn ParallelImporter::parallel_import(
   self : ParallelImporter,
   data : Array[(String, @realtime_db.Value)],
-  parallelism : Int?,
+  parallelism : Int32?,
 ) -> Result[ParallelResult, ParallelError] {
   let actual_parallelism = match parallelism {
     Some(p) => p.min(self.config.parallelism)
@@ -162,18 +162,18 @@ pub fn ParallelImporter::set_importer(
 
 ///|
 /// 获取总成功数
-pub fn ParallelResult::total_success(self : ParallelResult) -> Int {
+pub fn ParallelResult::total_success(self : ParallelResult) -> Int32 {
   self.total_success
 }
 
 ///|
 /// 获取总失败数
-pub fn ParallelResult::total_failed(self : ParallelResult) -> Int {
+pub fn ParallelResult::total_failed(self : ParallelResult) -> Int32 {
   self.total_failed
 }
 
 ///|
 /// 获取分片数量
-pub fn ParallelResult::shard_count(self : ParallelResult) -> Int {
+pub fn ParallelResult::shard_count(self : ParallelResult) -> Int32 {
   self.shard_count
 }

@@ -6,20 +6,20 @@
 /// 投票请求
 pub(all) struct VoteRequest {
   /// 任期
-  term : Int
+  term : Int32
   /// 候选人 ID
   candidate_id : String
   /// 最后日志索引
-  last_log_index : Int
+  last_log_index : Int32
   /// 最后日志任期
-  last_log_term : Int
+  last_log_term : Int32
 }
 
 ///|
 /// 投票响应
 pub(all) struct VoteResponse {
   /// 任期
-  term : Int
+  term : Int32
   /// 是否投票
   vote_granted : Bool
   /// 错误信息
@@ -30,39 +30,39 @@ pub(all) struct VoteResponse {
 /// 附加日志请求
 pub(all) struct AppendEntriesRequest {
   /// 任期
-  term : Int
+  term : Int32
   /// 领导者 ID
   leader_id : String
   /// 前一个日志索引
-  prev_log_index : Int
+  prev_log_index : Int32
   /// 前一个日志任期
-  prev_log_term : Int
+  prev_log_term : Int32
   /// 日志条目
   entries : Array[LogEntry]
   /// 领导者提交索引
-  leader_commit : Int
+  leader_commit : Int32
 }
 
 ///|
 /// 附加日志响应
 pub(all) struct AppendEntriesResponse {
   /// 任期
-  term : Int
+  term : Int32
   /// 是否成功
   success : Bool
   /// 冲突索引
-  conflict_index : Int
+  conflict_index : Int32
   /// 冲突任期
-  conflict_term : Int
+  conflict_term : Int32
 }
 
 ///|
 /// 日志条目
 pub(all) struct LogEntry {
   /// 索引
-  mut index : Int
+  mut index : Int32
   /// 任期
-  term : Int
+  term : Int32
   /// 命令
   command : String
   /// 数据
@@ -148,9 +148,9 @@ pub(all) struct RaftNode {
   /// 投票服务
   vote_service : VoteService
   /// 选举超时
-  election_timeout : Int
+  election_timeout : Int32
   /// 心跳间隔
-  heartbeat_interval_ms : Int
+  heartbeat_interval_ms : Int32
   /// 是否在运行
   mut is_running : Bool
 }
@@ -347,7 +347,7 @@ pub fn RaftNode::append_log(
   self : RaftNode,
   _command : String,
   _data : @realtime_db.Value?,
-) -> Int {
+) -> Int32 {
   if !self.state.is_leader() {
     return -1
   }
@@ -381,7 +381,7 @@ pub fn RaftNode::is_leader(self : RaftNode) -> Bool {
 
 ///|
 /// 获取任期
-pub fn RaftNode::current_term(self : RaftNode) -> Int {
+pub fn RaftNode::current_term(self : RaftNode) -> Int32 {
   self.state.current_term()
 }
 

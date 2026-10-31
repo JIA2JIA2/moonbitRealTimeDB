@@ -11,9 +11,9 @@
 /// 压缩统计结构
 pub struct CompressionStats {
   /// 压缩后大小
-  mut compressed_size : Int
+  mut compressed_size : Int32
   /// 原始大小
-  mut original_size : Int
+  mut original_size : Int32
   /// 压缩比
   mut compression_ratio : Double
 }
@@ -134,9 +134,9 @@ pub fn CompressionProcessor::compress(
   self : CompressionProcessor,
   data : Array[Byte],
   format : CompressionFormat,
-  level_opt : Int?,
+  level_opt : Int32?,
 ) -> Result[Array[Byte], CompressionError] {
-  let actual_level : Int = match level_opt {
+  let actual_level : Int32 = match level_opt {
     Some(l) => l
     None => self.config.level
   }
@@ -153,7 +153,7 @@ pub fn CompressionProcessor::compress(
 pub fn CompressionProcessor::compress_gzip(
   self : CompressionProcessor,
   data : Array[Byte],
-  _level : Int,
+  _level : Int32,
 ) -> Result[Array[Byte], CompressionError] {
   self.encode_frame(data, Gzip)
 }
@@ -163,7 +163,7 @@ pub fn CompressionProcessor::compress_gzip(
 pub fn CompressionProcessor::compress_zstd(
   self : CompressionProcessor,
   data : Array[Byte],
-  _level : Int,
+  _level : Int32,
 ) -> Result[Array[Byte], CompressionError] {
   self.encode_frame(data, Zstd)
 }
@@ -173,7 +173,7 @@ pub fn CompressionProcessor::compress_zstd(
 pub fn CompressionProcessor::compress_lz4(
   self : CompressionProcessor,
   data : Array[Byte],
-  _level : Int,
+  _level : Int32,
 ) -> Result[Array[Byte], CompressionError] {
   self.encode_frame(data, Lz4)
 }
@@ -204,13 +204,13 @@ pub fn CompressionStats::compression_ratio(self : CompressionStats) -> Double {
 
 ///|
 /// 获取压缩后大小
-pub fn CompressionStats::compressed_size(self : CompressionStats) -> Int {
+pub fn CompressionStats::compressed_size(self : CompressionStats) -> Int32 {
   self.compressed_size
 }
 
 ///|
 /// 获取原始大小
-pub fn CompressionStats::original_size(self : CompressionStats) -> Int {
+pub fn CompressionStats::original_size(self : CompressionStats) -> Int32 {
   self.original_size
 }
 
@@ -220,26 +220,11 @@ pub fn CompressionStats::original_size(self : CompressionStats) -> Int {
 fn compression_magic(format : CompressionFormat) -> Array[Byte] {
   match format {
     Gzip =>
-      [
-        0x1f.to_byte(),
-        0x8b.to_byte(),
-        0x4d.to_byte(),
-        0x42.to_byte(),
-      ]
+      [(0x1f).to_byte(), (0x8b).to_byte(), (0x4d).to_byte(), (0x42).to_byte()]
     Zstd =>
-      [
-        0x28.to_byte(),
-        0xb5.to_byte(),
-        0x2f.to_byte(),
-        0xfd.to_byte(),
-      ]
+      [(0x28).to_byte(), (0xb5).to_byte(), (0x2f).to_byte(), (0xfd).to_byte()]
     Lz4 =>
-      [
-        0x04.to_byte(),
-        0x22.to_byte(),
-        0x4d.to_byte(),
-        0x18.to_byte(),
-      ]
+      [(0x04).to_byte(), (0x22).to_byte(), (0x4d).to_byte(), (0x18).to_byte()]
   }
 }
 
@@ -266,7 +251,7 @@ fn rle_encode(data : Array[Byte]) -> Array[Byte] {
 /// RLE 解码：展开 [run_len, value] 对并严格校验总长度。
 fn rle_decode(
   payload : Array[Byte],
-  expected_len : Int,
+  expected_len : Int32,
 ) -> Result[Array[Byte], CompressionError] {
   let out : Array[Byte] = []
   let n = payload.length()
@@ -308,12 +293,12 @@ fn CompressionProcessor::encode_frame(
 ) -> Result[Array[Byte], CompressionError] {
   let rle = rle_encode(data)
   let use_rle = rle.length() < data.length()
-  let mode : Int = if use_rle { 0 } else { 1 }
+  let mode : Int32 = if use_rle { 0 } else { 1 }
   let result : Array[Byte] = []
   for b in compression_magic(format) {
     result.push(b)
   }
-  result.push(1.to_byte())
+  result.push((1).to_byte())
   result.push(mode.to_byte())
   let len = data.length()
   result.push((len & 0xff).to_byte())

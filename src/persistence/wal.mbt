@@ -9,7 +9,7 @@
 ///|
 /// 日志序列号（LSN）
 pub struct Lsn {
-  value : Int
+  value : Int32
 }
 
 ///|
@@ -20,11 +20,11 @@ pub(all) enum Operation {
   /// 删除键
   Delete(String)
   /// 事务开始
-  Begin(Int)
+  Begin(Int32)
   /// 事务提交
-  Commit(Int)
+  Commit(Int32)
   /// 事务回滚
-  Rollback(Int)
+  Rollback(Int32)
 }
 
 ///|
@@ -35,9 +35,9 @@ pub struct WalEntry {
   /// 操作类型
   operation : Operation
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
   /// 事务 ID（可选）
-  tx_id : Int?
+  tx_id : Int32?
 }
 
 ///|
@@ -47,24 +47,24 @@ pub struct WAL {
   /// 日志文件路径（预留，供未来接入文件 IO）
   file_path : String
   /// 下一个待分配的 LSN
-  mut current_lsn : Int
+  mut current_lsn : Int32
   /// 写入缓冲区（未刷盘）
   mut buffer : Array[WalEntry]
   /// 已刷盘的日志条目
   persisted : Array[WalEntry]
   /// 缓冲区大小阈值
-  buffer_threshold : Int
+  buffer_threshold : Int32
 }
 
 ///|
 /// 创建 LSN
-pub fn Lsn::new(value : Int) -> Lsn {
+pub fn Lsn::new(value : Int32) -> Lsn {
   { value, }
 }
 
 ///|
 /// 获取 LSN 值
-pub fn Lsn::value(self : Lsn) -> Int {
+pub fn Lsn::value(self : Lsn) -> Int32 {
   self.value
 }
 
@@ -74,7 +74,7 @@ pub fn Lsn::value(self : Lsn) -> Int {
 /// ## 参数
 /// - file_path: 日志文件路径
 /// - buffer_threshold: 缓冲区大小阈值（默认 1000）
-pub fn WAL::new(file_path : String, buffer_threshold : Int) -> WAL {
+pub fn WAL::new(file_path : String, buffer_threshold : Int32) -> WAL {
   { file_path, current_lsn: 0, buffer: [], persisted: [], buffer_threshold, }
 }
 
@@ -83,8 +83,8 @@ pub fn WAL::new(file_path : String, buffer_threshold : Int) -> WAL {
 pub fn WAL::append(
   self : WAL,
   operation : Operation,
-  timestamp? : Int,
-  tx_id? : Int,
+  timestamp? : Int32,
+  tx_id? : Int32,
 ) -> Lsn {
   self.append_entry(
     operation,
@@ -101,8 +101,8 @@ pub fn WAL::append(
 fn WAL::append_entry(
   self : WAL,
   operation : Operation,
-  timestamp : Int,
-  tx_id : Int?,
+  timestamp : Int32,
+  tx_id : Int32?,
 ) -> Lsn {
   let lsn = Lsn::new(self.current_lsn)
   self.current_lsn = self.current_lsn + 1
@@ -116,7 +116,7 @@ fn WAL::append_entry(
 ///|
 /// 同步缓冲区到持久化区：把缓冲区条目全部转移后清空。
 /// 返回本次刷盘的条目数。
-pub fn WAL::sync(self : WAL) -> Int {
+pub fn WAL::sync(self : WAL) -> Int32 {
   let n = self.buffer.length()
   for entry in self.buffer {
     self.persisted.push(entry)
@@ -127,13 +127,13 @@ pub fn WAL::sync(self : WAL) -> Int {
 
 ///|
 /// 获取当前缓冲区大小
-pub fn WAL::buffer_size(self : WAL) -> Int {
+pub fn WAL::buffer_size(self : WAL) -> Int32 {
   self.buffer.length()
 }
 
 ///|
 /// 获取已刷盘条目数
-pub fn WAL::persisted_size(self : WAL) -> Int {
+pub fn WAL::persisted_size(self : WAL) -> Int32 {
   self.persisted.length()
 }
 
@@ -148,8 +148,8 @@ pub fn WAL::should_flush(self : WAL) -> Bool {
 pub fn WAL::append_and_flush(
   self : WAL,
   operation : Operation,
-  timestamp? : Int,
-  tx_id? : Int,
+  timestamp? : Int32,
+  tx_id? : Int32,
 ) -> Lsn {
   let lsn = self.append_entry(
     operation,
@@ -170,7 +170,7 @@ pub fn WAL::append_and_flush(
 ///
 /// ## 参数
 /// - callback: 重放操作的回调函数，接收操作与可选事务 ID
-pub fn WAL::replay(self : WAL, callback : (Operation, Int?) -> Unit) -> Unit {
+pub fn WAL::replay(self : WAL, callback : (Operation, Int32?) -> Unit) -> Unit {
   for entry in self.persisted {
     callback(entry.operation, entry.tx_id)
   }
@@ -178,7 +178,7 @@ pub fn WAL::replay(self : WAL, callback : (Operation, Int?) -> Unit) -> Unit {
 
 ///|
 /// 获取下一个待分配的 LSN
-pub fn WAL::current_lsn(self : WAL) -> Int {
+pub fn WAL::current_lsn(self : WAL) -> Int32 {
   self.current_lsn
 }
 

@@ -76,9 +76,9 @@ pub(all) struct ColumnMeta {
   /// 是否可空
   nullable : Bool
   /// 精度
-  precision : Int
+  precision : Int32
   /// 标度
-  scale : Int
+  scale : Int32
 }
 
 ///|
@@ -104,7 +104,7 @@ pub(all) struct Column {
   /// 默认值
   default_value : @realtime_db.Value?
   /// 长度
-  length : Int?
+  length : Int32?
   /// 别名
   alias_name : String?
 }
@@ -261,7 +261,7 @@ pub extend SqlError with Debug::{to_repr}
 
 ///|
 /// 获取错误码
-pub fn SqlError::code(self : SqlError) -> Int {
+pub fn SqlError::code(self : SqlError) -> Int32 {
   match self {
     Syntax_Error => 3001
     Parse_Error => 3002
@@ -350,9 +350,9 @@ pub(all) struct SelectStatement {
   /// ORDER BY 子句
   order_by : Array[OrderByItem]?
   /// LIMIT 子句
-  limit : Int?
+  limit : Int32?
   /// OFFSET 子句
-  offset : Int?
+  offset : Int32?
 }
 
 ///|

@@ -40,7 +40,7 @@ pub(all) struct LakeSyncer {
   /// 配置
   config : LakeConfig
   /// 下一个任务 ID
-  mut next_task_id : Int
+  mut next_task_id : Int32
 }
 
 ///|

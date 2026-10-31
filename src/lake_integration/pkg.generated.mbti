@@ -44,7 +44,7 @@ pub impl Eq for CompressionType
 pub(all) struct LakeConfig {
   format : LakeFormat
   path : String
-  batch_size : Int
+  batch_size : Int32
   compression : CompressionType
   schema_evolution : Bool
   write_mode : WriteMode
@@ -64,7 +64,7 @@ pub(all) enum LakeError {
   Sync_In_Progress
   Internal_Error(String)
 }
-pub fn LakeError::code(Self) -> Int
+pub fn LakeError::code(Self) -> Int32
 pub fn LakeError::equal(Self, Self) -> Bool
 pub fn LakeError::message(Self) -> String
 pub fn LakeError::not_equal(Self, Self) -> Bool
@@ -88,8 +88,8 @@ pub impl @debug.Debug for LakeFormat
 
 pub(all) struct LakeMetadata {
   format : LakeFormat
-  row_count : Int
-  size_bytes : Int
+  row_count : Int32
+  size_bytes : Int32
   schema : @multi_tenant.TableSchema?
   partitions : Array[PartitionInfo]
 }
@@ -98,7 +98,7 @@ pub(all) struct LakeReadConfig {
   predicate_pushdown : Bool
   column_pruning : Bool
   partition_pruning : Bool
-  batch_size : Int
+  batch_size : Int32
 }
 pub fn LakeReadConfig::default() -> Self
 
@@ -116,7 +116,7 @@ pub(all) struct LakeSyncer {
   mut tasks : Map[String, SyncTask]
   mut schema_mappings : Map[String, SchemaMapping]
   config : LakeConfig
-  mut next_task_id : Int
+  mut next_task_id : Int32
 }
 pub fn LakeSyncer::create_sync_task(Self, SyncTaskConfig) -> Result[String, LakeError]
 pub fn LakeSyncer::delete_sync_task(Self, String) -> Result[Unit, LakeError]
@@ -130,8 +130,8 @@ pub fn LakeSyncer::stop_sync(Self, String) -> Result[Unit, LakeError]
 pub(all) struct PartitionInfo {
   partition_name : String
   partition_value : String
-  row_count : Int
-  size_bytes : Int
+  row_count : Int32
+  size_bytes : Int32
 }
 
 pub(all) struct SchemaChange {
@@ -140,7 +140,7 @@ pub(all) struct SchemaChange {
   change_type : SchemaChangeType
   column : @multi_tenant.Column?
   old_column_name : String?
-  timestamp : Int
+  timestamp : Int32
 }
 
 pub(all) enum SchemaChangeType {
@@ -160,7 +160,7 @@ pub(all) struct SchemaMapping {
   target_table : String
   mut column_mappings : Array[ColumnMapping]
   auto_sync : Bool
-  mut last_sync_time : Int
+  mut last_sync_time : Int32
 }
 
 pub(all) struct SchemaSynchronizer {
@@ -204,11 +204,11 @@ pub(all) struct SyncTask {
   sync_mode : SyncMode
   mut status : SyncStatus
   config : LakeConfig
-  created_at : Int
-  mut updated_at : Int
-  mut last_sync_at : Int
-  mut synced_records : Int
-  mut total_records : Int
+  created_at : Int32
+  mut updated_at : Int32
+  mut last_sync_at : Int32
+  mut synced_records : Int32
+  mut total_records : Int32
   mut error_message : String?
 }
 
@@ -218,8 +218,8 @@ pub(all) struct SyncTaskConfig {
   target_path : String
   format : LakeFormat
   sync_mode : SyncMode
-  batch_size : Int
-  sync_interval : Int
+  batch_size : Int32
+  sync_interval : Int32
   incremental_checkpoint : Bool
 }
 

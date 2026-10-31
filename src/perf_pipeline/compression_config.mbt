@@ -19,9 +19,9 @@ pub struct CompressionConfig {
   /// 压缩格式
   mut format : CompressionFormat
   /// 压缩级别（1~9）
-  mut level : Int
+  mut level : Int32
   /// 解压超时时间（毫秒）
-  mut decompress_timeout : Int
+  mut decompress_timeout : Int32
   /// 最大压缩比（超过此值拒绝解压）
   mut max_compression_ratio : Double
 }
@@ -71,7 +71,7 @@ pub fn CompressionConfig::set_format(
 /// 设置压缩级别
 pub fn CompressionConfig::set_level(
   self : CompressionConfig,
-  level : Int,
+  level : Int32,
 ) -> Unit {
   self.level = level
 }
@@ -80,7 +80,7 @@ pub fn CompressionConfig::set_level(
 /// 设置解压超时时间
 pub fn CompressionConfig::set_decompress_timeout(
   self : CompressionConfig,
-  timeout : Int,
+  timeout : Int32,
 ) -> Unit {
   self.decompress_timeout = timeout
 }

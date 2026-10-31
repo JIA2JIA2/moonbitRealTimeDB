@@ -6,7 +6,7 @@
 /// GraphQL 值类型
 pub(all) enum GraphQLValue {
   /// 整数值
-  IntValue(Int)
+  IntValue(Int32)
   /// 浮点值
   FloatValue(Double)
   /// 字符串值
@@ -201,9 +201,9 @@ pub(all) struct GraphQLError {
   /// 错误消息
   message : String
   /// 行号
-  line : Int?
+  line : Int32?
   /// 列号
-  column : Int?
+  column : Int32?
   /// 路径
   path : Array[String]?
   /// 扩展信息
@@ -284,7 +284,7 @@ pub fn GraphQLErrorEnum::message(self : GraphQLErrorEnum) -> String {
 
 ///|
 /// GraphQL 错误码
-pub fn GraphQLErrorEnum::code(self : GraphQLErrorEnum) -> Int {
+pub fn GraphQLErrorEnum::code(self : GraphQLErrorEnum) -> Int32 {
   match self {
     SyntaxError(_) => 7001
     FieldNotFound(_) => 7002
@@ -324,13 +324,13 @@ pub(all) struct GraphQLConfig {
   /// 是否启用缓存
   enable_cache : Bool
   /// 缓存大小
-  cache_size : Int
+  cache_size : Int32
   /// 缓存 TTL（秒）
-  cache_ttl : Int
+  cache_ttl : Int32
   /// 最大查询深度
-  max_query_depth : Int
+  max_query_depth : Int32
   /// 最大字段数
-  max_field_count : Int
+  max_field_count : Int32
   /// 是否启用订阅
   enable_subscription : Bool
 }
@@ -353,17 +353,17 @@ pub fn GraphQLConfig::default() -> GraphQLConfig {
 /// GraphQL 统计
 pub(all) struct GraphQLStats {
   /// 总查询数
-  total_queries : Int
+  total_queries : Int32
   /// 总变更数
-  total_mutations : Int
+  total_mutations : Int32
   /// 总订阅数
-  total_subscriptions : Int
+  total_subscriptions : Int32
   /// 平均延迟（毫秒）
   avg_latency_ms : Double
   /// P99 延迟（毫秒）
-  p99_latency_ms : Int
+  p99_latency_ms : Int32
   /// 错误数
-  error_count : Int
+  error_count : Int32
   /// 缓存命中率
   cache_hit_rate : Double
 }

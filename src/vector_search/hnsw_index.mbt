@@ -13,9 +13,9 @@ pub struct HNSWIndex {
   /// 顶层入口点
   mut entry_point : String
   /// 入口点层级
-  mut entry_level : Int
+  mut entry_level : Int32
   /// 伪随机数发生器状态（xorshift32，非零种子）
-  mut rng_state : Int
+  mut rng_state : Int32
 }
 
 ///|
@@ -32,7 +32,7 @@ pub fn HNSWIndex::new(config : HNSWConfig) -> HNSWIndex {
 
 ///|
 /// 获取索引中的记录数
-pub fn HNSWIndex::size(self : HNSWIndex) -> Int {
+pub fn HNSWIndex::size(self : HNSWIndex) -> Int32 {
   self.nodes.length()
 }
 
@@ -54,7 +54,7 @@ fn metric_distance(
 
 ///|
 /// 生成 level+1 个相互独立的空邻居列表
-fn empty_neighbors(level : Int) -> Array[Array[String]] {
+fn empty_neighbors(level : Int32) -> Array[Array[String]] {
   let neighbors : Array[Array[String]] = Array(capacity=level + 1)
   let mut i = 0
   while i <= level {
@@ -66,7 +66,7 @@ fn empty_neighbors(level : Int) -> Array[Array[String]] {
 
 ///|
 /// 保证邻居列表至少覆盖到 layer 层（不足时补空数组）
-fn ensure_layer(neighbors : Array[Array[String]], layer : Int) -> Unit {
+fn ensure_layer(neighbors : Array[Array[String]], layer : Int32) -> Unit {
   while neighbors.length() <= layer {
     neighbors.push(Array(capacity=0))
   }
@@ -76,10 +76,12 @@ fn ensure_layer(neighbors : Array[Array[String]], layer : Int) -> Unit {
 ///|
 /// xorshift32 伪随机数（返回 [0, 2^31) 内的非负整数）。
 /// MoonBit 无内置随机源，用确定性 PRNG 保证可复现。
-fn HNSWIndex::next_rand(self : HNSWIndex) -> Int {
+/// 注：MoonBit 不支持 >>>（无符号右移），因 x 已掩码为非负，
+/// >>（算术右移）与 >>> 在此场景下等价。
+fn HNSWIndex::next_rand(self : HNSWIndex) -> Int32 {
   let mut x = self.rng_state
   x = x ^ (x << 13)
-  x = x ^ (x >>> 17)
+  x = x ^ (x >> 17)
   x = x ^ (x << 5)
   let r = x & 0x7fffffff
   // 种子不能退化为 0（xorshift 的不动点）
@@ -94,7 +96,7 @@ fn HNSWIndex::next_rand(self : HNSWIndex) -> Int {
 /// 等价于 floor(-ln(uniform) * mL) 的几何分布，且受 max_layers
 /// 约束。修复前固定返回 4：所有节点都落在同一层，多层结构
 /// 名存实亡，内存与插入成本放大 max_layers 倍。
-fn HNSWIndex::random_level(self : HNSWIndex) -> Int {
+fn HNSWIndex::random_level(self : HNSWIndex) -> Int32 {
   let m = self.config.m
   let max_level = self.config.max_layers - 1
   let p = 1.0 / m.to_double()
@@ -121,8 +123,8 @@ fn HNSWIndex::search_layer(
   self : HNSWIndex,
   query : Array[Double],
   entry : String,
-  ef : Int,
-  layer : Int,
+  ef : Int32,
+  layer : Int32,
   metric : DistanceMetric,
 ) -> Array[(String, Double)] {
   if entry == "" {
@@ -193,7 +195,7 @@ fn HNSWIndex::search_layer(
 /// 剪枝：候选已按距离升序，保留最近的 m 个邻居
 fn prune_neighbors(
   candidates : Array[(String, Double)],
-  m : Int,
+  m : Int32,
 ) -> Array[String] {
   let len = candidates.length()
   if len <= m {
@@ -214,7 +216,7 @@ fn HNSWIndex::connect_at_layer(
   self : HNSWIndex,
   target_ : HNSWNode,
   neighbor_id : String,
-  layer : Int,
+  layer : Int32,
   metric : DistanceMetric,
 ) -> HNSWNode {
   let target = target_
@@ -342,7 +344,7 @@ pub fn HNSWIndex::insert(
 pub fn HNSWIndex::search_top_k(
   self : HNSWIndex,
   query : Array[Double],
-  k : Int,
+  k : Int32,
   metric : DistanceMetric,
 ) -> Array[(String, Double)] {
   if self.entry_level == -1 || k <= 0 {

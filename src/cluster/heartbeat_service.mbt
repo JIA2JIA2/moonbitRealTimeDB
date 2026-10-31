@@ -8,15 +8,15 @@ pub(all) struct HeartbeatMessage {
   /// 节点 ID
   node_id : String
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
   /// 节点状态
   status : NodeStatus
   /// 分片数量
-  shard_count : Int
+  shard_count : Int32
   /// 负载分数
   load_score : Double
   /// 路由表版本
-  route_version : Int
+  route_version : Int32
 }
 
 ///|
@@ -27,9 +27,9 @@ pub(all) struct HeartbeatResponse {
   /// 集群状态
   cluster_status : String
   /// 路由表版本
-  route_version : Int
+  route_version : Int32
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
   /// 错误信息
   error_message : String
 }
@@ -40,13 +40,13 @@ pub(all) struct HeartbeatService {
   /// 节点管理器
   node_manager : NodeManager
   /// 心跳间隔（毫秒）
-  heartbeat_interval_ms : Int
+  heartbeat_interval_ms : Int32
   /// 心跳超时次数阈值
-  timeout_threshold : Int
+  timeout_threshold : Int32
   /// 疑似故障超时（毫秒）
-  suspect_timeout_ms : Int
+  suspect_timeout_ms : Int32
   /// 上次心跳时间映射
-  mut last_heartbeat_times : Map[String, Int]
+  mut last_heartbeat_times : Map[String, Int32]
   /// 是否在运行
   mut is_running : Bool
 }
@@ -73,9 +73,9 @@ pub fn HeartbeatService::send_heartbeat(
   self : HeartbeatService,
   node_id : String,
   status : NodeStatus,
-  shard_count : Int,
+  shard_count : Int32,
   load_score : Double,
-  route_version : Int,
+  route_version : Int32,
 ) -> HeartbeatMessage {
   let _ = self
   HeartbeatMessage::{
@@ -134,7 +134,7 @@ pub fn HeartbeatService::receive_heartbeat(
 /// 检查心跳超时
 pub fn HeartbeatService::check_timeouts(
   self : HeartbeatService,
-  current_time : Int,
+  current_time : Int32,
 ) -> Array[String] {
   let timed_out_nodes : Array[String] = []
 
@@ -203,7 +203,7 @@ pub fn HeartbeatService::is_running(self : HeartbeatService) -> Bool {
 pub fn HeartbeatService::get_last_heartbeat(
   self : HeartbeatService,
   node_id : String,
-) -> Int {
+) -> Int32 {
   match self.last_heartbeat_times.get(node_id) {
     Some(t) => t
     None => 0

@@ -9,7 +9,7 @@ pub(all) enum PathSegment {
   /// 键访问（如 `user`）
   Key(String)
   /// 索引访问（如 `[0]`）
-  Index(Int)
+  Index(Int32)
 }
 
 ///|
@@ -41,16 +41,16 @@ pub struct FieldParser {
   /// 路径解析缓存：原始路径 -> 解析后的段数组
   mut cache : Map[String, Array[PathSegment]]
   /// 缓存最大容量
-  max_cache_size : Int
+  max_cache_size : Int32
   /// 累计查询次数（含命中与未命中）
-  mut total_lookups : Int
+  mut total_lookups : Int32
   /// 缓存命中次数
-  mut cache_hits : Int
+  mut cache_hits : Int32
 }
 
 ///|
 /// 默认缓存大小
-pub const DEFAULT_CACHE_SIZE : Int = 1000
+pub const DEFAULT_CACHE_SIZE : Int32 = 1000
 
 ///|
 /// 创建字段路径解析器
@@ -65,13 +65,13 @@ pub fn FieldParser::new() -> FieldParser {
 
 ///|
 /// 创建指定缓存大小的字段路径解析器
-pub fn FieldParser::with_cache_size(max_size : Int) -> FieldParser {
+pub fn FieldParser::with_cache_size(max_size : Int32) -> FieldParser {
   { cache: Map([]), max_cache_size: max_size, total_lookups: 0, cache_hits: 0, }
 }
 
 ///|
 /// 解析非负整数字符串，非法输入返回 None
-fn parse_non_negative_int(s : String) -> Int? {
+fn parse_non_negative_int(s : String) -> Int32? {
   let chars = s.to_array()
   if chars.length() == 0 {
     return None

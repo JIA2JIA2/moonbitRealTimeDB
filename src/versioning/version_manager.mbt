@@ -40,11 +40,11 @@ pub(all) struct VersionManager {
   /// 数据库引用
   mut db : @realtime_db.DB?
   /// 下一个快照 ID
-  mut next_snapshot_id : Int
+  mut next_snapshot_id : Int32
   /// 下一个分支 ID
-  mut next_branch_id : Int
+  mut next_branch_id : Int32
   /// 下一个版本 ID
-  mut next_version_id : Int
+  mut next_version_id : Int32
 }
 
 ///|
@@ -529,11 +529,11 @@ pub fn VersionManager::point_in_time_query(
 /// 查找最接近的版本
 fn VersionManager::find_closest_version(
   self : VersionManager,
-  timestamp : Int,
+  timestamp : Int32,
   branch_name : String,
 ) -> VersionEntry? {
   let mut closest : VersionEntry? = None
-  let mut min_diff : Int? = None
+  let mut min_diff : Int32? = None
 
   for version in self.version_history.versions {
     if version.branch_name == branch_name {
@@ -562,7 +562,9 @@ fn VersionManager::find_closest_version(
 
 ///|
 /// 清理过期快照
-pub fn VersionManager::cleanup_expired_snapshots(self : VersionManager) -> Int {
+pub fn VersionManager::cleanup_expired_snapshots(
+  self : VersionManager,
+) -> Int32 {
   let expired : Array[String] = []
 
   for (snapshot_id, snapshot) in self.snapshots {
@@ -581,13 +583,13 @@ pub fn VersionManager::cleanup_expired_snapshots(self : VersionManager) -> Int {
 
 ///|
 /// 获取快照数量
-pub fn VersionManager::snapshot_count(self : VersionManager) -> Int {
+pub fn VersionManager::snapshot_count(self : VersionManager) -> Int32 {
   self.snapshots.length()
 }
 
 ///|
 /// 获取分支数量
-pub fn VersionManager::branch_count(self : VersionManager) -> Int {
+pub fn VersionManager::branch_count(self : VersionManager) -> Int32 {
   self.version_history.branches.length()
 }
 

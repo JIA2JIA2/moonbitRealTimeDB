@@ -10,13 +10,13 @@ pub struct PipelineMetrics {
   /// 吞吐量（条/秒）
   mut throughput : Double
   /// P99 延迟（微秒）
-  mut latency_p99 : Int
+  mut latency_p99 : Int32
   /// 缓冲区使用率（百分比）
-  mut buffer_usage : Int
+  mut buffer_usage : Int32
   /// 内存池命中率（百分比）
   mut pool_hit_rate : Double
   /// 背压次数
-  mut backpressure_count : Int
+  mut backpressure_count : Int32
 }
 
 ///|
@@ -44,7 +44,7 @@ pub fn PipelineMetrics::set_throughput(
 /// 设置 P99 延迟
 pub fn PipelineMetrics::set_latency_p99(
   self : PipelineMetrics,
-  latency_us : Int,
+  latency_us : Int32,
 ) -> Unit {
   self.latency_p99 = latency_us
 }
@@ -53,7 +53,7 @@ pub fn PipelineMetrics::set_latency_p99(
 /// 设置缓冲区使用率
 pub fn PipelineMetrics::set_buffer_usage(
   self : PipelineMetrics,
-  usage : Int,
+  usage : Int32,
 ) -> Unit {
   self.buffer_usage = usage
 }
@@ -81,13 +81,13 @@ pub fn PipelineMetrics::throughput(self : PipelineMetrics) -> Double {
 
 ///|
 /// 获取 P99 延迟
-pub fn PipelineMetrics::latency_p99(self : PipelineMetrics) -> Int {
+pub fn PipelineMetrics::latency_p99(self : PipelineMetrics) -> Int32 {
   self.latency_p99
 }
 
 ///|
 /// 获取缓冲区使用率
-pub fn PipelineMetrics::buffer_usage(self : PipelineMetrics) -> Int {
+pub fn PipelineMetrics::buffer_usage(self : PipelineMetrics) -> Int32 {
   self.buffer_usage
 }
 
@@ -99,6 +99,6 @@ pub fn PipelineMetrics::pool_hit_rate(self : PipelineMetrics) -> Double {
 
 ///|
 /// 获取背压次数
-pub fn PipelineMetrics::backpressure_count(self : PipelineMetrics) -> Int {
+pub fn PipelineMetrics::backpressure_count(self : PipelineMetrics) -> Int32 {
   self.backpressure_count
 }

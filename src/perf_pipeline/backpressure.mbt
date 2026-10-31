@@ -9,20 +9,20 @@
 /// 监控缓冲区使用率，触发背压机制。
 pub struct BackpressureController {
   /// 背压阈值（百分比）
-  threshold : Int
+  threshold : Int32
   /// 是否触发背压
   mut triggered : Bool
   /// 触发时间（逻辑时钟）
-  mut trigger_time : Int
+  mut trigger_time : Int32
   /// 背压超时时间（毫秒），默认 30000
-  mut timeout_ms : Int
+  mut timeout_ms : Int32
 }
 
 ///|
 /// 创建背压控制器
 ///
 /// 默认阈值为 80%。
-pub fn BackpressureController::new(threshold : Int) -> BackpressureController {
+pub fn BackpressureController::new(threshold : Int32) -> BackpressureController {
   { threshold, triggered: false, trigger_time: 0, timeout_ms: 30000, }
 }
 
@@ -33,7 +33,7 @@ pub fn BackpressureController::new(threshold : Int) -> BackpressureController {
 /// 返回是否应该触发背压（仅在状态从未触发转为触发的边沿返回 true）。
 pub fn BackpressureController::check(
   self : BackpressureController,
-  buffer_usage : Int,
+  buffer_usage : Int32,
 ) -> Bool {
   self.check_at(buffer_usage, 0)
 }
@@ -44,8 +44,8 @@ pub fn BackpressureController::check(
 /// 与 `check` 相同，但记录触发时刻，使 `is_timeout` 可以判定背压是否超时。
 pub fn BackpressureController::check_at(
   self : BackpressureController,
-  buffer_usage : Int,
-  current_time : Int,
+  buffer_usage : Int32,
+  current_time : Int32,
 ) -> Bool {
   if buffer_usage > self.threshold {
     if !self.triggered {
@@ -81,7 +81,7 @@ pub fn BackpressureController::reset(self : BackpressureController) -> Unit {
 /// 获取背压触发时间（逻辑时钟），未触发或手动触发时为 0
 pub fn BackpressureController::trigger_time(
   self : BackpressureController,
-) -> Int {
+) -> Int32 {
   self.trigger_time
 }
 
@@ -99,7 +99,7 @@ pub fn BackpressureController::is_backpressured(
 /// 设置背压超时时间（毫秒）
 pub fn BackpressureController::set_timeout(
   self : BackpressureController,
-  timeout_ms : Int,
+  timeout_ms : Int32,
 ) -> Unit {
   self.timeout_ms = timeout_ms
 }
@@ -111,7 +111,7 @@ pub fn BackpressureController::set_timeout(
 /// 注意：需通过 `check_at` 触发并记录时间后该判定才会生效。
 pub fn BackpressureController::is_timeout(
   self : BackpressureController,
-  current_time : Int,
+  current_time : Int32,
 ) -> Bool {
   self.triggered &&
   self.trigger_time > 0 &&

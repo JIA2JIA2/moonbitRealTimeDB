@@ -9,22 +9,22 @@ pub struct StatsCollector {
   /// 索引管理器引用
   mut manager : IndexManager?
   /// 收集间隔（秒）
-  mut collect_interval : Int
+  mut collect_interval : Int32
   /// 上次收集时间
-  mut last_collect_time : Int
+  mut last_collect_time : Int32
   /// 统计信息缓存
   mut stats_cache : Map[String, IndexStats]
   /// 是否启用自动收集
   mut auto_collect : Bool
   /// 查询计数器
-  mut query_count : Int
+  mut query_count : Int32
   /// 命中计数器
-  mut hit_count : Int
+  mut hit_count : Int32
 }
 
 ///|
 /// 默认收集间隔（1 小时）
-pub const DEFAULT_COLLECT_INTERVAL : Int = 3600
+pub const DEFAULT_COLLECT_INTERVAL : Int32 = 3600
 
 ///|
 /// 创建统计收集器
@@ -163,7 +163,7 @@ pub fn StatsCollector::get_all_stats(
 fn StatsCollector::estimate_cardinality(
   self : StatsCollector,
   storage : IndexStorageHandle,
-) -> Int {
+) -> Int32 {
   let _ = self
   storage.size()
 }
@@ -184,7 +184,7 @@ fn StatsCollector::estimate_fragmentation(
 fn StatsCollector::estimate_query_latency(
   self : StatsCollector,
   storage : IndexStorageHandle,
-) -> Int {
+) -> Int32 {
   let _ = self
   match storage.index_type() {
     Hash => 10
@@ -196,7 +196,7 @@ fn StatsCollector::estimate_query_latency(
 
 ///|
 /// 获取当前时间（逻辑时钟，秒）
-fn StatsCollector::get_current_time(self : StatsCollector) -> Int {
+fn StatsCollector::get_current_time(self : StatsCollector) -> Int32 {
   match self.manager {
     Some(manager) =>
       match manager.db {
@@ -233,7 +233,7 @@ pub fn StatsCollector::record_query(
 /// 设置收集间隔
 pub fn StatsCollector::set_collect_interval(
   self : StatsCollector,
-  interval : Int,
+  interval : Int32,
 ) -> Unit {
   if interval > 0 {
     self.collect_interval = interval

@@ -10,7 +10,7 @@ pub(all) struct WindowId {
   /// 窗口名称
   window_name : String
   /// 起始时间
-  start_time : Int
+  start_time : Int32
 } derive(Eq, Hash)
 
 ///|
@@ -47,11 +47,11 @@ pub(all) struct WindowState {
   /// 当前状态
   mut status : WindowStatus
   /// 起始时间
-  start_time : Int
+  start_time : Int32
   /// 结束时间
-  end_time : Int
+  end_time : Int32
   /// 元素数量
-  mut elements : Int
+  mut elements : Int32
   /// 聚合状态
   mut aggregate_state : @realtime_db.Value?
 }
@@ -60,7 +60,7 @@ pub(all) struct WindowState {
 /// 水位线结构体
 pub(all) struct Watermark {
   /// 时间戳
-  mut timestamp : Int
+  mut timestamp : Int32
   /// 是否已推进
   mut advanced : Bool
 }
@@ -69,9 +69,9 @@ pub(all) struct Watermark {
 /// 检查点 ID
 pub(all) struct CheckpointId {
   /// 检查点值
-  value : Int
+  value : Int32
   /// 创建时间
-  created_at : Int
+  created_at : Int32
 }
 
 ///|
@@ -80,7 +80,7 @@ pub(all) struct CheckpointState {
   /// 检查点 ID
   checkpoint_id : CheckpointId
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
   /// 窗口状态映射
   window_states : Map[WindowId, WindowState]
   /// 聚合状态映射
@@ -93,13 +93,13 @@ pub(all) struct CheckpointState {
 /// 检查点配置
 pub(all) struct CheckpointConfig {
   /// 检查点间隔（毫秒）
-  interval_ms : Int
+  interval_ms : Int32
   /// 检查点超时（毫秒）
-  timeout_ms : Int
+  timeout_ms : Int32
   /// 是否增量检查点
   incremental : Bool
   /// 最大保留检查点数
-  max_retained_checkpoints : Int
+  max_retained_checkpoints : Int32
 }
 
 ///|
@@ -169,24 +169,24 @@ pub(all) struct SubscriptionState {
   /// 过滤表达式
   filter_expr : FilterExpr
   /// 最后事件时间
-  last_event_time : Int
+  last_event_time : Int32
   /// 待处理事件数
-  pending_events : Int
+  pending_events : Int32
   /// 失败计数
-  failed_count : Int
+  failed_count : Int32
 }
 
 ///|
 /// 订阅配置
 pub(all) struct SubscriptionConfig {
   /// 最大重试次数
-  max_retries : Int
+  max_retries : Int32
   /// 重试超时（毫秒）
-  retry_timeout_ms : Int
+  retry_timeout_ms : Int32
   /// 回调超时（毫秒）
-  callback_timeout_ms : Int
+  callback_timeout_ms : Int32
   /// 队列深度
-  queue_depth : Int
+  queue_depth : Int32
 }
 
 ///|
@@ -208,7 +208,7 @@ pub(all) struct AggregateState {
   /// 数据
   data : @realtime_db.Value
   /// 计数
-  count : Int
+  count : Int32
 }
 
 ///|
@@ -230,11 +230,11 @@ pub(all) struct WindowConfig {
   /// 窗口类型
   window_type : WindowType
   /// 窗口大小（毫秒）
-  size_ms : Int
+  size_ms : Int32
   /// 滑动步长（毫秒）
-  slide_ms : Int
+  slide_ms : Int32
   /// 会话超时（毫秒）
-  timeout_ms : Int
+  timeout_ms : Int32
   /// 迟到数据策略
   late_data_policy : LateDataPolicy
 }
@@ -243,15 +243,15 @@ pub(all) struct WindowConfig {
 /// 管道配置
 pub(all) struct PipelineConfig {
   /// 批次大小
-  batch_size : Int
+  batch_size : Int32
   /// 缓冲区大小
-  buffer_size : Int
+  buffer_size : Int32
   /// 背压阈值
   backpressure_threshold : Double
   /// 并发度
-  concurrency : Int
+  concurrency : Int32
   /// 重试次数
-  retry_count : Int
+  retry_count : Int32
 }
 
 ///|
@@ -306,7 +306,7 @@ pub(all) struct StreamEvent {
   /// 事件类型
   event_type : StreamEventType
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
 }
 
 ///|
@@ -330,7 +330,7 @@ pub(all) struct AggregateResult {
   /// 结果值
   result : @realtime_db.Value
   /// 触发时间
-  trigger_time : Int
+  trigger_time : Int32
 }
 
 ///|

@@ -101,7 +101,7 @@ pub fn IndexStorageHandle::prefix_query(
 
 ///|
 /// 获取索引内存占用
-pub fn IndexStorageHandle::memory_usage(self : IndexStorageHandle) -> Int {
+pub fn IndexStorageHandle::memory_usage(self : IndexStorageHandle) -> Int32 {
   match self {
     Hash(h) => h.memory_usage()
     BTree(h) => h.memory_usage()
@@ -112,7 +112,7 @@ pub fn IndexStorageHandle::memory_usage(self : IndexStorageHandle) -> Int {
 
 ///|
 /// 获取索引条目数
-pub fn IndexStorageHandle::size(self : IndexStorageHandle) -> Int {
+pub fn IndexStorageHandle::size(self : IndexStorageHandle) -> Int32 {
   match self {
     Hash(h) => h.size()
     BTree(h) => h.size()
@@ -162,16 +162,16 @@ pub fn IndexStorageHandle::batch_update(
 /// 批量索引更新结果
 pub(all) struct BatchUpdateResult {
   /// 成功插入数
-  inserted : Int
+  inserted : Int32
   /// 成功删除数
-  deleted : Int
+  deleted : Int32
   /// 失败数
-  failed : Int
+  failed : Int32
 }
 
 ///|
 /// 值比较辅助函数：-1/0/1
-fn compare_values(a : @realtime_db.Value, b : @realtime_db.Value) -> Int {
+fn compare_values(a : @realtime_db.Value, b : @realtime_db.Value) -> Int32 {
   match (a, b) {
     (@realtime_db.Int(ai), @realtime_db.Int(bi)) =>
       if ai < bi {
@@ -227,7 +227,7 @@ fn value_key(v : @realtime_db.Value) -> String {
 
 ///|
 /// 数组区间复制（Array 无内建 subarray）
-fn[T] subarray(arr : Array[T], start : Int, end : Int) -> Array[T] {
+fn[T] subarray(arr : Array[T], start : Int32, end : Int32) -> Array[T] {
   let lo = if start < 0 {
     0
   } else if start > arr.length() {

@@ -30,7 +30,7 @@ pub struct Metric {
 /// 指标集合
 pub struct Metrics {
   /// 采集时间
-  collection_time : Int
+  collection_time : Int32
   /// 指标列表
   metrics : Array[Metric]
 }
@@ -92,7 +92,7 @@ pub fn Metric::to_prometheus(self : Metric) -> String {
 
 ///|
 /// 创建指标集合
-pub fn Metrics::new(collection_time : Int) -> Metrics {
+pub fn Metrics::new(collection_time : Int32) -> Metrics {
   { collection_time, metrics: [], }
 }
 
@@ -115,12 +115,12 @@ pub struct Monitor {
   /// 指标注册表（名称 -> 指标）
   registry : Map[String, Metric]
   /// 采集间隔（秒）
-  interval : Int
+  interval : Int32
 }
 
 ///|
 /// 创建监控器
-pub fn Monitor::new(interval : Int) -> Monitor {
+pub fn Monitor::new(interval : Int32) -> Monitor {
   { registry: Map([]), interval, }
 }
 
@@ -234,12 +234,12 @@ pub fn Monitor::expose(self : Monitor) -> String {
 
 ///|
 /// 获取指标数量
-pub fn Monitor::metric_count(self : Monitor) -> Int {
+pub fn Monitor::metric_count(self : Monitor) -> Int32 {
   self.registry.length()
 }
 
 ///|
 /// 获取采集间隔
-pub fn Monitor::interval(self : Monitor) -> Int {
+pub fn Monitor::interval(self : Monitor) -> Int32 {
   self.interval
 }

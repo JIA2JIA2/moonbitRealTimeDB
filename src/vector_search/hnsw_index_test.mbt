@@ -214,13 +214,13 @@ test "hnsw_config_validate" {
 
 ///|
 /// 确定性伪随机向量生成器（xorshift32），生成 dim 维均匀分布向量
-fn test_vector(seed : Int, dim : Int) -> Array[Double] {
+fn test_vector(seed : Int32, dim : Int32) -> Array[Double] {
   let v : Array[Double] = Array(capacity=dim)
   let mut x = if seed == 0 { 1 } else { seed }
   let mut j = 0
   while j < dim {
     x = x ^ (x << 13)
-    x = x ^ (x >>> 17)
+    x = x ^ (x >> 17)
     x = x ^ (x << 5)
     v.push((x & 0x7fffffff).to_double() / 2147483647.0 - 0.5)
     j = j + 1
@@ -244,7 +244,11 @@ test "hnsw_recall_against_exact" {
   let n = 100
   let mut i = 0
   while i < n {
-    let _ = index.insert("v_\{i}", test_vector(i + 1, dim), @vector_search.Euclidean)
+    let _ = index.insert(
+      "v_\{i}",
+      test_vector(i + 1, dim),
+      @vector_search.Euclidean,
+    )
     i = i + 1
   }
   assert_eq(index.size(), n)
@@ -289,8 +293,7 @@ test "hnsw_recall_against_exact" {
       }
     }
     total_recall = total_recall +
-      hits.to_double() /
-      exact_keys.length().to_double()
+      hits.to_double() / exact_keys.length().to_double()
     q = q + 1
   }
   let avg_recall = total_recall / 20.0

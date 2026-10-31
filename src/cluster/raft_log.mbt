@@ -8,17 +8,17 @@ pub(all) struct RaftLog {
   /// 日志条目数组
   mut entries : Array[LogEntry]
   /// 起始索引（快照压缩后前移，故为可变）
-  mut start_index : Int
+  mut start_index : Int32
   /// 最后索引
-  mut last_index : Int
+  mut last_index : Int32
   /// 最后任期
-  mut last_term : Int
+  mut last_term : Int32
   /// 提交索引
-  mut commit_index : Int
+  mut commit_index : Int32
   /// 快照索引
-  mut snapshot_index : Int
+  mut snapshot_index : Int32
   /// 快照任期
-  mut snapshot_term : Int
+  mut snapshot_term : Int32
 }
 
 ///|
@@ -37,7 +37,7 @@ pub fn RaftLog::new() -> RaftLog {
 
 ///|
 /// 追加日志
-pub fn RaftLog::append(self : RaftLog, entry : LogEntry) -> Int {
+pub fn RaftLog::append(self : RaftLog, entry : LogEntry) -> Int32 {
   entry.index = self.last_index + 1
   let index = entry.index
   let term = entry.term
@@ -49,7 +49,10 @@ pub fn RaftLog::append(self : RaftLog, entry : LogEntry) -> Int {
 
 ///|
 /// 批量追加日志
-pub fn RaftLog::append_batch(self : RaftLog, entries : Array[LogEntry]) -> Int {
+pub fn RaftLog::append_batch(
+  self : RaftLog,
+  entries : Array[LogEntry],
+) -> Int32 {
   for entry in entries {
     entry.index = self.last_index + 1
     let index = entry.index
@@ -63,7 +66,7 @@ pub fn RaftLog::append_batch(self : RaftLog, entries : Array[LogEntry]) -> Int {
 
 ///|
 /// 获取日志条目
-pub fn RaftLog::get_entry(self : RaftLog, index : Int) -> LogEntry? {
+pub fn RaftLog::get_entry(self : RaftLog, index : Int32) -> LogEntry? {
   if index < self.start_index || index > self.last_index {
     return None
   }
@@ -80,8 +83,8 @@ pub fn RaftLog::get_entry(self : RaftLog, index : Int) -> LogEntry? {
 /// 获取日志条目列表
 pub fn RaftLog::get_entries(
   self : RaftLog,
-  start : Int,
-  end : Int,
+  start : Int32,
+  end : Int32,
 ) -> Array[LogEntry] {
   let result : Array[LogEntry] = []
 
@@ -101,7 +104,7 @@ pub fn RaftLog::get_entries(
 
 ///|
 /// 删除日志
-pub fn RaftLog::delete_from(self : RaftLog, index : Int) -> Unit {
+pub fn RaftLog::delete_from(self : RaftLog, index : Int32) -> Unit {
   if index <= self.last_index {
     let idx = index - self.start_index
     if idx >= 0 && idx < self.entries.length() {
@@ -122,7 +125,7 @@ pub fn RaftLog::delete_from(self : RaftLog, index : Int) -> Unit {
 
 ///|
 /// 截断日志
-pub fn RaftLog::truncate(self : RaftLog, index : Int) -> Unit {
+pub fn RaftLog::truncate(self : RaftLog, index : Int32) -> Unit {
   if index < self.start_index {
     return
   }
@@ -140,25 +143,25 @@ pub fn RaftLog::truncate(self : RaftLog, index : Int) -> Unit {
 
 ///|
 /// 获取最后索引
-pub fn RaftLog::last_index(self : RaftLog) -> Int {
+pub fn RaftLog::last_index(self : RaftLog) -> Int32 {
   self.last_index
 }
 
 ///|
 /// 获取最后任期
-pub fn RaftLog::last_term(self : RaftLog) -> Int {
+pub fn RaftLog::last_term(self : RaftLog) -> Int32 {
   self.last_term
 }
 
 ///|
 /// 获取提交索引
-pub fn RaftLog::commit_index(self : RaftLog) -> Int {
+pub fn RaftLog::commit_index(self : RaftLog) -> Int32 {
   self.commit_index
 }
 
 ///|
 /// 更新提交索引
-pub fn RaftLog::update_commit_index(self : RaftLog, index : Int) -> Unit {
+pub fn RaftLog::update_commit_index(self : RaftLog, index : Int32) -> Unit {
   if index > self.commit_index && index <= self.last_index {
     self.commit_index = index
   }
@@ -166,7 +169,7 @@ pub fn RaftLog::update_commit_index(self : RaftLog, index : Int) -> Unit {
 
 ///|
 /// 获取日志大小
-pub fn RaftLog::size(self : RaftLog) -> Int {
+pub fn RaftLog::size(self : RaftLog) -> Int32 {
   self.entries.length()
 }
 
@@ -194,7 +197,7 @@ pub fn RaftLog::clear(self : RaftLog) -> Unit {
 /// 最新日志、保留旧日志，方向正好相反。
 pub fn RaftLog::create_snapshot(
   self : RaftLog,
-  index : Int,
+  index : Int32,
   _data : @realtime_db.Value,
 ) -> Unit {
   if index < self.start_index || index > self.last_index {
@@ -222,13 +225,13 @@ pub fn RaftLog::create_snapshot(
 
 ///|
 /// 获取快照索引
-pub fn RaftLog::snapshot_index(self : RaftLog) -> Int {
+pub fn RaftLog::snapshot_index(self : RaftLog) -> Int32 {
   self.snapshot_index
 }
 
 ///|
 /// 获取快照任期
-pub fn RaftLog::snapshot_term(self : RaftLog) -> Int {
+pub fn RaftLog::snapshot_term(self : RaftLog) -> Int32 {
   self.snapshot_term
 }
 
@@ -236,8 +239,8 @@ pub fn RaftLog::snapshot_term(self : RaftLog) -> Int {
 /// 从快照恢复
 pub fn RaftLog::restore_from_snapshot(
   self : RaftLog,
-  snapshot_index : Int,
-  snapshot_term : Int,
+  snapshot_index : Int32,
+  snapshot_term : Int32,
 ) -> Unit {
   self.snapshot_index = snapshot_index
   self.snapshot_term = snapshot_term
@@ -250,8 +253,8 @@ pub fn RaftLog::restore_from_snapshot(
 /// 检查日志一致性
 pub fn RaftLog::check_consistency(
   self : RaftLog,
-  index : Int,
-  term : Int,
+  index : Int32,
+  term : Int32,
 ) -> Bool {
   match self.get_entry(index) {
     Some(entry) => entry.term == term

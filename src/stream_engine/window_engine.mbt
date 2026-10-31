@@ -7,34 +7,38 @@
 /// 窗口分配器接口
 pub trait WindowAssigner {
   /// 分配窗口
-  fn assign_windows(self : Self, timestamp : Int, window_config : WindowConfig) -> Array[
-    WindowId,
-  ]
+  fn assign_windows(
+    self : Self,
+    timestamp : Int32,
+    window_config : WindowConfig,
+  ) -> Array[WindowId]
 
   /// 获取窗口触发时间
-  fn get_window_trigger_time(self : Self, window_id : WindowId) -> Int
+  fn get_window_trigger_time(self : Self, window_id : WindowId) -> Int32
 
   /// 判断是否是迟到数据
-  fn is_late(self : Self, timestamp : Int, watermark : Int) -> Bool
+  fn is_late(self : Self, timestamp : Int32, watermark : Int32) -> Bool
 }
 
 ///|
 /// 滚动窗口分配器
 pub(all) struct TumblingWindowAssigner {
   /// 窗口大小（毫秒）
-  window_size : Int
+  window_size : Int32
 }
 
 ///|
 /// 创建滚动窗口分配器
-pub fn TumblingWindowAssigner::new(window_size : Int) -> TumblingWindowAssigner {
+pub fn TumblingWindowAssigner::new(
+  window_size : Int32,
+) -> TumblingWindowAssigner {
   { window_size, }
 }
 
 ///|
 pub impl WindowAssigner for TumblingWindowAssigner with fn assign_windows(
   self : TumblingWindowAssigner,
-  timestamp : Int,
+  timestamp : Int32,
   window_config : WindowConfig,
 ) -> Array[WindowId] {
   let _ = self
@@ -57,15 +61,15 @@ pub impl WindowAssigner for TumblingWindowAssigner with fn assign_windows(
 pub impl WindowAssigner for TumblingWindowAssigner with fn get_window_trigger_time(
   self : TumblingWindowAssigner,
   window_id : WindowId,
-) -> Int {
+) -> Int32 {
   window_id.start_time + self.window_size
 }
 
 ///|
 pub impl WindowAssigner for TumblingWindowAssigner with fn is_late(
   self : TumblingWindowAssigner,
-  timestamp : Int,
-  watermark : Int,
+  timestamp : Int32,
+  watermark : Int32,
 ) -> Bool {
   let _ = self
   timestamp <= watermark
@@ -82,16 +86,16 @@ pub extend TumblingWindowAssigner with WindowAssigner::{
 /// 滑动窗口分配器
 pub(all) struct SlidingWindowAssigner {
   /// 窗口大小（毫秒）
-  window_size : Int
+  window_size : Int32
   /// 滑动步长（毫秒）
-  slide_size : Int
+  slide_size : Int32
 }
 
 ///|
 /// 创建滑动窗口分配器
 pub fn SlidingWindowAssigner::new(
-  window_size : Int,
-  slide_size : Int,
+  window_size : Int32,
+  slide_size : Int32,
 ) -> SlidingWindowAssigner {
   { window_size, slide_size, }
 }
@@ -99,7 +103,7 @@ pub fn SlidingWindowAssigner::new(
 ///|
 pub impl WindowAssigner for SlidingWindowAssigner with fn assign_windows(
   self : SlidingWindowAssigner,
-  timestamp : Int,
+  timestamp : Int32,
   window_config : WindowConfig,
 ) -> Array[WindowId] {
   let _ = self
@@ -132,15 +136,15 @@ pub impl WindowAssigner for SlidingWindowAssigner with fn assign_windows(
 pub impl WindowAssigner for SlidingWindowAssigner with fn get_window_trigger_time(
   self : SlidingWindowAssigner,
   window_id : WindowId,
-) -> Int {
+) -> Int32 {
   window_id.start_time + self.window_size
 }
 
 ///|
 pub impl WindowAssigner for SlidingWindowAssigner with fn is_late(
   self : SlidingWindowAssigner,
-  timestamp : Int,
-  watermark : Int,
+  timestamp : Int32,
+  watermark : Int32,
 ) -> Bool {
   let _ = self
   timestamp <= watermark
@@ -157,21 +161,21 @@ pub extend SlidingWindowAssigner with WindowAssigner::{
 /// 会话窗口分配器
 pub(all) struct SessionWindowAssigner {
   /// 会话超时时间（毫秒）
-  timeout : Int
+  timeout : Int32
   /// 活跃会话映射
   mut active_sessions : Map[String, WindowId]
 }
 
 ///|
 /// 创建会话窗口分配器
-pub fn SessionWindowAssigner::new(timeout : Int) -> SessionWindowAssigner {
+pub fn SessionWindowAssigner::new(timeout : Int32) -> SessionWindowAssigner {
   { timeout, active_sessions: Map([]), }
 }
 
 ///|
 pub impl WindowAssigner for SessionWindowAssigner with fn assign_windows(
   self : SessionWindowAssigner,
-  timestamp : Int,
+  timestamp : Int32,
   window_config : WindowConfig,
 ) -> Array[WindowId] {
   let _ = self
@@ -194,15 +198,15 @@ pub impl WindowAssigner for SessionWindowAssigner with fn assign_windows(
 pub impl WindowAssigner for SessionWindowAssigner with fn get_window_trigger_time(
   self : SessionWindowAssigner,
   window_id : WindowId,
-) -> Int {
+) -> Int32 {
   window_id.start_time + self.timeout
 }
 
 ///|
 pub impl WindowAssigner for SessionWindowAssigner with fn is_late(
   self : SessionWindowAssigner,
-  timestamp : Int,
-  watermark : Int,
+  timestamp : Int32,
+  watermark : Int32,
 ) -> Bool {
   let _ = self
   timestamp <= watermark
@@ -221,9 +225,9 @@ pub(all) enum WindowTrigger {
   /// 水位线触发
   WatermarkTrigger
   /// 计数触发
-  CountTrigger(Int)
+  CountTrigger(Int32)
   /// 时间触发
-  TimeTrigger(Int)
+  TimeTrigger(Int32)
 } derive(Eq)
 
 ///|
@@ -237,7 +241,7 @@ pub trait Trigger {
   ) -> Bool
 
   /// 获取触发时间
-  fn get_trigger_time(self : Self, trigger : WindowTrigger) -> Int
+  fn get_trigger_time(self : Self, trigger : WindowTrigger) -> Int32
 }
 
 ///|
@@ -268,7 +272,7 @@ pub impl Trigger for DefaultTrigger with fn is_triggered(
 pub impl Trigger for DefaultTrigger with fn get_trigger_time(
   self : DefaultTrigger,
   trigger : WindowTrigger,
-) -> Int {
+) -> Int32 {
   let _ = self
   match trigger {
     WatermarkTrigger => 0
@@ -300,7 +304,7 @@ pub fn LateDataHandler::new(policy : LateDataPolicy) -> LateDataHandler {
 pub fn LateDataHandler::handle_late_data(
   self : LateDataHandler,
   event : StreamEvent,
-  watermark : Int,
+  watermark : Int32,
   window_state : WindowState,
 ) -> Bool {
   let _ = window_state
@@ -338,12 +342,12 @@ pub(all) struct WindowStateManager {
   /// 窗口状态映射
   mut window_states : Map[WindowId, WindowState]
   /// 状态 TTL（毫秒）
-  state_ttl : Int
+  state_ttl : Int32
 }
 
 ///|
 /// 创建窗口状态管理器
-pub fn WindowStateManager::new(state_ttl : Int) -> WindowStateManager {
+pub fn WindowStateManager::new(state_ttl : Int32) -> WindowStateManager {
   { window_states: Map([]), state_ttl, }
 }
 
@@ -352,8 +356,8 @@ pub fn WindowStateManager::new(state_ttl : Int) -> WindowStateManager {
 pub fn WindowStateManager::create_window_state(
   self : WindowStateManager,
   window_id : WindowId,
-  start_time : Int,
-  end_time : Int,
+  start_time : Int32,
+  end_time : Int32,
 ) -> Result[WindowState, StreamError] {
   if self.window_states.contains(window_id) {
     return Err(Window_Already_Exists)
@@ -416,8 +420,8 @@ pub fn WindowStateManager::add_element(
 /// 清理过期窗口状态
 pub fn WindowStateManager::cleanup_expired(
   self : WindowStateManager,
-  current_time : Int,
-) -> Int {
+  current_time : Int32,
+) -> Int32 {
   let expired : Array[WindowId] = []
   for (window_id, state) in self.window_states {
     if state.status == Closed && current_time - state.end_time > self.state_ttl {

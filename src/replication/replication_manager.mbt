@@ -16,22 +16,22 @@ pub(all) struct ReplicationManager {
   /// 配置
   config : ReplicationConfig
   /// 下一个任务 ID
-  mut next_task_id : Int
+  mut next_task_id : Int32
 }
 
 ///|
 /// 复制配置
 pub(all) struct ReplicationConfig {
   /// 默认批次大小
-  default_batch_size : Int
+  default_batch_size : Int32
   /// 默认复制间隔（毫秒）
-  default_replication_interval_ms : Int
+  default_replication_interval_ms : Int32
   /// 最大重试次数
-  max_retries : Int
+  max_retries : Int32
   /// 重试间隔（毫秒）
-  retry_interval_ms : Int
+  retry_interval_ms : Int32
   /// 复制超时（毫秒）
-  replication_timeout_ms : Int
+  replication_timeout_ms : Int32
   /// 是否启用断点续传
   enable_checkpoint : Bool
 }

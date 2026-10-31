@@ -8,7 +8,7 @@
 ///|
 /// 事务 ID 类型（封装 Int）
 pub struct TransactionId {
-  value : Int
+  value : Int32
 }
 
 ///|
@@ -64,24 +64,24 @@ pub struct Transaction {
   /// 事务状态
   mut status : TransactionStatus
   /// 事务开始时间
-  begin_time : Int
+  begin_time : Int32
 }
 
 ///|
 /// 创建事务 ID
-pub fn TransactionId::new(value : Int) -> TransactionId {
+pub fn TransactionId::new(value : Int32) -> TransactionId {
   { value, }
 }
 
 ///|
 /// 获取事务 ID 的值
-pub fn TransactionId::value(self : TransactionId) -> Int {
+pub fn TransactionId::value(self : TransactionId) -> Int32 {
   self.value
 }
 
 ///|
 /// 创建事务
-pub fn Transaction::new(id : TransactionId, begin_time : Int) -> Transaction {
+pub fn Transaction::new(id : TransactionId, begin_time : Int32) -> Transaction {
   { id, status: Active, begin_time, }
 }
 
@@ -99,7 +99,7 @@ pub fn Transaction::status(self : Transaction) -> TransactionStatus {
 
 ///|
 /// 获取事务开始时间
-pub fn Transaction::begin_time(self : Transaction) -> Int {
+pub fn Transaction::begin_time(self : Transaction) -> Int32 {
   self.begin_time
 }
 
@@ -210,13 +210,13 @@ pub fn LockManager::release_all(
 
 ///|
 /// 当前被锁定的键数量。
-pub fn LockManager::locked_key_count(self : LockManager) -> Int {
+pub fn LockManager::locked_key_count(self : LockManager) -> Int32 {
   self.lock_table.length()
 }
 
 ///|
 /// 查询某键的持有者数量。
-pub fn LockManager::holder_count(self : LockManager, key : String) -> Int {
+pub fn LockManager::holder_count(self : LockManager, key : String) -> Int32 {
   match self.lock_table.get(key) {
     Some(holders) => holders.length()
     None => 0
@@ -230,16 +230,16 @@ pub struct TransactionManager {
   /// 事务表：事务 ID -> 事务
   transactions : Map[TransactionId, Transaction]
   /// 下一个事务 ID
-  mut next_tx_id : Int
+  mut next_tx_id : Int32
   /// 锁管理器
   lock_manager : LockManager
   /// 事务超时时间（逻辑时钟单位，<=0 表示不超时）
-  timeout : Int
+  timeout : Int32
 }
 
 ///|
 /// 创建事务管理器
-pub fn TransactionManager::new(timeout : Int) -> TransactionManager {
+pub fn TransactionManager::new(timeout : Int32) -> TransactionManager {
   {
     transactions: Map([]),
     next_tx_id: 0,
@@ -252,7 +252,7 @@ pub fn TransactionManager::new(timeout : Int) -> TransactionManager {
 /// 开始新事务，返回事务 ID。
 pub fn TransactionManager::begin(
   self : TransactionManager,
-  current_clock : Int,
+  current_clock : Int32,
 ) -> TransactionId {
   let tx_id = TransactionId::new(self.next_tx_id)
   self.next_tx_id = self.next_tx_id + 1
@@ -304,7 +304,7 @@ pub fn TransactionManager::rollback(
 
 ///|
 /// 清理所有已结束（Committed/Rolled_Back）的事务记录。返回清理数量。
-pub fn TransactionManager::purge_finished(self : TransactionManager) -> Int {
+pub fn TransactionManager::purge_finished(self : TransactionManager) -> Int32 {
   let dead : Array[TransactionId] = []
   for id, tx in self.transactions {
     if !(tx.status() is Active) {
@@ -322,7 +322,7 @@ pub fn TransactionManager::purge_finished(self : TransactionManager) -> Int {
 /// 返回被超时回滚的事务 ID 列表。
 pub fn TransactionManager::expire_old(
   self : TransactionManager,
-  current_clock : Int,
+  current_clock : Int32,
 ) -> Array[TransactionId] {
   let expired : Array[TransactionId] = []
   guard self.timeout > 0 else { return expired }
@@ -355,7 +355,7 @@ pub fn TransactionManager::lock_manager(
 
 ///|
 /// 获取活跃事务数量
-pub fn TransactionManager::active_count(self : TransactionManager) -> Int {
+pub fn TransactionManager::active_count(self : TransactionManager) -> Int32 {
   let mut count = 0
   for _, tx in self.transactions {
     if tx.status() is Active {

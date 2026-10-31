@@ -154,9 +154,9 @@ pub(all) struct ClusterInfo {
   /// 节点列表
   nodes : Array[NodeInfo]
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 最后活跃时间
-  last_active_at : Int
+  last_active_at : Int32
 }
 
 ///|
@@ -169,9 +169,9 @@ pub(all) struct NodeInfo {
   /// 是否主节点
   is_primary : Bool
   /// 优先级
-  priority : Int
+  priority : Int32
   /// 延迟（毫秒）
-  latency_ms : Int
+  latency_ms : Int32
   /// 是否健康
   is_healthy : Bool
 }
@@ -196,15 +196,15 @@ pub(all) struct ReplicationTask {
   /// 冲突解决策略
   conflict_strategy : ConflictResolutionStrategy
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 更新时间
-  mut updated_at : Int
+  mut updated_at : Int32
   /// 已复制记录数
-  replicated_records : Int
+  replicated_records : Int32
   /// 总记录数
-  total_records : Int
+  total_records : Int32
   /// 延迟（毫秒）
-  replication_lag_ms : Int
+  replication_lag_ms : Int32
   /// 错误信息
   error_message : String?
 }
@@ -225,15 +225,15 @@ pub(all) struct ReplicationTaskConfig {
   /// 冲突解决策略
   conflict_strategy : ConflictResolutionStrategy
   /// 批次大小
-  batch_size : Int
+  batch_size : Int32
   /// 复制间隔（毫秒）
-  replication_interval_ms : Int
+  replication_interval_ms : Int32
   /// 是否启用断点续传
   enable_checkpoint : Bool
   /// 最大重试次数
-  max_retries : Int
+  max_retries : Int32
   /// 重试间隔（毫秒）
-  retry_interval_ms : Int
+  retry_interval_ms : Int32
 }
 
 ///|
@@ -250,7 +250,7 @@ pub(all) struct ReplicationLog {
   /// 值
   value : @realtime_db.Value?
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
   /// 源集群
   source_cluster : String
   /// 目标集群
@@ -275,19 +275,19 @@ pub(all) struct ConflictRecord {
   /// 目标值
   target_value : @realtime_db.Value
   /// 源时间戳
-  source_timestamp : Int
+  source_timestamp : Int32
   /// 目标时间戳
-  target_timestamp : Int
+  target_timestamp : Int32
   /// 源版本
-  source_version : Int
+  source_version : Int32
   /// 目标版本
-  target_version : Int
+  target_version : Int32
   /// 解决策略
   resolution_strategy : ConflictResolutionStrategy
   /// 解决后的值
   resolved_value : @realtime_db.Value?
   /// 解决时间
-  resolved_at : Int
+  resolved_at : Int32
 }
 
 ///|
@@ -360,7 +360,7 @@ pub extend ReplicationError with Debug::{to_repr}
 
 ///|
 /// 获取错误码
-pub fn ReplicationError::code(self : ReplicationError) -> Int {
+pub fn ReplicationError::code(self : ReplicationError) -> Int32 {
   match self {
     Task_Already_Exists => 5001
     Task_Not_Found => 5002
@@ -406,19 +406,19 @@ pub(all) struct ReplicationStats {
   /// 任务 ID
   task_id : String
   /// 总记录数
-  total_records : Int
+  total_records : Int32
   /// 已复制记录数
-  replicated_records : Int
+  replicated_records : Int32
   /// 失败记录数
-  failed_records : Int
+  failed_records : Int32
   /// 冲突记录数
-  conflict_records : Int
+  conflict_records : Int32
   /// 平均延迟（毫秒）
   avg_latency_ms : Double
   /// P99 延迟（毫秒）
-  p99_latency_ms : Int
+  p99_latency_ms : Int32
   /// 复制吞吐量（条/秒）
   throughput_qps : Double
   /// 复制延迟（毫秒）
-  replication_lag_ms : Int
+  replication_lag_ms : Int32
 }

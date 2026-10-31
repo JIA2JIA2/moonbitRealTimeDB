@@ -194,7 +194,7 @@ fn ConditionEvaluator::compare_values(
   self : ConditionEvaluator,
   a : @realtime_db.Value,
   b : @realtime_db.Value,
-) -> Int {
+) -> Int32 {
   let _ = self
   match (a, b) {
     (@realtime_db.Int(ai), @realtime_db.Int(bi)) =>
@@ -268,7 +268,7 @@ pub(all) struct SubscriptionManager {
   /// 评估器
   evaluator : ConditionEvaluator
   /// 下一个订阅 ID
-  mut next_id : Int
+  mut next_id : Int32
 }
 
 ///|
@@ -362,7 +362,7 @@ pub fn SubscriptionManager::get_all_subscriptions(
 pub fn SubscriptionManager::process_event(
   self : SubscriptionManager,
   event : StreamEvent,
-) -> Int {
+) -> Int32 {
   let mut matched_count = 0
 
   for (sub_id, _state) in self.subscriptions {
@@ -394,20 +394,20 @@ pub(all) struct CallbackScheduler {
   /// 订阅管理器
   manager : SubscriptionManager
   /// 最大重试次数
-  max_retries : Int
+  max_retries : Int32
   /// 回调超时（毫秒）
-  callback_timeout_ms : Int
+  callback_timeout_ms : Int32
   /// 队列深度
-  queue_depth : Int
+  queue_depth : Int32
 }
 
 ///|
 /// 创建回调调度器
 pub fn CallbackScheduler::new(
   manager : SubscriptionManager,
-  max_retries : Int,
-  callback_timeout_ms : Int,
-  queue_depth : Int,
+  max_retries : Int32,
+  callback_timeout_ms : Int32,
+  queue_depth : Int32,
 ) -> CallbackScheduler {
   { manager, max_retries, callback_timeout_ms, queue_depth, }
 }

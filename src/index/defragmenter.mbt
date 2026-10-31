@@ -30,13 +30,13 @@ pub const DEFAULT_TARGET_FRAGMENTATION : Double = 0.1
 /// 整理统计
 pub(all) struct DefragmentStats {
   /// 整理次数
-  mut total_runs : Int
+  mut total_runs : Int32
   /// 整理的索引数
-  mut indices_processed : Int
+  mut indices_processed : Int32
   /// 释放的内存（字节）
-  mut memory_freed : Int
+  mut memory_freed : Int32
   /// 总耗时（微秒）
-  mut total_time_us : Int
+  mut total_time_us : Int32
 }
 
 ///|
@@ -274,7 +274,7 @@ pub fn Defragmenter::should_defragment(
 
 ///|
 /// 获取时间（微秒，当前为逻辑时钟占位）
-fn Defragmenter::get_time_us(self : Defragmenter) -> Int {
+fn Defragmenter::get_time_us(self : Defragmenter) -> Int32 {
   let _ = self
   0
 }
@@ -317,7 +317,7 @@ pub fn Defragmenter::set_target_fragmentation(
 /// 自动整理（根据碎片率阈值自动触发），返回整理的索引数
 pub fn Defragmenter::auto_defragment(
   self : Defragmenter,
-) -> Result[Int, IndexError] {
+) -> Result[Int32, IndexError] {
   let manager = match self.manager {
     Some(m) => m
     None => return Err(Internal_Error("Index manager not set"))

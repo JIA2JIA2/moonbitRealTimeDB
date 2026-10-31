@@ -79,8 +79,8 @@ pub fn FeatureComputeEngine::sliding_window_compute(
   self : FeatureComputeEngine,
   feature_name : String,
   events : Array[@stream_engine.StreamEvent],
-  window_size_ms : Int,
-  slide_interval_ms : Int,
+  window_size_ms : Int32,
+  slide_interval_ms : Int32,
 ) -> Result[Array[FeatureVector], FeatureError] {
   let _ = window_size_ms
   let kind = match self.aggregators.get(feature_name) {
@@ -89,7 +89,7 @@ pub fn FeatureComputeEngine::sliding_window_compute(
   }
 
   // 按窗口分组
-  let windowed_data : Map[Int, Array[@stream_engine.StreamEvent]] = Map([])
+  let windowed_data : Map[Int32, Array[@stream_engine.StreamEvent]] = Map([])
 
   for event in events {
     let window_start = event.timestamp - event.timestamp % slide_interval_ms
@@ -329,7 +329,7 @@ pub impl FeatureAggregator for MaxAggregator with fn aggregate(
   data : Array[@realtime_db.Value],
 ) -> Result[@realtime_db.Value, FeatureError] {
   let _ = self
-  let mut max_value : Int? = None
+  let mut max_value : Int32? = None
   for value in data {
     match value {
       @realtime_db.Int(i) =>
@@ -385,7 +385,7 @@ pub impl FeatureAggregator for MinAggregator with fn aggregate(
   data : Array[@realtime_db.Value],
 ) -> Result[@realtime_db.Value, FeatureError] {
   let _ = self
-  let mut min_value : Int? = None
+  let mut min_value : Int32? = None
   for value in data {
     match value {
       @realtime_db.Int(i) =>
@@ -427,9 +427,9 @@ pub extend MinAggregator with FeatureAggregator::{aggregate, merge}
 /// 窗口配置
 pub(all) struct WindowConfig {
   /// 窗口大小（毫秒）
-  window_size_ms : Int
+  window_size_ms : Int32
   /// 滑动间隔（毫秒）
-  slide_interval_ms : Int
+  slide_interval_ms : Int32
   /// 聚合器种类
   aggregator : AggregatorKind
 }

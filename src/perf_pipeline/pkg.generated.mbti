@@ -19,42 +19,42 @@ pub fn parse_transform_action(String) -> TransformAction?
 
 // Types and methods
 pub struct AdaptiveConfig {
-  mut min_batch_size : Int
-  mut max_batch_size : Int
-  mut initial_batch_size : Int
-  monitor_window : Int
-  mut adjust_interval : Int
+  mut min_batch_size : Int32
+  mut max_batch_size : Int32
+  mut initial_batch_size : Int32
+  monitor_window : Int32
+  mut adjust_interval : Int32
 }
 pub fn AdaptiveConfig::default() -> Self
-pub fn AdaptiveConfig::set_adjust_interval(Self, Int) -> Unit
-pub fn AdaptiveConfig::set_initial_batch_size(Self, Int) -> Unit
-pub fn AdaptiveConfig::set_max_batch_size(Self, Int) -> Unit
-pub fn AdaptiveConfig::set_min_batch_size(Self, Int) -> Unit
+pub fn AdaptiveConfig::set_adjust_interval(Self, Int32) -> Unit
+pub fn AdaptiveConfig::set_initial_batch_size(Self, Int32) -> Unit
+pub fn AdaptiveConfig::set_max_batch_size(Self, Int32) -> Unit
+pub fn AdaptiveConfig::set_min_batch_size(Self, Int32) -> Unit
 pub fn AdaptiveConfig::validate(Self) -> Result[Unit, String]
 
 pub struct AdaptiveController {
   config : AdaptiveConfig
-  mut current_batch_size : Int
+  mut current_batch_size : Int32
   load_history : Array[LoadInfo]
   mut stats : AdaptiveStats
-  mut oscillation_count : Int
+  mut oscillation_count : Int32
 }
-pub fn AdaptiveController::adjust_batch_size(Self) -> Int
+pub fn AdaptiveController::adjust_batch_size(Self) -> Int32
 pub fn AdaptiveController::calculate_avg_throughput(Self) -> Double
-pub fn AdaptiveController::current_batch_size(Self) -> Int
-pub fn AdaptiveController::monitor_load(Self, Double, Int, Double) -> Unit
+pub fn AdaptiveController::current_batch_size(Self) -> Int32
+pub fn AdaptiveController::monitor_load(Self, Double, Int32, Double) -> Unit
 pub fn AdaptiveController::new(AdaptiveConfig) -> Self
-pub fn AdaptiveController::oscillation_count(Self) -> Int
+pub fn AdaptiveController::oscillation_count(Self) -> Int32
 pub fn AdaptiveController::reset(Self) -> Unit
 pub fn AdaptiveController::stats(Self) -> AdaptiveStats
 
 pub struct AdaptiveStats {
-  mut current_batch_size : Int
-  mut adjust_count : Int
-  last_adjust_time : Int
+  mut current_batch_size : Int32
+  mut adjust_count : Int32
+  last_adjust_time : Int32
   mut avg_throughput : Double
 }
-pub fn AdaptiveStats::new(Int) -> Self
+pub fn AdaptiveStats::new(Int32) -> Self
 
 pub(all) enum AggregateFunction {
   Count
@@ -66,35 +66,35 @@ pub(all) enum AggregateFunction {
 pub fn AggregateFunction::to_string(Self) -> String
 
 pub struct BackpressureController {
-  threshold : Int
+  threshold : Int32
   mut triggered : Bool
-  mut trigger_time : Int
-  mut timeout_ms : Int
+  mut trigger_time : Int32
+  mut timeout_ms : Int32
 }
-pub fn BackpressureController::check(Self, Int) -> Bool
-pub fn BackpressureController::check_at(Self, Int, Int) -> Bool
+pub fn BackpressureController::check(Self, Int32) -> Bool
+pub fn BackpressureController::check_at(Self, Int32, Int32) -> Bool
 pub fn BackpressureController::is_backpressured(Self) -> Bool
-pub fn BackpressureController::is_timeout(Self, Int) -> Bool
-pub fn BackpressureController::new(Int) -> Self
+pub fn BackpressureController::is_timeout(Self, Int32) -> Bool
+pub fn BackpressureController::new(Int32) -> Self
 pub fn BackpressureController::reset(Self) -> Unit
-pub fn BackpressureController::set_timeout(Self, Int) -> Unit
+pub fn BackpressureController::set_timeout(Self, Int32) -> Unit
 pub fn BackpressureController::trigger(Self) -> Unit
-pub fn BackpressureController::trigger_time(Self) -> Int
+pub fn BackpressureController::trigger_time(Self) -> Int32
 
 pub struct BatchAggregator {
-  watchers : Map[Int, BatchWatcher]
-  watcher_buffers : Map[Int, Array[@core.Event]]
-  watcher_window_starts : Map[Int, Int]
+  watchers : Map[Int32, BatchWatcher]
+  watcher_buffers : Map[Int32, Array[@core.Event]]
+  watcher_window_starts : Map[Int32, Int32]
   config : PipelineConfig
-  mut next_watcher_id : Int
+  mut next_watcher_id : Int32
 }
-pub fn BatchAggregator::flush(Self, Int) -> Unit
-pub fn BatchAggregator::flush_due(Self, Int) -> Unit
+pub fn BatchAggregator::flush(Self, Int32) -> Unit
+pub fn BatchAggregator::flush_due(Self, Int32) -> Unit
 pub fn BatchAggregator::new(PipelineConfig) -> Self
 pub fn BatchAggregator::notify(Self, @core.Event) -> Unit
-pub fn BatchAggregator::notify_at(Self, @core.Event, Int) -> Unit
-pub fn BatchAggregator::subscribe_batch(Self, (BatchNotification) -> Unit, Int?) -> Int
-pub fn BatchAggregator::unsubscribe_batch(Self, Int) -> Unit
+pub fn BatchAggregator::notify_at(Self, @core.Event, Int32) -> Unit
+pub fn BatchAggregator::subscribe_batch(Self, (BatchNotification) -> Unit, Int32?) -> Int32
+pub fn BatchAggregator::unsubscribe_batch(Self, Int32) -> Unit
 
 pub struct BatchImporter {
   mut db : @core.DB?
@@ -102,7 +102,7 @@ pub struct BatchImporter {
   mut mempool : MemoryPool?
   config : PipelineConfig
 }
-pub fn BatchImporter::import_batch(Self, Array[(String, @core.Value)], Int?) -> BatchResult
+pub fn BatchImporter::import_batch(Self, Array[(String, @core.Value)], Int32?) -> BatchResult
 pub fn BatchImporter::new(@core.DB?, @persistence.WAL?, MemoryPool?, PipelineConfig) -> Self
 pub fn BatchImporter::set_db(Self, @core.DB?) -> Unit
 pub fn BatchImporter::set_mempool(Self, MemoryPool?) -> Unit
@@ -110,45 +110,45 @@ pub fn BatchImporter::set_wal(Self, @persistence.WAL?) -> Unit
 
 pub struct BatchNotification {
   events : Array[@core.Event]
-  timestamp : Int
-  batch_id : Int
+  timestamp : Int32
+  batch_id : Int32
 }
-pub fn BatchNotification::batch_id(Self) -> Int
+pub fn BatchNotification::batch_id(Self) -> Int32
 pub fn BatchNotification::events(Self) -> Array[@core.Event]
-pub fn BatchNotification::new(Array[@core.Event], Int, Int) -> Self
-pub fn BatchNotification::timestamp(Self) -> Int
+pub fn BatchNotification::new(Array[@core.Event], Int32, Int32) -> Self
+pub fn BatchNotification::timestamp(Self) -> Int32
 
 pub struct BatchResult {
-  mut success_count : Int
-  mut failed_count : Int
-  failed_records : Array[(Int, String)]
+  mut success_count : Int32
+  mut failed_count : Int32
+  failed_records : Array[(Int32, String)]
 }
-pub fn BatchResult::add_failure(Self, Int, String) -> Unit
+pub fn BatchResult::add_failure(Self, Int32, String) -> Unit
 pub fn BatchResult::add_success(Self) -> Unit
-pub fn BatchResult::failed_count(Self) -> Int
-pub fn BatchResult::failed_records(Self) -> Array[(Int, String)]
+pub fn BatchResult::failed_count(Self) -> Int32
+pub fn BatchResult::failed_records(Self) -> Array[(Int32, String)]
 pub fn BatchResult::merge(Self, Self) -> Unit
 pub fn BatchResult::new() -> Self
-pub fn BatchResult::success_count(Self) -> Int
+pub fn BatchResult::success_count(Self) -> Int32
 
 pub struct BatchWatcher {
-  id : Int
+  id : Int32
   callback : (BatchNotification) -> Unit
-  window_ms : Int
+  window_ms : Int32
   deduplicate : Bool
 }
-pub fn BatchWatcher::new(Int, (BatchNotification) -> Unit, Int, Bool) -> Self
+pub fn BatchWatcher::new(Int32, (BatchNotification) -> Unit, Int32, Bool) -> Self
 
 pub struct CompressionConfig {
   mut format : CompressionFormat
-  mut level : Int
-  mut decompress_timeout : Int
+  mut level : Int32
+  mut decompress_timeout : Int32
   mut max_compression_ratio : Double
 }
 pub fn CompressionConfig::default() -> Self
-pub fn CompressionConfig::set_decompress_timeout(Self, Int) -> Unit
+pub fn CompressionConfig::set_decompress_timeout(Self, Int32) -> Unit
 pub fn CompressionConfig::set_format(Self, CompressionFormat) -> Unit
-pub fn CompressionConfig::set_level(Self, Int) -> Unit
+pub fn CompressionConfig::set_level(Self, Int32) -> Unit
 pub fn CompressionConfig::set_max_compression_ratio(Self, Double) -> Unit
 pub fn CompressionConfig::validate(Self) -> Result[Unit, String]
 
@@ -172,10 +172,10 @@ pub struct CompressionProcessor {
   mempool : MemoryPool?
   stats : CompressionStats
 }
-pub fn CompressionProcessor::compress(Self, Array[Byte], CompressionFormat, Int?) -> Result[Array[Byte], CompressionError]
-pub fn CompressionProcessor::compress_gzip(Self, Array[Byte], Int) -> Result[Array[Byte], CompressionError]
-pub fn CompressionProcessor::compress_lz4(Self, Array[Byte], Int) -> Result[Array[Byte], CompressionError]
-pub fn CompressionProcessor::compress_zstd(Self, Array[Byte], Int) -> Result[Array[Byte], CompressionError]
+pub fn CompressionProcessor::compress(Self, Array[Byte], CompressionFormat, Int32?) -> Result[Array[Byte], CompressionError]
+pub fn CompressionProcessor::compress_gzip(Self, Array[Byte], Int32) -> Result[Array[Byte], CompressionError]
+pub fn CompressionProcessor::compress_lz4(Self, Array[Byte], Int32) -> Result[Array[Byte], CompressionError]
+pub fn CompressionProcessor::compress_zstd(Self, Array[Byte], Int32) -> Result[Array[Byte], CompressionError]
 pub fn CompressionProcessor::decompress(Self, Array[Byte], CompressionFormat) -> Result[Array[Byte], CompressionError]
 pub fn CompressionProcessor::decompress_stream(Self, Array[Byte], CompressionFormat) -> Result[Array[Byte], CompressionError]
 pub fn CompressionProcessor::detect_format(Array[Byte]) -> CompressionFormat
@@ -183,14 +183,14 @@ pub fn CompressionProcessor::new(CompressionConfig, MemoryPool?) -> Self
 pub fn CompressionProcessor::stats(Self) -> CompressionStats
 
 pub struct CompressionStats {
-  mut compressed_size : Int
-  mut original_size : Int
+  mut compressed_size : Int32
+  mut original_size : Int32
   mut compression_ratio : Double
 }
-pub fn CompressionStats::compressed_size(Self) -> Int
+pub fn CompressionStats::compressed_size(Self) -> Int32
 pub fn CompressionStats::compression_ratio(Self) -> Double
 pub fn CompressionStats::new() -> Self
-pub fn CompressionStats::original_size(Self) -> Int
+pub fn CompressionStats::original_size(Self) -> Int32
 
 pub(all) enum ConfigError {
   Invalid_Batch_Size
@@ -200,52 +200,52 @@ pub(all) enum ConfigError {
 }
 
 pub struct DataReference {
-  ptr : Int
-  len : Int
-  version : Int
+  ptr : Int32
+  len : Int32
+  version : Int32
   mut valid : Bool
 }
 pub fn DataReference::invalidate(Self) -> Unit
 pub fn DataReference::is_valid(Self) -> Bool
-pub fn DataReference::len(Self) -> Int
-pub fn DataReference::new(Int, Int, Int) -> Self
-pub fn DataReference::ptr(Self) -> Int
-pub fn DataReference::version(Self) -> Int
+pub fn DataReference::len(Self) -> Int32
+pub fn DataReference::new(Int32, Int32, Int32) -> Self
+pub fn DataReference::ptr(Self) -> Int32
+pub fn DataReference::version(Self) -> Int32
 
 pub struct JobResult {
-  job_id : Int
+  job_id : Int32
   mut status : TaskStatus
-  priority : Int
-  wait_time : Int
-  mut exec_time : Int
+  priority : Int32
+  wait_time : Int32
+  mut exec_time : Int32
 }
-pub fn JobResult::new(Int, Int) -> Self
+pub fn JobResult::new(Int32, Int32) -> Self
 
 pub struct LoadInfo {
   throughput : Double
-  latency_us : Int
+  latency_us : Int32
   error_rate : Double
-  timestamp : Int
+  timestamp : Int32
 }
-pub fn LoadInfo::new(Double, Int, Double, Int) -> Self
+pub fn LoadInfo::new(Double, Int32, Double, Int32) -> Self
 
 pub struct MemoryPool {
-  free_buffers : Array[Array[Int]]
-  all_buffers : Array[Array[Int]]
-  initial_size : Int
-  max_size : Int
+  free_buffers : Array[Array[Int32]]
+  all_buffers : Array[Array[Int32]]
+  initial_size : Int32
+  max_size : Int32
   grow_factor : Double
-  mut hit_count : Int
-  mut miss_count : Int
+  mut hit_count : Int32
+  mut miss_count : Int32
 }
-pub fn MemoryPool::acquire_buffer(Self) -> Array[Int]
-pub fn MemoryPool::current_size(Self) -> Int
-pub fn MemoryPool::free_count(Self) -> Int
-pub fn MemoryPool::hit_count(Self) -> Int
+pub fn MemoryPool::acquire_buffer(Self) -> Array[Int32]
+pub fn MemoryPool::current_size(Self) -> Int32
+pub fn MemoryPool::free_count(Self) -> Int32
+pub fn MemoryPool::hit_count(Self) -> Int32
 pub fn MemoryPool::hit_rate(Self) -> Double
-pub fn MemoryPool::miss_count(Self) -> Int
-pub fn MemoryPool::new(Int, Int, Double) -> Self
-pub fn MemoryPool::release_buffer(Self, Array[Int]) -> Unit
+pub fn MemoryPool::miss_count(Self) -> Int32
+pub fn MemoryPool::new(Int32, Int32, Double) -> Self
+pub fn MemoryPool::release_buffer(Self, Array[Int32]) -> Unit
 
 pub(all) enum ParallelError {
   Importer_Not_Initialized
@@ -255,14 +255,14 @@ pub(all) enum ParallelError {
 }
 
 pub struct ParallelImportConfig {
-  mut parallelism : Int
-  mut shard_size : Int
-  mut shard_timeout : Int
+  mut parallelism : Int32
+  mut shard_size : Int32
+  mut shard_timeout : Int32
 }
 pub fn ParallelImportConfig::default() -> Self
-pub fn ParallelImportConfig::set_parallelism(Self, Int) -> Unit
-pub fn ParallelImportConfig::set_shard_size(Self, Int) -> Unit
-pub fn ParallelImportConfig::set_shard_timeout(Self, Int) -> Unit
+pub fn ParallelImportConfig::set_parallelism(Self, Int32) -> Unit
+pub fn ParallelImportConfig::set_shard_size(Self, Int32) -> Unit
+pub fn ParallelImportConfig::set_shard_timeout(Self, Int32) -> Unit
 pub fn ParallelImportConfig::validate(Self) -> Result[Unit, String]
 
 pub struct ParallelImporter {
@@ -274,20 +274,20 @@ pub struct ParallelImporter {
 pub fn ParallelImporter::import_shard(Self, Shard) -> Result[BatchResult, ParallelError]
 pub fn ParallelImporter::merge_results(Self, Array[BatchResult]) -> ParallelResult
 pub fn ParallelImporter::new(BatchImporter?, ParallelImportConfig) -> Self
-pub fn ParallelImporter::parallel_import(Self, Array[(String, @core.Value)], Int?) -> Result[ParallelResult, ParallelError]
+pub fn ParallelImporter::parallel_import(Self, Array[(String, @core.Value)], Int32?) -> Result[ParallelResult, ParallelError]
 pub fn ParallelImporter::set_importer(Self, BatchImporter?) -> Unit
 pub fn ParallelImporter::stats(Self) -> ParallelResult
 
 pub struct ParallelResult {
   shard_results : Array[BatchResult]
-  mut total_success : Int
-  mut total_failed : Int
-  mut shard_count : Int
+  mut total_success : Int32
+  mut total_failed : Int32
+  mut shard_count : Int32
 }
 pub fn ParallelResult::new() -> Self
-pub fn ParallelResult::shard_count(Self) -> Int
-pub fn ParallelResult::total_failed(Self) -> Int
-pub fn ParallelResult::total_success(Self) -> Int
+pub fn ParallelResult::shard_count(Self) -> Int32
+pub fn ParallelResult::total_failed(Self) -> Int32
+pub fn ParallelResult::total_success(Self) -> Int32
 
 pub struct Pipeline {
   config : PipelineConfig
@@ -326,44 +326,44 @@ pub fn Pipeline::unpause(Self) -> Unit
 pub fn Pipeline::zero_copy_reader(Self) -> ZeroCopyReader?
 
 pub struct PipelineConfig {
-  mut batch_size : Int
-  max_in_flight : Int
-  import_timeout : Int
-  buffer_size : Int
-  mut backpressure_threshold : Int
-  mut concurrency : Int
-  retry_count : Int
-  mut aggregate_window : Int
-  mut max_batch_size : Int
+  mut batch_size : Int32
+  max_in_flight : Int32
+  import_timeout : Int32
+  buffer_size : Int32
+  mut backpressure_threshold : Int32
+  mut concurrency : Int32
+  retry_count : Int32
+  mut aggregate_window : Int32
+  mut max_batch_size : Int32
   deduplicate : Bool
 }
-pub fn PipelineConfig::aggregate_window(Self) -> Int
-pub fn PipelineConfig::backpressure_threshold(Self) -> Int
-pub fn PipelineConfig::batch_size(Self) -> Int
-pub fn PipelineConfig::concurrency(Self) -> Int
+pub fn PipelineConfig::aggregate_window(Self) -> Int32
+pub fn PipelineConfig::backpressure_threshold(Self) -> Int32
+pub fn PipelineConfig::batch_size(Self) -> Int32
+pub fn PipelineConfig::concurrency(Self) -> Int32
 pub fn PipelineConfig::default() -> Self
-pub fn PipelineConfig::set_aggregate_window(Self, Int) -> Unit
-pub fn PipelineConfig::set_backpressure_threshold(Self, Int) -> Unit
-pub fn PipelineConfig::set_batch_size(Self, Int) -> Unit
-pub fn PipelineConfig::set_concurrency(Self, Int) -> Unit
-pub fn PipelineConfig::set_max_batch_size(Self, Int) -> Unit
+pub fn PipelineConfig::set_aggregate_window(Self, Int32) -> Unit
+pub fn PipelineConfig::set_backpressure_threshold(Self, Int32) -> Unit
+pub fn PipelineConfig::set_batch_size(Self, Int32) -> Unit
+pub fn PipelineConfig::set_concurrency(Self, Int32) -> Unit
+pub fn PipelineConfig::set_max_batch_size(Self, Int32) -> Unit
 pub fn PipelineConfig::validate(Self) -> Result[Unit, ConfigError]
 
 pub struct PipelineMetrics {
   mut throughput : Double
-  mut latency_p99 : Int
-  mut buffer_usage : Int
+  mut latency_p99 : Int32
+  mut buffer_usage : Int32
   mut pool_hit_rate : Double
-  mut backpressure_count : Int
+  mut backpressure_count : Int32
 }
-pub fn PipelineMetrics::backpressure_count(Self) -> Int
-pub fn PipelineMetrics::buffer_usage(Self) -> Int
+pub fn PipelineMetrics::backpressure_count(Self) -> Int32
+pub fn PipelineMetrics::buffer_usage(Self) -> Int32
 pub fn PipelineMetrics::incr_backpressure(Self) -> Unit
-pub fn PipelineMetrics::latency_p99(Self) -> Int
+pub fn PipelineMetrics::latency_p99(Self) -> Int32
 pub fn PipelineMetrics::new() -> Self
 pub fn PipelineMetrics::pool_hit_rate(Self) -> Double
-pub fn PipelineMetrics::set_buffer_usage(Self, Int) -> Unit
-pub fn PipelineMetrics::set_latency_p99(Self, Int) -> Unit
+pub fn PipelineMetrics::set_buffer_usage(Self, Int32) -> Unit
+pub fn PipelineMetrics::set_latency_p99(Self, Int32) -> Unit
 pub fn PipelineMetrics::set_pool_hit_rate(Self, Double) -> Unit
 pub fn PipelineMetrics::set_throughput(Self, Double) -> Unit
 pub fn PipelineMetrics::throughput(Self) -> Double
@@ -374,15 +374,15 @@ pub struct PipelineMonitor {
   config : PipelineConfig
   alerts : Array[String]
 }
-pub fn PipelineMonitor::alert_count(Self) -> Int
+pub fn PipelineMonitor::alert_count(Self) -> Int32
 pub fn PipelineMonitor::alerts(Self) -> Array[String]
 pub fn PipelineMonitor::expose(Self) -> String
 pub fn PipelineMonitor::incr_backpressure(Self) -> Unit
 pub fn PipelineMonitor::metrics(Self) -> PipelineMetrics
 pub fn PipelineMonitor::new(@monitor.Monitor?, PipelineConfig) -> Self
-pub fn PipelineMonitor::record_latency(Self, Int) -> Unit
-pub fn PipelineMonitor::record_throughput(Self, Int, Int) -> Unit
-pub fn PipelineMonitor::set_buffer_usage(Self, Int) -> Unit
+pub fn PipelineMonitor::record_latency(Self, Int32) -> Unit
+pub fn PipelineMonitor::record_throughput(Self, Int32, Int32) -> Unit
+pub fn PipelineMonitor::set_buffer_usage(Self, Int32) -> Unit
 pub fn PipelineMonitor::set_pool_hit_rate(Self, Double) -> Unit
 
 pub(all) enum PipelineStatus {
@@ -399,130 +399,130 @@ pub impl @debug.Debug for PipelineStatus
 
 pub struct PriorityQueue {
   tasks : Array[PriorityTask]
-  priorities : Array[Int]
-  timestamps : Array[Int]
-  mut size : Int
-  max_size : Int
+  priorities : Array[Int32]
+  timestamps : Array[Int32]
+  mut size : Int32
+  max_size : Int32
 }
 pub fn PriorityQueue::clear(Self) -> Unit
 pub fn PriorityQueue::is_empty(Self) -> Bool
 pub fn PriorityQueue::is_full(Self) -> Bool
-pub fn PriorityQueue::new(Int) -> Self
+pub fn PriorityQueue::new(Int32) -> Self
 pub fn PriorityQueue::peek(Self) -> PriorityTask?
 pub fn PriorityQueue::pop(Self) -> PriorityTask?
 pub fn PriorityQueue::push(Self, PriorityTask) -> Unit
-pub fn PriorityQueue::remove(Self, Int) -> Bool
-pub fn PriorityQueue::size(Self) -> Int
+pub fn PriorityQueue::remove(Self, Int32) -> Bool
+pub fn PriorityQueue::size(Self) -> Int32
 
 pub struct PriorityScheduler {
   queue : PriorityQueue
   config : SchedulerConfig
   resources : SchedulerResources
   stats : SchedulerStats
-  mut next_job_id : Int
+  mut next_job_id : Int32
 }
-pub fn PriorityScheduler::batch_submit(Self, Array[@core.Value], Int) -> Array[JobResult]
+pub fn PriorityScheduler::batch_submit(Self, Array[@core.Value], Int32) -> Array[JobResult]
 pub fn PriorityScheduler::check_starvation(Self) -> Unit
 pub fn PriorityScheduler::execute_next(Self) -> JobResult?
 pub fn PriorityScheduler::new(SchedulerConfig) -> Self
-pub fn PriorityScheduler::queue_size(Self) -> Int
+pub fn PriorityScheduler::queue_size(Self) -> Int32
 pub fn PriorityScheduler::stats(Self) -> SchedulerStats
-pub fn PriorityScheduler::submit_job(Self, @core.Value, Int) -> JobResult
-pub fn PriorityScheduler::update_priority(Self, Int, Int) -> Bool
+pub fn PriorityScheduler::submit_job(Self, @core.Value, Int32) -> JobResult
+pub fn PriorityScheduler::update_priority(Self, Int32, Int32) -> Bool
 
 pub struct PriorityTask {
-  id : Int
+  id : Int32
   data : @core.Value
-  priority : Int
-  submit_time : Int
+  priority : Int32
+  submit_time : Int32
   mut status : TaskStatus
 }
-pub fn PriorityTask::new(Int, @core.Value, Int, Int) -> Self
-pub fn PriorityTask::priority(Self) -> Int
+pub fn PriorityTask::new(Int32, @core.Value, Int32, Int32) -> Self
+pub fn PriorityTask::priority(Self) -> Int32
 pub fn PriorityTask::set_status(Self, TaskStatus) -> Unit
 pub fn PriorityTask::status(Self) -> TaskStatus
 
 pub struct SchedulerConfig {
-  mut default_priority : Int
-  mut high_priority_reserve : Int
-  mut starvation_timeout : Int
-  mut max_queue_size : Int
+  mut default_priority : Int32
+  mut high_priority_reserve : Int32
+  mut starvation_timeout : Int32
+  mut max_queue_size : Int32
 }
 pub fn SchedulerConfig::default() -> Self
-pub fn SchedulerConfig::set_default_priority(Self, Int) -> Unit
-pub fn SchedulerConfig::set_high_priority_reserve(Self, Int) -> Unit
-pub fn SchedulerConfig::set_max_queue_size(Self, Int) -> Unit
-pub fn SchedulerConfig::set_starvation_timeout(Self, Int) -> Unit
+pub fn SchedulerConfig::set_default_priority(Self, Int32) -> Unit
+pub fn SchedulerConfig::set_high_priority_reserve(Self, Int32) -> Unit
+pub fn SchedulerConfig::set_max_queue_size(Self, Int32) -> Unit
+pub fn SchedulerConfig::set_starvation_timeout(Self, Int32) -> Unit
 pub fn SchedulerConfig::validate(Self) -> Result[Unit, String]
 
 pub struct SchedulerResources {
-  total : Int
-  used : Int
-  high_reserved : Int
+  total : Int32
+  used : Int32
+  high_reserved : Int32
 }
 
 pub struct SchedulerStats {
-  mut total_jobs : Int
-  mut completed_jobs : Int
+  mut total_jobs : Int32
+  mut completed_jobs : Int32
   avg_wait_time : Double
   avg_exec_time : Double
 }
-pub fn SchedulerStats::completed_jobs(Self) -> Int
+pub fn SchedulerStats::completed_jobs(Self) -> Int32
 pub fn SchedulerStats::new() -> Self
-pub fn SchedulerStats::total_jobs(Self) -> Int
+pub fn SchedulerStats::total_jobs(Self) -> Int32
 
 pub struct Shard {
-  id : Int
+  id : Int32
   data : Array[(String, @core.Value)]
-  offset : Int
-  size : Int
+  offset : Int32
+  size : Int32
 }
 pub fn Shard::data(Self) -> Array[(String, @core.Value)]
-pub fn Shard::new(Int, Array[(String, @core.Value)], Int, Int) -> Self
-pub fn Shard::size(Self) -> Int
+pub fn Shard::new(Int32, Array[(String, @core.Value)], Int32, Int32) -> Self
+pub fn Shard::size(Self) -> Int32
 
 pub struct ShardingStrategy {
-  mut shard_size : Int
-  mut shard_count : Int
+  mut shard_size : Int32
+  mut shard_count : Int32
 }
-pub fn ShardingStrategy::calculate_shard_count(Self, Int) -> Int
-pub fn ShardingStrategy::new(Int) -> Self
-pub fn ShardingStrategy::set_shard_size(Self, Int) -> Unit
-pub fn ShardingStrategy::shard_count(Self) -> Int
+pub fn ShardingStrategy::calculate_shard_count(Self, Int32) -> Int32
+pub fn ShardingStrategy::new(Int32) -> Self
+pub fn ShardingStrategy::set_shard_size(Self, Int32) -> Unit
+pub fn ShardingStrategy::shard_count(Self) -> Int32
 pub fn ShardingStrategy::split_data(Self, Array[(String, @core.Value)]) -> Array[Shard]
 
 pub struct StreamResult {
   mut completed : Bool
-  mut total_records : Int
-  mut success_count : Int
-  mut failed_count : Int
-  mut latency_p99 : Int
+  mut total_records : Int32
+  mut success_count : Int32
+  mut failed_count : Int32
+  mut latency_p99 : Int32
 }
 pub fn StreamResult::add_failure(Self) -> Unit
 pub fn StreamResult::add_success(Self) -> Unit
 pub fn StreamResult::completed(Self) -> Bool
-pub fn StreamResult::failed_count(Self) -> Int
-pub fn StreamResult::latency_p99(Self) -> Int
+pub fn StreamResult::failed_count(Self) -> Int32
+pub fn StreamResult::latency_p99(Self) -> Int32
 pub fn StreamResult::new() -> Self
 pub fn StreamResult::set_completed(Self, Bool) -> Unit
-pub fn StreamResult::set_latency_p99(Self, Int) -> Unit
-pub fn StreamResult::set_total_records(Self, Int) -> Unit
-pub fn StreamResult::success_count(Self) -> Int
-pub fn StreamResult::total_records(Self) -> Int
+pub fn StreamResult::set_latency_p99(Self, Int32) -> Unit
+pub fn StreamResult::set_total_records(Self, Int32) -> Unit
+pub fn StreamResult::success_count(Self) -> Int32
+pub fn StreamResult::total_records(Self) -> Int32
 
 pub struct StreamingProcessor {
   mut db : @core.DB?
   wal : @persistence.WAL?
   mempool : MemoryPool?
-  buffer : Array[(@core.Value, Int)]
+  buffer : Array[(@core.Value, Int32)]
   backpressure : BackpressureController?
   config : PipelineConfig
 }
-pub fn StreamingProcessor::buffer_usage(Self) -> Int
-pub fn StreamingProcessor::in_flight(Self) -> Int
+pub fn StreamingProcessor::buffer_usage(Self) -> Int32
+pub fn StreamingProcessor::in_flight(Self) -> Int32
 pub fn StreamingProcessor::new(@core.DB?, @persistence.WAL?, MemoryPool?, PipelineConfig) -> Self
 pub fn StreamingProcessor::set_db(Self, @core.DB?) -> Unit
-pub fn StreamingProcessor::stream_write(Self, Array[(@core.Value, Int)]) -> StreamResult
+pub fn StreamingProcessor::stream_write(Self, Array[(@core.Value, Int32)]) -> StreamResult
 
 pub(all) enum TaskStatus {
   Pending
@@ -542,14 +542,14 @@ pub fn TransformAction::to_string(Self) -> String
 
 pub struct TransformConfig {
   rules : Array[TransformRule]
-  mut max_transforms : Int
-  mut transform_timeout : Int
+  mut max_transforms : Int32
+  mut transform_timeout : Int32
 }
 pub fn TransformConfig::add_rule(Self, TransformRule) -> Unit
 pub fn TransformConfig::default() -> Self
 pub fn TransformConfig::rules(Self) -> Array[TransformRule]
-pub fn TransformConfig::set_max_transforms(Self, Int) -> Unit
-pub fn TransformConfig::set_transform_timeout(Self, Int) -> Unit
+pub fn TransformConfig::set_max_transforms(Self, Int32) -> Unit
+pub fn TransformConfig::set_transform_timeout(Self, Int32) -> Unit
 pub fn TransformConfig::validate(Self) -> Result[Unit, String]
 
 pub struct TransformEngine {
@@ -575,13 +575,13 @@ pub(all) enum TransformError {
 }
 
 pub struct TransformResult {
-  mut success_count : Int
-  mut failed_count : Int
+  mut success_count : Int32
+  mut failed_count : Int32
   transformed_records : Array[@core.Value]
 }
-pub fn TransformResult::failed_count(Self) -> Int
+pub fn TransformResult::failed_count(Self) -> Int32
 pub fn TransformResult::new() -> Self
-pub fn TransformResult::success_count(Self) -> Int
+pub fn TransformResult::success_count(Self) -> Int32
 pub fn TransformResult::transformed_records(Self) -> Array[@core.Value]
 
 pub struct TransformRule {
@@ -599,13 +599,13 @@ pub fn TransformRule::set_target_type(Self, String) -> Unit
 pub struct ZeroCopyReader {
   mut db : @core.DB?
   mut mempool : MemoryPool?
-  mut ref_count : Int
+  mut ref_count : Int32
 }
 pub fn ZeroCopyReader::check_valid(Self, DataReference) -> Bool
 pub fn ZeroCopyReader::get_batch(Self, Array[String]) -> Array[DataReference]
 pub fn ZeroCopyReader::get_reference(Self, String) -> DataReference?
 pub fn ZeroCopyReader::new(@core.DB?, MemoryPool?) -> Self
-pub fn ZeroCopyReader::ref_count(Self) -> Int
+pub fn ZeroCopyReader::ref_count(Self) -> Int32
 pub fn ZeroCopyReader::release_reference(Self, DataReference) -> Unit
 pub fn ZeroCopyReader::set_db(Self, @core.DB?) -> Unit
 pub fn ZeroCopyReader::set_mempool(Self, MemoryPool?) -> Unit

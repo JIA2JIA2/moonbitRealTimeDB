@@ -128,16 +128,16 @@ pub(all) struct Metric {
   /// 数据点列表
   mut data_points : Array[DataPoint]
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 更新时间
-  mut updated_at : Int
+  mut updated_at : Int32
 }
 
 ///|
 /// 数据点
 pub(all) struct DataPoint {
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
   /// 值
   value : Double
   /// 是否有效
@@ -156,7 +156,7 @@ pub(all) struct DownsamplePolicy {
   /// 聚合类型
   aggregation : AggregationType
   /// 保留时间（秒）
-  retention_seconds : Int
+  retention_seconds : Int32
   /// 是否启用
   is_enabled : Bool
 }
@@ -173,11 +173,11 @@ pub(all) struct ContinuousQuery {
   /// 目标度量
   target_metric : String
   /// 查询间隔（秒）
-  query_interval_seconds : Int
+  query_interval_seconds : Int32
   /// 聚合类型
   aggregation : AggregationType
   /// 窗口大小（秒）
-  window_seconds : Int
+  window_seconds : Int32
   /// 是否启用
   is_enabled : Bool
 }
@@ -192,11 +192,11 @@ pub(all) struct RetentionPolicy {
   /// 策略类型
   policy_type : RetentionPolicyType
   /// 保留时间（秒）
-  retention_seconds : Int
+  retention_seconds : Int32
   /// 最大数据点数
-  max_data_points : Int
+  max_data_points : Int32
   /// 最大大小（字节）
-  max_size_bytes : Int
+  max_size_bytes : Int32
   /// 是否启用
   is_enabled : Bool
 }
@@ -205,9 +205,9 @@ pub(all) struct RetentionPolicy {
 /// 时间序列配置
 pub(all) struct TimeSeriesConfig {
   /// 默认保留时间（秒）
-  default_retention_seconds : Int
+  default_retention_seconds : Int32
   /// 最大数据点数
-  max_data_points : Int
+  max_data_points : Int32
   /// 是否启用自动降采样
   auto_downsample : Bool
   /// 默认降采样精度
@@ -215,7 +215,7 @@ pub(all) struct TimeSeriesConfig {
   /// 是否启用连续查询
   enable_continuous_query : Bool
   /// 数据刷新间隔（毫秒）
-  flush_interval_ms : Int
+  flush_interval_ms : Int32
 }
 
 ///|
@@ -287,7 +287,7 @@ pub extend TimeSeriesError with Debug::{to_repr}
 
 ///|
 /// 获取错误码
-pub fn TimeSeriesError::code(self : TimeSeriesError) -> Int {
+pub fn TimeSeriesError::code(self : TimeSeriesError) -> Int32 {
   match self {
     Metric_Already_Exists => 9001
     Metric_Not_Found => 9002
@@ -337,17 +337,17 @@ pub(all) struct QueryRequest {
   /// 标签过滤器
   label_filters : Map[String, String]
   /// 起始时间
-  start_time : Int
+  start_time : Int32
   /// 结束时间
-  end_time : Int
+  end_time : Int32
   /// 聚合类型
   aggregation : AggregationType
   /// 窗口大小（秒）
-  window_seconds : Int?
+  window_seconds : Int32?
   /// 降采样精度
   precision : DownsamplePrecision?
   /// 最大数据点数
-  max_data_points : Int?
+  max_data_points : Int32?
 }
 
 ///|
@@ -360,24 +360,24 @@ pub(all) struct QueryResult {
   /// 精度
   precision : DownsamplePrecision?
   /// 查询耗时（毫秒）
-  latency_ms : Int
+  latency_ms : Int32
 }
 
 ///|
 /// 时间序列统计
 pub(all) struct TimeSeriesStats {
   /// 度量数
-  mut metric_count : Int
+  mut metric_count : Int32
   /// 总数据点数
-  mut total_data_points : Int
+  mut total_data_points : Int32
   /// 总大小（字节）
-  mut total_size_bytes : Int
+  mut total_size_bytes : Int32
   /// 平均写入延迟（毫秒）
   mut avg_write_latency_ms : Double
   /// 平均查询延迟（毫秒）
   mut avg_query_latency_ms : Double
   /// P99 查询延迟（毫秒）
-  mut p99_query_latency_ms : Int
+  mut p99_query_latency_ms : Int32
   /// 查询吞吐量（查询/秒）
   mut query_throughput_qps : Double
 }

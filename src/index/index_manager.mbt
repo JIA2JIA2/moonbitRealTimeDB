@@ -19,11 +19,11 @@ pub(all) struct IndexDef {
   /// 索引存储实例
   mut storage : IndexStorageHandle?
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 更新时间
-  mut updated_at : Int
+  mut updated_at : Int32
   /// 事件订阅 ID
-  mut watch_id : Int?
+  mut watch_id : Int32?
 }
 
 ///|
@@ -36,9 +36,9 @@ pub struct IndexManager {
   /// 字段路径解析器
   parser : FieldParser
   /// 下一个索引 ID
-  next_id : Int
+  next_id : Int32
   /// 单表最大索引数
-  max_indices_per_table : Int
+  max_indices_per_table : Int32
   /// 配置
   config : IndexManagerConfig
 }
@@ -47,11 +47,11 @@ pub struct IndexManager {
 /// 索引管理器配置
 pub struct IndexManagerConfig {
   /// 单表最大索引数
-  max_indices_per_table : Int
+  max_indices_per_table : Int32
   /// 是否自动重建失败的索引
   auto_rebuild : Bool
   /// 重建重试间隔（秒）
-  rebuild_retry_interval : Int
+  rebuild_retry_interval : Int32
 }
 
 ///|
@@ -297,7 +297,7 @@ pub fn IndexManager::get_index_storage(
 
 ///|
 /// 当前逻辑时钟
-fn IndexManager::current_clock(self : IndexManager) -> Int {
+fn IndexManager::current_clock(self : IndexManager) -> Int32 {
   match self.db {
     Some(db) => db.clock()
     None => 0
@@ -509,7 +509,7 @@ fn IndexManager::build_index(self : IndexManager, name : String) -> Unit {
 
 ///|
 /// 获取索引数量
-pub fn IndexManager::index_count(self : IndexManager) -> Int {
+pub fn IndexManager::index_count(self : IndexManager) -> Int32 {
   self.indices.length()
 }
 

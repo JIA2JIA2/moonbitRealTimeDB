@@ -6,7 +6,7 @@
 /// 向量时钟
 pub(all) struct VectorClock {
   /// 时钟映射：节点ID -> 时间戳
-  mut clocks : Map[String, Int]
+  mut clocks : Map[String, Int32]
 }
 
 ///|
@@ -20,14 +20,14 @@ pub fn VectorClock::new() -> VectorClock {
 pub fn VectorClock::update(
   self : VectorClock,
   node_id : String,
-  timestamp : Int,
+  timestamp : Int32,
 ) -> Unit {
   self.clocks.set(node_id, timestamp)
 }
 
 ///|
 /// 获取时钟值
-pub fn VectorClock::get(self : VectorClock, node_id : String) -> Int {
+pub fn VectorClock::get(self : VectorClock, node_id : String) -> Int32 {
   match self.clocks.get(node_id) {
     Some(t) => t
     None => 0
@@ -91,7 +91,7 @@ pub extend ClockOrder with Debug::{to_repr}
 /// 版本向量
 pub(all) struct VersionVector {
   /// 版本映射：节点ID -> 版本号
-  mut versions : Map[String, Int]
+  mut versions : Map[String, Int32]
 }
 
 ///|
@@ -102,7 +102,10 @@ pub fn VersionVector::new() -> VersionVector {
 
 ///|
 /// 增加版本
-pub fn VersionVector::increment(self : VersionVector, node_id : String) -> Int {
+pub fn VersionVector::increment(
+  self : VersionVector,
+  node_id : String,
+) -> Int32 {
   let current = self.get(node_id.to_string())
   let new_version = current + 1
   self.versions.set(node_id, new_version)
@@ -114,7 +117,7 @@ pub fn VersionVector::increment(self : VersionVector, node_id : String) -> Int {
 pub fn VersionVector::update(
   self : VersionVector,
   node_id : String,
-  version : Int,
+  version : Int32,
 ) -> Unit {
   let current = self.get(node_id.to_string())
   if version > current {
@@ -124,7 +127,7 @@ pub fn VersionVector::update(
 
 ///|
 /// 获取版本号
-pub fn VersionVector::get(self : VersionVector, node_id : String) -> Int {
+pub fn VersionVector::get(self : VersionVector, node_id : String) -> Int32 {
   match self.versions.get(node_id) {
     Some(v) => v
     None => 0
@@ -174,10 +177,10 @@ pub fn ConflictDetector::detect(
   self : ConflictDetector,
   key : String,
   source_value : @realtime_db.Value,
-  source_timestamp : Int,
+  source_timestamp : Int32,
   source_node : String,
   target_value : @realtime_db.Value,
-  target_timestamp : Int,
+  target_timestamp : Int32,
   target_node : String,
 ) -> Bool {
   let _ = key
@@ -219,12 +222,12 @@ pub fn ConflictDetector::resolve(
   self : ConflictDetector,
   key : String,
   source_value : @realtime_db.Value,
-  source_timestamp : Int,
-  source_version : Int,
+  source_timestamp : Int32,
+  source_version : Int32,
   source_node : String,
   target_value : @realtime_db.Value,
-  target_timestamp : Int,
-  target_version : Int,
+  target_timestamp : Int32,
+  target_version : Int32,
   target_node : String,
 ) -> ConflictResolutionResult {
   let _ = source_node
@@ -271,7 +274,7 @@ pub(all) struct ConflictResolutionResult {
   /// 解决策略
   resolution_strategy : ConflictResolutionStrategy
   /// 解决时间
-  resolved_at : Int
+  resolved_at : Int32
 }
 
 ///|
@@ -320,12 +323,12 @@ pub fn ConflictResolver::resolve(
   table_name : String,
   key : String,
   source_value : @realtime_db.Value,
-  source_timestamp : Int,
-  source_version : Int,
+  source_timestamp : Int32,
+  source_version : Int32,
   source_node : String,
   target_value : @realtime_db.Value,
-  target_timestamp : Int,
-  target_version : Int,
+  target_timestamp : Int32,
+  target_version : Int32,
   target_node : String,
 ) -> ConflictResolutionResult {
   let strategy = self.get_strategy(table_name)

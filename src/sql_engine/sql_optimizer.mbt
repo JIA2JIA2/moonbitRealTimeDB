@@ -10,7 +10,7 @@ pub(all) struct QueryPlan {
   /// 预估成本
   estimated_cost : Double
   /// 预估行数
-  estimated_rows : Int
+  estimated_rows : Int32
   /// 执行计划
   execution_plan : ExecutionPlan?
 }
@@ -105,17 +105,17 @@ pub(all) struct QueryOptimizer {
 /// 查询统计
 pub(all) struct QueryStats {
   /// 表行数
-  row_count : Int
+  row_count : Int32
   /// 表大小
-  table_size : Int
+  table_size : Int32
   /// 索引数量
-  index_count : Int
+  index_count : Int32
   /// 列数量
-  column_count : Int
+  column_count : Int32
   /// 平均行大小
-  avg_row_size : Int
+  avg_row_size : Int32
   /// 基数估计
-  cardinality : Map[String, Int]
+  cardinality : Map[String, Int32]
 }
 
 ///|

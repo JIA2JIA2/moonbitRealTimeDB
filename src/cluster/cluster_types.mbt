@@ -233,11 +233,11 @@ pub(all) struct Replica {
   /// 副本角色
   role : ReplicaRole
   /// 延迟（毫秒）
-  latency_ms : Int
+  latency_ms : Int32
   /// 是否健康
   is_healthy : Bool
   /// 最后心跳时间
-  last_heartbeat : Int
+  last_heartbeat : Int32
 }
 
 ///|
@@ -261,15 +261,15 @@ pub(all) struct ShardInfo {
   /// 分片状态
   mut status : ShardStatus
   /// 版本号
-  mut version : Int
+  mut version : Int32
   /// 键范围
   key_range : ShardKeyRange
   /// 分片大小（字节）
-  size_bytes : Int
+  size_bytes : Int32
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 更新时间
-  updated_at : Int
+  updated_at : Int32
 }
 
 ///|
@@ -282,7 +282,7 @@ pub(all) struct RoutingEntry {
   /// 副本地址列表
   replica_addrs : Array[String]
   /// 版本号
-  version : Int
+  version : Int32
 }
 
 ///|
@@ -291,11 +291,11 @@ pub(all) struct RoutingTable {
   /// 路由条目映射：分片ID -> 路由条目
   entries : Map[String, RoutingEntry]
   /// 分片键映射：哈希值 -> 分片ID
-  shard_mapping : Map[Int, String]
+  shard_mapping : Map[Int32, String]
   /// 版本号
-  mut version : Int
+  mut version : Int32
   /// 更新时间
-  updated_at : Int
+  updated_at : Int32
 }
 
 ///|
@@ -347,7 +347,7 @@ pub fn RoutingTable::get_all_entries(
 
 ///|
 /// 获取版本号
-pub fn RoutingTable::get_version(self : RoutingTable) -> Int {
+pub fn RoutingTable::get_version(self : RoutingTable) -> Int32 {
   self.version
 }
 
@@ -363,15 +363,15 @@ pub(all) struct NodeInfo {
   /// 节点标签
   labels : Map[String, String]
   /// 分片数量
-  mut shard_count : Int
+  mut shard_count : Int32
   /// 负载分数
   mut load_score : Double
   /// 加入时间
-  joined_at : Int
+  joined_at : Int32
   /// 最后活跃时间
-  mut last_active_at : Int
+  mut last_active_at : Int32
   /// 心跳超时次数
-  mut heartbeat_timeouts : Int
+  mut heartbeat_timeouts : Int32
 }
 
 ///|
@@ -521,7 +521,7 @@ pub extend ClusterError with Debug::{to_repr}
 
 ///|
 /// 获取错误码
-pub fn ClusterError::code(self : ClusterError) -> Int {
+pub fn ClusterError::code(self : ClusterError) -> Int32 {
   match self {
     Invalid_Node_Id => 1001
     Auth_Failed => 1002
@@ -671,21 +671,21 @@ pub(all) struct ClusterConfig {
   /// 节点 ID 正则校验
   node_id_pattern : String
   /// 心跳间隔（毫秒）
-  heartbeat_interval_ms : Int
+  heartbeat_interval_ms : Int32
   /// 心跳超时次数
-  heartbeat_timeout_count : Int
+  heartbeat_timeout_count : Int32
   /// 疑似故障超时（毫秒）
-  suspect_timeout_ms : Int
+  suspect_timeout_ms : Int32
   /// 副本因子
-  replica_factor : Int
+  replica_factor : Int32
   /// 分片总数
-  total_shards : Int
+  total_shards : Int32
   /// 选举超时最小（毫秒）
-  election_timeout_min_ms : Int
+  election_timeout_min_ms : Int32
   /// 选举超时最大（毫秒）
-  election_timeout_max_ms : Int
+  election_timeout_max_ms : Int32
   /// 故障转移超时（毫秒）
-  failover_timeout_ms : Int
+  failover_timeout_ms : Int32
 }
 
 ///|

@@ -19,7 +19,7 @@ pub(all) struct CheckpointService {
   /// WAL 引用
   mut wal : @persistence.WAL?
   /// 下一个检查点 ID
-  mut next_id : Int
+  mut next_id : Int32
 }
 
 ///|
@@ -152,7 +152,7 @@ fn CheckpointService::get_oldest_checkpoint_id(
   self : CheckpointService,
 ) -> String {
   let mut oldest_id : String? = None
-  let mut oldest_time : Int? = None
+  let mut oldest_time : Int32? = None
   for (id, checkpoint) in self.checkpoints {
     match oldest_time {
       Some(time) if checkpoint.timestamp < time => {
@@ -229,22 +229,24 @@ pub(all) struct WatermarkService {
   /// 水位线
   mut watermark : Watermark
   /// 乱序容忍度（毫秒）
-  out_of_order_tolerance : Int
+  out_of_order_tolerance : Int32
   /// 最大水位线
-  mut max_watermark : Int
+  mut max_watermark : Int32
   /// 水位线停滞阈值
-  stalled_threshold : Int
+  stalled_threshold : Int32
   /// 上次更新时间
-  mut last_update_time : Int
+  mut last_update_time : Int32
 }
 
 ///|
 /// 默认乱序容忍度
-pub const DEFAULT_OUT_OF_ORDER_TOLERANCE : Int = 1000 // 1 秒
+pub const DEFAULT_OUT_OF_ORDER_TOLERANCE : Int32 = 1000 // 1 秒
 
 ///|
 /// 创建水位线服务
-pub fn WatermarkService::new(out_of_order_tolerance : Int) -> WatermarkService {
+pub fn WatermarkService::new(
+  out_of_order_tolerance : Int32,
+) -> WatermarkService {
   {
     watermark: Watermark::{ timestamp: 0, advanced: false, },
     out_of_order_tolerance,
@@ -258,8 +260,8 @@ pub fn WatermarkService::new(out_of_order_tolerance : Int) -> WatermarkService {
 /// 推进水位线
 pub fn WatermarkService::advance_watermark(
   self : WatermarkService,
-  event_timestamp : Int,
-  current_time : Int,
+  event_timestamp : Int32,
+  current_time : Int32,
 ) -> Watermark {
   // 更新最大时间戳
   if event_timestamp > self.max_watermark {
@@ -290,7 +292,7 @@ pub fn WatermarkService::get_watermark(self : WatermarkService) -> Watermark {
 /// 检查水位线是否停滞
 pub fn WatermarkService::is_stalled(
   self : WatermarkService,
-  current_time : Int,
+  current_time : Int32,
 ) -> Bool {
   current_time - self.last_update_time > self.stalled_threshold
 }
@@ -299,7 +301,7 @@ pub fn WatermarkService::is_stalled(
 /// 检查是否是迟到数据
 pub fn WatermarkService::is_late_data(
   self : WatermarkService,
-  event_timestamp : Int,
+  event_timestamp : Int32,
 ) -> Bool {
   event_timestamp <= self.watermark.timestamp
 }
@@ -308,15 +310,15 @@ pub fn WatermarkService::is_late_data(
 /// 获取水位线停滞时间
 pub fn WatermarkService::get_stalled_duration(
   self : WatermarkService,
-  current_time : Int,
-) -> Int {
+  current_time : Int32,
+) -> Int32 {
   current_time - self.last_update_time
 }
 
 ///|
 /// 创建水位线服务
 pub fn create_watermark_service(
-  out_of_order_tolerance : Int,
+  out_of_order_tolerance : Int32,
 ) -> WatermarkService {
   WatermarkService::new(out_of_order_tolerance)
 }

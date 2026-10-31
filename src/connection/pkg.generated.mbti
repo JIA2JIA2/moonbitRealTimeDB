@@ -7,32 +7,32 @@ package "moonbit/realtime_db/src/connection"
 
 // Types and methods
 pub struct Connection {
-  id : Int
+  id : Int32
   addr : String
-  mut last_used : Int
+  mut last_used : Int32
   mut healthy : Bool
 }
 pub fn Connection::addr(Self) -> String
-pub fn Connection::id(Self) -> Int
+pub fn Connection::id(Self) -> Int32
 pub fn Connection::is_healthy(Self) -> Bool
-pub fn Connection::last_used(Self) -> Int
+pub fn Connection::last_used(Self) -> Int32
 pub fn Connection::mark_unhealthy(Self) -> Unit
-pub fn Connection::new(Int, String, Int) -> Self
+pub fn Connection::new(Int32, String, Int32) -> Self
 
 pub struct ConnectionPool {
   connections : Array[Connection]
-  idle_queue : Array[Int]
-  max_connections : Int
-  mut current_count : Int
-  mut next_id : Int
+  idle_queue : Array[Int32]
+  max_connections : Int32
+  mut current_count : Int32
+  mut next_id : Int32
 }
-pub fn ConnectionPool::current_count(Self) -> Int
-pub fn ConnectionPool::get(Self, String, Int) -> Result[Connection, PoolError]
-pub fn ConnectionPool::idle_count(Self) -> Int
-pub fn ConnectionPool::mark_unhealthy(Self, Int) -> Bool
-pub fn ConnectionPool::max_connections(Self) -> Int
-pub fn ConnectionPool::new(Int) -> Self
-pub fn ConnectionPool::return_connection(Self, Connection, Int) -> Unit
+pub fn ConnectionPool::current_count(Self) -> Int32
+pub fn ConnectionPool::get(Self, String, Int32) -> Result[Connection, PoolError]
+pub fn ConnectionPool::idle_count(Self) -> Int32
+pub fn ConnectionPool::mark_unhealthy(Self, Int32) -> Bool
+pub fn ConnectionPool::max_connections(Self) -> Int32
+pub fn ConnectionPool::new(Int32) -> Self
+pub fn ConnectionPool::return_connection(Self, Connection, Int32) -> Unit
 
 pub(all) enum PoolError {
   Pool_Exhausted

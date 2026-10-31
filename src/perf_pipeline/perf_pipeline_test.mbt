@@ -478,7 +478,10 @@ test "compression_roundtrip_high_redundancy" {
   }
   let compressed = processor.compress(data, @perf_pipeline.Gzip, None).unwrap()
   assert_true(compressed.length() < data.length())
-  assert_true(@perf_pipeline.CompressionProcessor::detect_format(compressed) is @perf_pipeline.Gzip)
+  assert_true(
+    @perf_pipeline.CompressionProcessor::detect_format(compressed)
+    is @perf_pipeline.Gzip,
+  )
   let restored = processor.decompress(compressed, @perf_pipeline.Gzip).unwrap()
   assert_eq(restored.length(), data.length())
   let mut same = true
@@ -537,7 +540,7 @@ test "compression_roundtrip_all_formats" {
     let mut i = 0
     while i < 64 {
       if i % 3 == 0 {
-        data.push(0.to_byte())
+        data.push((0).to_byte())
       } else {
         data.push((i % 256).to_byte())
       }
@@ -579,14 +582,15 @@ test "compression_rejects_corrupted_input" {
     None,
   )
   // 截断数据（不足帧头长度）
-  let short : Array[Byte] = [0x1f.to_byte(), 0x8b.to_byte()]
-  assert_true(
-    processor.decompress(short, @perf_pipeline.Gzip) is Err(_),
-  )
+  let short : Array[Byte] = [(0x1f).to_byte(), (0x8b).to_byte()]
+  assert_true(processor.decompress(short, @perf_pipeline.Gzip) is Err(_))
   // 格式不匹配：Gzip 产物用 Zstd 解压
-  let data : Array[Byte] = [1.to_byte(), 2.to_byte(), 2.to_byte()]
+  let data : Array[Byte] = [(1).to_byte(), (2).to_byte(), (2).to_byte()]
   let gzip_data = processor.compress(data, @perf_pipeline.Gzip, None).unwrap()
-  assert_true(processor.decompress(gzip_data, @perf_pipeline.Zstd) is Err(@perf_pipeline.Unsupported_Format))
+  assert_true(
+    processor.decompress(gzip_data, @perf_pipeline.Zstd)
+    is Err(@perf_pipeline.Unsupported_Format),
+  )
   // 篡改声明的原始长度（stored 模式长度校验失败）
   let tampered = gzip_data.copy()
   tampered[6] = (tampered[6].to_int() + 1).to_byte()
@@ -602,18 +606,21 @@ test "compression_rejects_decompression_bomb" {
   )
   // 手工构造帧：gzip 魔数 + 版本 1 + RLE 模式 + 声明 300MB 展开长度
   let bomb : Array[Byte] = [
-    0x1f.to_byte(),
-    0x8b.to_byte(),
-    0x4d.to_byte(),
-    0x42.to_byte(),
-    1.to_byte(),
-    0.to_byte(),
-    0.to_byte(),
-    0.to_byte(),
-    0x12.to_byte(),
-    0.to_byte(),
+    (0x1f).to_byte(),
+    (0x8b).to_byte(),
+    (0x4d).to_byte(),
+    (0x42).to_byte(),
+    (1).to_byte(),
+    (0).to_byte(),
+    (0).to_byte(),
+    (0).to_byte(),
+    (0x12).to_byte(),
+    (0).to_byte(),
   ]
-  assert_true(processor.decompress(bomb, @perf_pipeline.Gzip) is Err(@perf_pipeline.Compression_Bomb))
+  assert_true(
+    processor.decompress(bomb, @perf_pipeline.Gzip)
+    is Err(@perf_pipeline.Compression_Bomb),
+  )
 }
 
 ///|

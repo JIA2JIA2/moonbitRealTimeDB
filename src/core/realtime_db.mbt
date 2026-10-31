@@ -30,7 +30,7 @@ pub(all) enum Value {
   /// 字符串类型
   Str(String)
   /// 整数类型
-  Int(Int)
+  Int(Int32)
   /// 浮点数类型
   Float(Double)
   /// 布尔类型
@@ -112,7 +112,7 @@ struct Watcher {
 /// 键值条目，含可选过期时间（逻辑时钟单位）。
 struct Entry {
   value : Value
-  expires_at : Int? // None = 永不过期
+  expires_at : Int32? // None = 永不过期
 }
 
 ///|
@@ -129,17 +129,17 @@ pub struct DB {
   /// 键值存储：键 -> 条目（值 + 过期时间）
   data : Map[String, Entry]
   /// 所有订阅者：订阅者 ID -> 订阅者信息
-  all_watchers : Map[Int, Watcher]
+  all_watchers : Map[Int32, Watcher]
   /// 键订阅索引：键 -> 订阅者 ID 集合
-  key_watchers : Map[String, Map[Int, Unit]]
+  key_watchers : Map[String, Map[Int32, Unit]]
   /// 前缀订阅索引：订阅者 ID -> 前缀
-  prefix_watchers : Map[Int, String]
+  prefix_watchers : Map[Int32, String]
   /// 全局订阅者：订阅者 ID -> 单位
-  global_watchers : Map[Int, Unit]
+  global_watchers : Map[Int32, Unit]
   /// 下一个订阅者 ID
-  mut next_id : Int
+  mut next_id : Int32
   /// 逻辑时钟值
-  mut clock : Int
+  mut clock : Int32
 }
 
 ///|
@@ -158,13 +158,13 @@ pub fn DB::new() -> DB {
 
 ///|
 /// 当前逻辑时钟值。
-pub fn DB::clock(self : DB) -> Int {
+pub fn DB::clock(self : DB) -> Int32 {
   self.clock
 }
 
 ///|
 /// 推进逻辑时钟 n 个单位，并清理已过期键。返回清理的键数。
-pub fn DB::advance(self : DB, n : Int) -> Int {
+pub fn DB::advance(self : DB, n : Int32) -> Int32 {
   self.clock = self.clock + n
   self.expire_now()
 }
@@ -174,7 +174,7 @@ pub fn DB::advance(self : DB, n : Int) -> Int {
 ///
 /// 派发阶段会重新校验过期状态：若前序 Expire 回调对同批键重新
 /// 写入了未过期的新值（set/touch），该键不再被清理，避免误删。
-pub fn DB::expire_now(self : DB) -> Int {
+pub fn DB::expire_now(self : DB) -> Int32 {
   let expired : Array[String] = []
   for k, e in self.data {
     if self.is_expired(e) {
@@ -206,7 +206,7 @@ pub fn DB::expire_now(self : DB) -> Int {
 /// db.set("key", @core.Str("value"))
 /// db.set("temp", @core.Int(42), ttl=10)
 /// ```
-pub fn DB::set(self : DB, key : String, value : Value, ttl? : Int) -> Unit {
+pub fn DB::set(self : DB, key : String, value : Value, ttl? : Int32) -> Unit {
   let old = match self.data.get(key) {
     Some(e) => Some(e.value)
     None => None
@@ -309,7 +309,7 @@ pub fn DB::contains(self : DB, key : String) -> Bool {
 /// db.set("b", @core.Int(2))
 /// assert_eq(db.size(), 2)
 /// ```
-pub fn DB::size(self : DB) -> Int {
+pub fn DB::size(self : DB) -> Int32 {
   let _ = self.expire_now()
   self.data.length()
 }
@@ -393,7 +393,11 @@ pub fn DB::entries(self : DB) -> Array[(String, Value)] {
 /// db.mset([("a", @core.Int(1)), ("b", @core.Str("x"))])
 /// db.mset([("c", @core.Int(3))], ttl=10)
 /// ```
-pub fn DB::mset(self : DB, pairs : Array[(String, Value)], ttl? : Int) -> Unit {
+pub fn DB::mset(
+  self : DB,
+  pairs : Array[(String, Value)],
+  ttl? : Int32,
+) -> Unit {
   for (k, v) in pairs {
     match ttl {
       Some(t) => self.set(k, v, ttl=t)
@@ -467,7 +471,7 @@ pub fn DB::mdelete(self : DB, keys : Array[String]) -> Array[Value?] {
 /// assert_true(db.incr("counter")) // 从 0 增加到 1
 /// assert_true(db.incr("counter", delta=5)) // 从 1 增加到 6
 /// ```
-pub fn DB::incr(self : DB, key : String, delta? : Int) -> Bool {
+pub fn DB::incr(self : DB, key : String, delta? : Int32) -> Bool {
   let d = match delta {
     Some(x) => x
     None => 1
@@ -504,7 +508,7 @@ pub fn DB::incr(self : DB, key : String, delta? : Int) -> Bool {
 /// assert_true(db.decr("counter")) // 从 10 减少到 9
 /// assert_true(db.decr("counter", delta=3)) // 从 9 减少到 6
 /// ```
-pub fn DB::decr(self : DB, key : String, delta? : Int) -> Bool {
+pub fn DB::decr(self : DB, key : String, delta? : Int32) -> Bool {
   let d = match delta {
     Some(x) => -x
     None => -1
@@ -532,7 +536,7 @@ pub fn DB::decr(self : DB, key : String, delta? : Int) -> Bool {
 /// let _ = db.advance(5) // 未过期
 /// assert_eq(db.get("k"), Some(@core.Int(1)))
 /// ```
-pub fn DB::touch(self : DB, key : String, ttl : Int) -> Bool {
+pub fn DB::touch(self : DB, key : String, ttl : Int32) -> Bool {
   guard self.data.get(key) is Some(entry) else { return false }
   if self.is_expired(entry) {
     self.do_expire(key, entry.value)
@@ -603,7 +607,7 @@ pub fn DB::clear(self : DB) -> Unit {
 /// assert_false(db.setnx("k", @core.Int(99))) // 不能覆盖
 /// assert_eq(db.get("k"), Some(@core.Int(1)))
 /// ```
-pub fn DB::setnx(self : DB, key : String, value : Value, ttl? : Int) -> Bool {
+pub fn DB::setnx(self : DB, key : String, value : Value, ttl? : Int32) -> Bool {
   match self.get(key) {
     Some(_) => false
     None => {
@@ -634,7 +638,7 @@ pub fn DB::setnx(self : DB, key : String, value : Value, ttl? : Int) -> Bool {
 /// db.set("key", @core.Str("new")) // 触发回调
 /// db.unwatch(id)
 /// ```
-pub fn DB::watch(self : DB, key : String, callback : (Event) -> Unit) -> Int {
+pub fn DB::watch(self : DB, key : String, callback : (Event) -> Unit) -> Int32 {
   let id = self.fresh_id()
   self.all_watchers.set(id, { kind: Key(key), callback, })
   match self.key_watchers.get(key) {
@@ -667,7 +671,7 @@ pub fn DB::watch_prefix(
   self : DB,
   prefix : String,
   callback : (Event) -> Unit,
-) -> Int {
+) -> Int32 {
   let id = self.fresh_id()
   self.all_watchers.set(id, { kind: Prefix, callback, })
   self.prefix_watchers.set(id, prefix)
@@ -691,7 +695,7 @@ pub fn DB::watch_prefix(
 /// db.set("key", @core.Int(1)) // 触发回调
 /// db.unwatch(id)
 /// ```
-pub fn DB::watch_all(self : DB, callback : (Event) -> Unit) -> Int {
+pub fn DB::watch_all(self : DB, callback : (Event) -> Unit) -> Int32 {
   let id = self.fresh_id()
   self.all_watchers.set(id, { kind: Global, callback, })
   self.global_watchers.set(id, ())
@@ -715,7 +719,7 @@ pub fn DB::watch_all(self : DB, callback : (Event) -> Unit) -> Int {
 /// assert_true(db.unwatch(id))
 /// assert_false(db.unwatch(id)) // 重复取消返回 false
 /// ```
-pub fn DB::unwatch(self : DB, id : Int) -> Bool {
+pub fn DB::unwatch(self : DB, id : Int32) -> Bool {
   guard self.all_watchers.get(id) is Some(w) else { return false }
   self.all_watchers.remove(id)
   match w.kind {
@@ -741,14 +745,14 @@ pub fn DB::unwatch(self : DB, id : Int) -> Bool {
 /// let _ = db.watch("key", fn(e) { ... })
 /// assert_eq(db.watcher_count(), 1)
 /// ```
-pub fn DB::watcher_count(self : DB) -> Int {
+pub fn DB::watcher_count(self : DB) -> Int32 {
   self.all_watchers.length()
 }
 
 // ---- 内部实现 ----
 
 ///|
-fn DB::fresh_id(self : DB) -> Int {
+fn DB::fresh_id(self : DB) -> Int32 {
   let id = self.next_id
   self.next_id = id + 1
   id
@@ -772,8 +776,8 @@ fn DB::do_expire(self : DB, key : String, value : Value) -> Unit {
 ///|
 /// 收集应被通知的订阅者 id（key 订阅者 + 前缀匹配 + 全局）。
 /// 返回新数组，保证调用回调时迭代已结束，回调内 unwatch 安全。
-fn DB::collect_watchers(self : DB, key : String) -> Array[Int] {
-  let ids : Array[Int] = []
+fn DB::collect_watchers(self : DB, key : String) -> Array[Int32] {
+  let ids : Array[Int32] = []
   match self.key_watchers.get(key) {
     Some(id_set) =>
       for id, _ in id_set {

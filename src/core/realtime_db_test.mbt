@@ -76,7 +76,7 @@ test "watch_all_receives_everything" {
 ///|
 test "unwatch_stops_notifications" {
   let db = @core.DB::new()
-  let count : Array[Int] = [0]
+  let count : Array[Int32] = [0]
   let id = db.watch("k", fn(_e) { count[0] = count[0] + 1 })
   db.set("k", @core.Int(1))
   assert_eq(count[0], 1)
@@ -90,8 +90,8 @@ test "unwatch_stops_notifications" {
 ///|
 test "unwatch_in_callback_is_safe" {
   let db = @core.DB::new()
-  let id_b_box : Array[Int] = []
-  let b_called : Array[Int] = [0]
+  let id_b_box : Array[Int32] = []
+  let b_called : Array[Int32] = [0]
   let _ = db.watch("k", fn(_e) {
     if id_b_box.length() > 0 {
       let _ = db.unwatch(id_b_box[0])
@@ -228,7 +228,7 @@ test "watch_prefix" {
 ///|
 test "unwatch_prefix_and_global" {
   let db = @core.DB::new()
-  let count : Array[Int] = [0]
+  let count : Array[Int32] = [0]
   let wp = db.watch_prefix("u:", fn(_e) { count[0] = count[0] + 1 })
   let wg = db.watch_all(fn(_e) { count[0] = count[0] + 1 })
   db.set("u:1", @core.Int(1))

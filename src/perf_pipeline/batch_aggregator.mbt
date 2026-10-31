@@ -9,11 +9,11 @@
 /// 包含回调、聚合窗口和去重配置。
 pub struct BatchWatcher {
   /// 订阅者 ID
-  id : Int
+  id : Int32
   /// 回调函数
   callback : (BatchNotification) -> Unit
   /// 聚合窗口（毫秒）
-  window_ms : Int
+  window_ms : Int32
   /// 是否去重
   deduplicate : Bool
 }
@@ -24,23 +24,23 @@ pub struct BatchWatcher {
 /// 管理所有批量订阅者。
 pub struct BatchAggregator {
   /// 订阅者映射
-  watchers : Map[Int, BatchWatcher]
+  watchers : Map[Int32, BatchWatcher]
   /// 每个订阅者的缓冲区
-  watcher_buffers : Map[Int, Array[@realtime_db.Event]]
+  watcher_buffers : Map[Int32, Array[@realtime_db.Event]]
   /// 每个订阅者的窗口开始时间
-  watcher_window_starts : Map[Int, Int]
+  watcher_window_starts : Map[Int32, Int32]
   /// 配置
   config : PipelineConfig
   /// 下一个订阅者 ID
-  mut next_watcher_id : Int
+  mut next_watcher_id : Int32
 }
 
 ///|
 /// 创建批量订阅者
 pub fn BatchWatcher::new(
-  id : Int,
+  id : Int32,
   callback : (BatchNotification) -> Unit,
-  window_ms : Int,
+  window_ms : Int32,
   deduplicate : Bool,
 ) -> BatchWatcher {
   { id, callback, window_ms, deduplicate, }
@@ -65,8 +65,8 @@ pub fn BatchAggregator::new(config : PipelineConfig) -> BatchAggregator {
 pub fn BatchAggregator::subscribe_batch(
   self : BatchAggregator,
   callback : (BatchNotification) -> Unit,
-  window_ms : Int?,
-) -> Int {
+  window_ms : Int32?,
+) -> Int32 {
   let id = self.next_watcher_id
   self.next_watcher_id = self.next_watcher_id + 1
   let window = match window_ms {
@@ -83,7 +83,7 @@ pub fn BatchAggregator::subscribe_batch(
 /// 取消批量订阅
 pub fn BatchAggregator::unsubscribe_batch(
   self : BatchAggregator,
-  id : Int,
+  id : Int32,
 ) -> Unit {
   self.watchers.remove(id)
   self.watcher_buffers.remove(id)
@@ -108,7 +108,7 @@ pub fn BatchAggregator::notify(
 pub fn BatchAggregator::notify_at(
   self : BatchAggregator,
   event : @realtime_db.Event,
-  current_time : Int,
+  current_time : Int32,
 ) -> Unit {
   // 禁止聚合 Expire 事件：立即广播给所有订阅者
   match event {
@@ -179,7 +179,7 @@ fn upsert_event(
 
 ///|
 /// 强制刷新聚合窗口
-pub fn BatchAggregator::flush(self : BatchAggregator, id : Int) -> Unit {
+pub fn BatchAggregator::flush(self : BatchAggregator, id : Int32) -> Unit {
   self.internal_flush(id, get_current_time())
 }
 
@@ -189,9 +189,9 @@ pub fn BatchAggregator::flush(self : BatchAggregator, id : Int) -> Unit {
 /// 窗口长度由各订阅者的 window_ms 决定。
 pub fn BatchAggregator::flush_due(
   self : BatchAggregator,
-  current_time : Int,
+  current_time : Int32,
 ) -> Unit {
-  let due : Array[Int] = []
+  let due : Array[Int32] = []
   for (id, watcher) in self.watchers {
     match self.watcher_window_starts.get(id) {
       Some(start) =>
@@ -212,8 +212,8 @@ pub fn BatchAggregator::flush_due(
 /// 缓冲事件超过 max_batch_size 时只发送首批，剩余事件保留在缓冲区，绝不丢弃。
 fn BatchAggregator::internal_flush(
   self : BatchAggregator,
-  id : Int,
-  timestamp : Int,
+  id : Int32,
+  timestamp : Int32,
 ) -> Unit {
   match self.watchers.get(id) {
     Some(watcher) => {

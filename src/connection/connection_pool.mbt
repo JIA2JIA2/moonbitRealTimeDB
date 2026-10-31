@@ -6,11 +6,11 @@
 /// 连接结构体
 pub struct Connection {
   /// 连接 ID
-  id : Int
+  id : Int32
   /// 连接地址
   addr : String
   /// 最后使用时间
-  mut last_used : Int
+  mut last_used : Int32
   /// 是否健康
   mut healthy : Bool
 }
@@ -21,13 +21,13 @@ pub struct ConnectionPool {
   /// 连接列表
   connections : Array[Connection]
   /// 空闲连接队列（存连接 ID）
-  idle_queue : Array[Int]
+  idle_queue : Array[Int32]
   /// 最大连接数
-  max_connections : Int
+  max_connections : Int32
   /// 当前连接数
-  mut current_count : Int
+  mut current_count : Int32
   /// 下一个连接 ID（单调递增，销毁的连接 ID 不回收）
-  mut next_id : Int
+  mut next_id : Int32
 }
 
 ///|
@@ -39,13 +39,17 @@ pub(all) enum PoolError {
 
 ///|
 /// 创建连接
-pub fn Connection::new(id : Int, addr : String, last_used : Int) -> Connection {
+pub fn Connection::new(
+  id : Int32,
+  addr : String,
+  last_used : Int32,
+) -> Connection {
   { id, addr, last_used, healthy: true, }
 }
 
 ///|
 /// 获取连接 ID
-pub fn Connection::id(self : Connection) -> Int {
+pub fn Connection::id(self : Connection) -> Int32 {
   self.id
 }
 
@@ -57,7 +61,7 @@ pub fn Connection::addr(self : Connection) -> String {
 
 ///|
 /// 获取最后使用时间
-pub fn Connection::last_used(self : Connection) -> Int {
+pub fn Connection::last_used(self : Connection) -> Int32 {
   self.last_used
 }
 
@@ -75,7 +79,7 @@ pub fn Connection::mark_unhealthy(self : Connection) -> Unit {
 
 ///|
 /// 创建连接池
-pub fn ConnectionPool::new(max_connections : Int) -> ConnectionPool {
+pub fn ConnectionPool::new(max_connections : Int32) -> ConnectionPool {
   {
     connections: [],
     idle_queue: [],
@@ -95,7 +99,7 @@ pub fn ConnectionPool::new(max_connections : Int) -> ConnectionPool {
 pub fn ConnectionPool::get(
   self : ConnectionPool,
   addr : String,
-  current_time : Int,
+  current_time : Int32,
 ) -> Result[Connection, PoolError] {
   // 不断从空闲队列队首取出，直到拿到健康连接
   while self.idle_queue.length() > 0 {
@@ -131,7 +135,7 @@ pub fn ConnectionPool::get(
 pub fn ConnectionPool::return_connection(
   self : ConnectionPool,
   conn : Connection,
-  current_time : Int,
+  current_time : Int32,
 ) -> Unit {
   let idx = self.find_index(conn.id())
   guard idx >= 0 else { return } // 不属于本池
@@ -151,7 +155,10 @@ pub fn ConnectionPool::return_connection(
 
 ///|
 /// 按 ID 标记连接不健康
-pub fn ConnectionPool::mark_unhealthy(self : ConnectionPool, id : Int) -> Bool {
+pub fn ConnectionPool::mark_unhealthy(
+  self : ConnectionPool,
+  id : Int32,
+) -> Bool {
   let idx = self.find_index(id)
   guard idx >= 0 else { return false }
   self.connections[idx].mark_unhealthy()
@@ -160,7 +167,7 @@ pub fn ConnectionPool::mark_unhealthy(self : ConnectionPool, id : Int) -> Bool {
 
 ///|
 /// 查找连接在数组中的下标，不存在返回 -1。
-fn ConnectionPool::find_index(self : ConnectionPool, id : Int) -> Int {
+fn ConnectionPool::find_index(self : ConnectionPool, id : Int32) -> Int32 {
   let mut i = 0
   while i < self.connections.length() {
     if self.connections[i].id() == id {
@@ -173,7 +180,7 @@ fn ConnectionPool::find_index(self : ConnectionPool, id : Int) -> Int {
 
 ///|
 /// 查找连接在空闲队列中的下标，不存在返回 -1。
-fn ConnectionPool::find_idle(self : ConnectionPool, id : Int) -> Int {
+fn ConnectionPool::find_idle(self : ConnectionPool, id : Int32) -> Int32 {
   let mut i = 0
   while i < self.idle_queue.length() {
     if self.idle_queue[i] == id {
@@ -186,7 +193,7 @@ fn ConnectionPool::find_idle(self : ConnectionPool, id : Int) -> Int {
 
 ///|
 /// 从空闲队列中移除指定连接 ID（若存在）。
-fn ConnectionPool::remove_idle(self : ConnectionPool, id : Int) -> Unit {
+fn ConnectionPool::remove_idle(self : ConnectionPool, id : Int32) -> Unit {
   let i = self.find_idle(id)
   if i >= 0 {
     let _ = self.idle_queue.remove(i)
@@ -195,18 +202,18 @@ fn ConnectionPool::remove_idle(self : ConnectionPool, id : Int) -> Unit {
 
 ///|
 /// 获取连接数
-pub fn ConnectionPool::current_count(self : ConnectionPool) -> Int {
+pub fn ConnectionPool::current_count(self : ConnectionPool) -> Int32 {
   self.current_count
 }
 
 ///|
 /// 获取空闲连接数
-pub fn ConnectionPool::idle_count(self : ConnectionPool) -> Int {
+pub fn ConnectionPool::idle_count(self : ConnectionPool) -> Int32 {
   self.idle_queue.length()
 }
 
 ///|
 /// 获取最大连接数
-pub fn ConnectionPool::max_connections(self : ConnectionPool) -> Int {
+pub fn ConnectionPool::max_connections(self : ConnectionPool) -> Int32 {
   self.max_connections
 }

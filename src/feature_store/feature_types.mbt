@@ -153,9 +153,9 @@ pub(all) struct FeatureTable {
   /// 主键
   primary_key : String
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 更新时间
-  mut updated_at : Int
+  mut updated_at : Int32
 }
 
 ///|
@@ -178,9 +178,9 @@ pub(all) struct Feature {
   /// 元数据
   metadata : Map[String, @realtime_db.Value]
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 更新时间
-  updated_at : Int
+  updated_at : Int32
 }
 
 ///|
@@ -195,9 +195,9 @@ pub(all) struct FeatureVector {
   /// 特征值映射：特征ID -> 值
   values : Map[String, @realtime_db.Value]
   /// 特征版本
-  version : Int
+  version : Int32
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
   /// 是否有效
   is_valid : Bool
 }
@@ -210,11 +210,11 @@ pub(all) struct FeatureVersion {
   /// 特征 ID
   feature_id : String
   /// 版本号
-  version : Int
+  version : Int32
   /// 变更描述
   change_description : String
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 是否当前版本
   is_current : Bool
 }
@@ -233,7 +233,7 @@ pub(all) struct FeatureView {
   /// 特征列表
   feature_names : Array[String]
   /// 创建时间
-  created_at : Int
+  created_at : Int32
 }
 
 ///|
@@ -246,7 +246,7 @@ pub(all) struct FeatureQueryRequest {
   /// 特征名列表（None 表示所有特征）
   feature_names : Array[String]?
   /// 版本
-  version : Int?
+  version : Int32?
   /// 是否使用缓存
   use_cache : Bool
 }
@@ -276,13 +276,13 @@ pub(all) struct FeatureStoreConfig {
   /// 是否启用缓存
   enable_cache : Bool
   /// 缓存大小
-  cache_size : Int
+  cache_size : Int32
   /// 缓存 TTL（秒）
-  cache_ttl : Int
+  cache_ttl : Int32
   /// 是否启用版本管理
   enable_versioning : Bool
   /// 最大版本数
-  max_versions : Int
+  max_versions : Int32
 }
 
 ///|
@@ -410,7 +410,7 @@ pub extend FeatureError with Debug::{to_repr}
 
 ///|
 /// 获取错误码
-pub fn FeatureError::code(self : FeatureError) -> Int {
+pub fn FeatureError::code(self : FeatureError) -> Int32 {
   match self {
     Table_Already_Exists => 6001
     Table_Not_Found => 6002

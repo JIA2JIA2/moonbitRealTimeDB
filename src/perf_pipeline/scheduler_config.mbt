@@ -6,13 +6,13 @@
 /// 调度配置结构
 pub struct SchedulerConfig {
   /// 默认优先级（1~10）
-  mut default_priority : Int
+  mut default_priority : Int32
   /// 高优先级资源预留（10~50%）
-  mut high_priority_reserve : Int
+  mut high_priority_reserve : Int32
   /// 饥饿超时时间（毫秒）
-  mut starvation_timeout : Int
+  mut starvation_timeout : Int32
   /// 最大队列大小
-  mut max_queue_size : Int
+  mut max_queue_size : Int32
 }
 
 ///|
@@ -54,7 +54,7 @@ pub fn SchedulerConfig::validate(
 /// 设置默认优先级
 pub fn SchedulerConfig::set_default_priority(
   self : SchedulerConfig,
-  priority : Int,
+  priority : Int32,
 ) -> Unit {
   self.default_priority = priority
 }
@@ -63,7 +63,7 @@ pub fn SchedulerConfig::set_default_priority(
 /// 设置高优先级资源预留
 pub fn SchedulerConfig::set_high_priority_reserve(
   self : SchedulerConfig,
-  reserve : Int,
+  reserve : Int32,
 ) -> Unit {
   self.high_priority_reserve = reserve
 }
@@ -72,7 +72,7 @@ pub fn SchedulerConfig::set_high_priority_reserve(
 /// 设置饥饿超时时间
 pub fn SchedulerConfig::set_starvation_timeout(
   self : SchedulerConfig,
-  timeout : Int,
+  timeout : Int32,
 ) -> Unit {
   self.starvation_timeout = timeout
 }
@@ -81,7 +81,7 @@ pub fn SchedulerConfig::set_starvation_timeout(
 /// 设置最大队列大小
 pub fn SchedulerConfig::set_max_queue_size(
   self : SchedulerConfig,
-  size : Int,
+  size : Int32,
 ) -> Unit {
   self.max_queue_size = size
 }

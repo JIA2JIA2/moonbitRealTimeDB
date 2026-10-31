@@ -6,35 +6,35 @@
 /// 任务结果结构
 pub struct JobResult {
   /// 任务 ID
-  job_id : Int
+  job_id : Int32
   /// 任务状态
   mut status : TaskStatus
   /// 优先级
-  priority : Int
+  priority : Int32
   /// 等待时间（毫秒）
-  wait_time : Int
+  wait_time : Int32
   /// 执行时间（毫秒）
-  mut exec_time : Int
+  mut exec_time : Int32
 }
 
 ///|
 /// 调度器资源结构
 pub struct SchedulerResources {
   /// 总资源
-  total : Int
+  total : Int32
   /// 已使用
-  used : Int
+  used : Int32
   /// 高优先级预留
-  high_reserved : Int
+  high_reserved : Int32
 }
 
 ///|
 /// 调度器统计
 pub struct SchedulerStats {
   /// 总任务数
-  mut total_jobs : Int
+  mut total_jobs : Int32
   /// 已完成任务数
-  mut completed_jobs : Int
+  mut completed_jobs : Int32
   /// 平均等待时间
   avg_wait_time : Double
   /// 平均执行时间
@@ -53,12 +53,12 @@ pub struct PriorityScheduler {
   /// 统计信息
   stats : SchedulerStats
   /// 下一个任务 ID
-  mut next_job_id : Int
+  mut next_job_id : Int32
 }
 
 ///|
 /// 创建任务结果
-pub fn JobResult::new(job_id : Int, priority : Int) -> JobResult {
+pub fn JobResult::new(job_id : Int32, priority : Int32) -> JobResult {
   { job_id, status: Pending, priority, wait_time: 0, exec_time: 0, }
 }
 
@@ -93,7 +93,7 @@ pub fn PriorityScheduler::new(config : SchedulerConfig) -> PriorityScheduler {
 pub fn PriorityScheduler::submit_job(
   self : PriorityScheduler,
   data : @realtime_db.Value,
-  priority : Int,
+  priority : Int32,
 ) -> JobResult {
   let actual_priority = if priority >= 1 && priority <= 10 {
     priority
@@ -119,7 +119,7 @@ pub fn PriorityScheduler::submit_job(
 
 ///|
 /// 获取当前时间（模拟）
-fn get_current_time() -> Int {
+fn get_current_time() -> Int32 {
   0
 }
 
@@ -149,7 +149,7 @@ pub fn PriorityScheduler::execute_next(self : PriorityScheduler) -> JobResult? {
 pub fn PriorityScheduler::batch_submit(
   self : PriorityScheduler,
   data_array : Array[@realtime_db.Value],
-  priority : Int,
+  priority : Int32,
 ) -> Array[JobResult] {
   let results : Array[JobResult] = []
   for data in data_array {
@@ -164,8 +164,8 @@ pub fn PriorityScheduler::batch_submit(
 // 禁止修改执行中任务。
 pub fn PriorityScheduler::update_priority(
   self : PriorityScheduler,
-  job_id : Int,
-  new_priority : Int,
+  job_id : Int32,
+  new_priority : Int32,
 ) -> Bool {
   let _ = self
   let _ = job_id
@@ -189,7 +189,7 @@ pub fn PriorityScheduler::check_starvation(self : PriorityScheduler) -> Unit {
 
 ///|
 /// 获取队列大小
-pub fn PriorityScheduler::queue_size(self : PriorityScheduler) -> Int {
+pub fn PriorityScheduler::queue_size(self : PriorityScheduler) -> Int32 {
   self.queue.size()
 }
 
@@ -201,12 +201,12 @@ pub fn PriorityScheduler::stats(self : PriorityScheduler) -> SchedulerStats {
 
 ///|
 /// 获取总任务数
-pub fn SchedulerStats::total_jobs(self : SchedulerStats) -> Int {
+pub fn SchedulerStats::total_jobs(self : SchedulerStats) -> Int32 {
   self.total_jobs
 }
 
 ///|
 /// 获取已完成任务数
-pub fn SchedulerStats::completed_jobs(self : SchedulerStats) -> Int {
+pub fn SchedulerStats::completed_jobs(self : SchedulerStats) -> Int32 {
   self.completed_jobs
 }

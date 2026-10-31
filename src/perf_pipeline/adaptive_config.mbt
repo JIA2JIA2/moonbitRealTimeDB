@@ -6,15 +6,15 @@
 /// 自适应批处理配置结构
 pub struct AdaptiveConfig {
   /// 最小批次大小
-  mut min_batch_size : Int
+  mut min_batch_size : Int32
   /// 最大批次大小
-  mut max_batch_size : Int
+  mut max_batch_size : Int32
   /// 初始批次大小
-  mut initial_batch_size : Int
+  mut initial_batch_size : Int32
   /// 负载监控窗口
-  monitor_window : Int
+  monitor_window : Int32
   /// 调整间隔（毫秒）
-  mut adjust_interval : Int
+  mut adjust_interval : Int32
 }
 
 ///|
@@ -56,7 +56,7 @@ pub fn AdaptiveConfig::validate(self : AdaptiveConfig) -> Result[Unit, String] {
 /// 设置最小批次大小
 pub fn AdaptiveConfig::set_min_batch_size(
   self : AdaptiveConfig,
-  size : Int,
+  size : Int32,
 ) -> Unit {
   self.min_batch_size = size
 }
@@ -65,7 +65,7 @@ pub fn AdaptiveConfig::set_min_batch_size(
 /// 设置最大批次大小
 pub fn AdaptiveConfig::set_max_batch_size(
   self : AdaptiveConfig,
-  size : Int,
+  size : Int32,
 ) -> Unit {
   self.max_batch_size = size
 }
@@ -74,7 +74,7 @@ pub fn AdaptiveConfig::set_max_batch_size(
 /// 设置初始批次大小
 pub fn AdaptiveConfig::set_initial_batch_size(
   self : AdaptiveConfig,
-  size : Int,
+  size : Int32,
 ) -> Unit {
   self.initial_batch_size = size
 }
@@ -83,7 +83,7 @@ pub fn AdaptiveConfig::set_initial_batch_size(
 /// 设置调整间隔
 pub fn AdaptiveConfig::set_adjust_interval(
   self : AdaptiveConfig,
-  interval : Int,
+  interval : Int32,
 ) -> Unit {
   self.adjust_interval = interval
 }

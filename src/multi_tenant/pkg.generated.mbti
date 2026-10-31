@@ -29,7 +29,7 @@ pub(all) struct AuditLog {
   resource_type : String
   resource_id : String
   result : Bool
-  timestamp : Int
+  timestamp : Int32
   details : String?
 }
 
@@ -39,7 +39,7 @@ pub(all) struct BillingData {
   cpu_hours : Double
   memory_gb_hours : Double
   storage_gb_hours : Double
-  connection_hours : Int
+  connection_hours : Int32
   throughput_gb : Double
   amount : Double
   currency : String
@@ -68,7 +68,7 @@ pub(all) struct Column {
   column_type : ColumnType
   nullable : Bool
   default_value : @core.Value?
-  length : Int?
+  length : Int32?
 }
 
 pub(all) enum ColumnType {
@@ -110,7 +110,7 @@ pub(all) struct FeatureTable {
   name : String
   source_table : String
   schema : TableSchema
-  created_at : Int
+  created_at : Int32
 }
 
 pub(all) struct IsolationGuard {
@@ -136,8 +136,8 @@ pub(all) struct Namespace {
   tenant_id : String
   tables : Map[String, Table]
   feature_tables : Map[String, FeatureTable]
-  created_at : Int
-  updated_at : Int
+  created_at : Int32
+  updated_at : Int32
 }
 
 pub(all) struct NamespaceResolver {
@@ -160,10 +160,10 @@ pub(all) struct ResourceQuotaManager {
   tenant_manager : TenantManager
   alert_threshold : Double
 }
-pub fn ResourceQuotaManager::check_quota(Self, String, ResourceType, Int) -> Result[QuotaCheckResult, TenantError]
+pub fn ResourceQuotaManager::check_quota(Self, String, ResourceType, Int32) -> Result[QuotaCheckResult, TenantError]
 pub fn ResourceQuotaManager::new(TenantManager) -> Self
-pub fn ResourceQuotaManager::record_usage(Self, String, ResourceType, Int) -> Result[Unit, TenantError]
-pub fn ResourceQuotaManager::release_usage(Self, String, ResourceType, Int) -> Result[Unit, TenantError]
+pub fn ResourceQuotaManager::record_usage(Self, String, ResourceType, Int32) -> Result[Unit, TenantError]
+pub fn ResourceQuotaManager::release_usage(Self, String, ResourceType, Int32) -> Result[Unit, TenantError]
 
 pub(all) enum ResourceType {
   Cpu
@@ -181,14 +181,14 @@ pub impl @debug.Debug for ResourceType
 pub(all) struct ResourceUsage {
   mut cpu_used : Double
   cpu_limit : Double
-  mut memory_used : Int
-  memory_limit : Int
+  mut memory_used : Int32
+  memory_limit : Int32
   mut storage_used : Int64
   storage_limit : Int64
-  mut connections_used : Int
-  connections_limit : Int
-  mut throughput_used : Int
-  throughput_limit : Int
+  mut connections_used : Int32
+  connections_limit : Int32
+  mut throughput_used : Int32
+  throughput_limit : Int32
 }
 pub fn ResourceUsage::default() -> Self
 
@@ -196,9 +196,9 @@ pub(all) struct Table {
   table_id : String
   name : String
   schema : TableSchema
-  row_count : Int
-  storage_size : Int
-  created_at : Int
+  row_count : Int32
+  storage_size : Int32
+  created_at : Int32
 }
 
 pub(all) struct TableSchema {
@@ -214,19 +214,19 @@ pub(all) struct Tenant {
   mut config : TenantConfig
   namespaces : Map[String, Namespace]
   resource_usage : ResourceUsage
-  created_at : Int
-  mut updated_at : Int
-  deleted_at : Int?
+  created_at : Int32
+  mut updated_at : Int32
+  deleted_at : Int32?
 }
 
 pub(all) struct TenantConfig {
   cpu_quota : Double
-  memory_quota : Int
+  memory_quota : Int32
   storage_quota : Int64
-  connection_quota : Int
-  throughput_quota : Int
-  max_namespaces : Int
-  max_tables : Int
+  connection_quota : Int32
+  throughput_quota : Int32
+  max_namespaces : Int32
+  max_tables : Int32
   auto_scaling : Bool
   isolation_level : IsolationLevel
 }
@@ -245,7 +245,7 @@ pub(all) enum TenantError {
   Invalid_Config
   Internal_Error(String)
 }
-pub fn TenantError::code(Self) -> Int
+pub fn TenantError::code(Self) -> Int32
 pub fn TenantError::equal(Self, Self) -> Bool
 pub fn TenantError::message(Self) -> String
 pub fn TenantError::not_equal(Self, Self) -> Bool
@@ -258,7 +258,7 @@ pub(all) struct TenantManager {
   mut tenants : Map[String, Tenant]
   mut tenant_state_machines : Map[String, TenantStateMachine]
   default_config : TenantConfig
-  mut next_id : Int
+  mut next_id : Int32
 }
 pub fn TenantManager::create_tenant(Self, String, TenantConfig?) -> Result[String, TenantError]
 pub fn TenantManager::delete_tenant(Self, String) -> Result[Unit, TenantError]
@@ -278,7 +278,7 @@ pub fn TenantMonitor::update_metric(Self, String, Double) -> Unit
 
 pub(all) struct TenantStateMachine {
   mut status : TenantStatus
-  mut state_history : Array[(Int, TenantStatus)]
+  mut state_history : Array[(Int32, TenantStatus)]
 }
 pub fn TenantStateMachine::can_transition_to(Self, TenantStatus) -> Bool
 pub fn TenantStateMachine::get_status(Self) -> TenantStatus

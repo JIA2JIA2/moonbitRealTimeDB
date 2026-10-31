@@ -234,7 +234,10 @@ fn IndexSelector::calculate_cost(
 
 ///|
 /// 计算使用的字段数（最左前缀原则）
-fn count_used_fields(def : IndexDef, conditions : Array[QueryCondition]) -> Int {
+fn count_used_fields(
+  def : IndexDef,
+  conditions : Array[QueryCondition],
+) -> Int32 {
   let mut count = 0
   for path in def.field_paths {
     let mut found = false
@@ -271,7 +274,7 @@ pub fn IndexSelector::select_index_with_scores(
     scores.push(self.calculate_score(name, def, conditions))
   }
 
-  scores.sort_by(fn(a : IndexScore, b : IndexScore) -> Int {
+  scores.sort_by(fn(a : IndexScore, b : IndexScore) -> Int32 {
     if a.total_score > b.total_score {
       -1
     } else if a.total_score < b.total_score {

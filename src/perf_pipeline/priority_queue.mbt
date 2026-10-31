@@ -21,13 +21,13 @@ pub(all) enum TaskStatus {
 /// 优先级任务结构
 pub struct PriorityTask {
   /// 任务 ID
-  id : Int
+  id : Int32
   /// 任务数据
   data : @realtime_db.Value
   /// 优先级（1 最高，10 最低）
-  priority : Int
+  priority : Int32
   /// 提交时间
-  submit_time : Int
+  submit_time : Int32
   /// 任务状态
   mut status : TaskStatus
 }
@@ -38,22 +38,22 @@ pub struct PriorityQueue {
   /// 任务列表
   tasks : Array[PriorityTask]
   /// 优先级索引
-  priorities : Array[Int]
+  priorities : Array[Int32]
   /// 时间戳列表
-  timestamps : Array[Int]
+  timestamps : Array[Int32]
   /// 当前大小
-  mut size : Int
+  mut size : Int32
   /// 最大大小
-  max_size : Int
+  max_size : Int32
 }
 
 ///|
 /// 创建优先级任务
 pub fn PriorityTask::new(
-  id : Int,
+  id : Int32,
   data : @realtime_db.Value,
-  priority : Int,
-  submit_time : Int,
+  priority : Int32,
+  submit_time : Int32,
 ) -> PriorityTask {
   { id, data, priority, submit_time, status: Pending, }
 }
@@ -75,13 +75,13 @@ pub fn PriorityTask::set_status(
 
 ///|
 /// 获取优先级
-pub fn PriorityTask::priority(self : PriorityTask) -> Int {
+pub fn PriorityTask::priority(self : PriorityTask) -> Int32 {
   self.priority
 }
 
 ///|
 /// 创建优先级队列
-pub fn PriorityQueue::new(max_size : Int) -> PriorityQueue {
+pub fn PriorityQueue::new(max_size : Int32) -> PriorityQueue {
   { tasks: [], priorities: [], timestamps: [], size: 0, max_size, }
 }
 
@@ -136,7 +136,7 @@ pub fn PriorityQueue::peek(self : PriorityQueue) -> PriorityTask? {
 
 ///|
 /// 移除指定任务
-pub fn PriorityQueue::remove(self : PriorityQueue, id : Int) -> Bool {
+pub fn PriorityQueue::remove(self : PriorityQueue, id : Int32) -> Bool {
   let mut i = 0
   while i < self.size {
     if self.tasks[i].id == id {
@@ -153,7 +153,7 @@ pub fn PriorityQueue::remove(self : PriorityQueue, id : Int) -> Bool {
 
 ///|
 /// 获取队列大小
-pub fn PriorityQueue::size(self : PriorityQueue) -> Int {
+pub fn PriorityQueue::size(self : PriorityQueue) -> Int32 {
   self.size
 }
 

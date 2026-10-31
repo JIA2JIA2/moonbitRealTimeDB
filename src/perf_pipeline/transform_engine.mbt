@@ -6,9 +6,9 @@
 /// 转换结果结构
 pub struct TransformResult {
   /// 成功数
-  mut success_count : Int
+  mut success_count : Int32
   /// 失败数
-  mut failed_count : Int
+  mut failed_count : Int32
   /// 转换后的记录
   transformed_records : Array[@realtime_db.Value]
 }
@@ -209,13 +209,13 @@ pub fn TransformEngine::reset_stats(self : TransformEngine) -> Unit {
 
 ///|
 /// 获取成功数
-pub fn TransformResult::success_count(self : TransformResult) -> Int {
+pub fn TransformResult::success_count(self : TransformResult) -> Int32 {
   self.success_count
 }
 
 ///|
 /// 获取失败数
-pub fn TransformResult::failed_count(self : TransformResult) -> Int {
+pub fn TransformResult::failed_count(self : TransformResult) -> Int32 {
   self.failed_count
 }
 
@@ -229,7 +229,7 @@ pub fn TransformResult::transformed_records(
 
 ///|
 /// 将整数字符串解析为 Int（支持可选负号），非法输入返回 None
-fn parse_int_str(s : String) -> Int? {
+fn parse_int_str(s : String) -> Int32? {
   let chars = s.to_array()
   if chars.length() == 0 {
     return None

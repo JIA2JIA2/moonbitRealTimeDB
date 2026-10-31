@@ -8,11 +8,11 @@ pub(all) struct GraphQLParser {
   /// 查询文本
   text : String
   /// 当前位置
-  mut position : Int
+  mut position : Int32
   /// 当前行
-  mut line : Int
+  mut line : Int32
   /// 当前列
-  mut column : Int
+  mut column : Int32
 }
 
 ///|
@@ -479,7 +479,7 @@ fn GraphQLParser::read_string(self : GraphQLParser) -> String {
 
 ///|
 /// 读取数字
-fn GraphQLParser::read_number(self : GraphQLParser) -> Int {
+fn GraphQLParser::read_number(self : GraphQLParser) -> Int32 {
   self.skip_whitespace()
 
   let mut num = 0

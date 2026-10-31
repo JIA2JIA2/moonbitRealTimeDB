@@ -8,11 +8,11 @@ import {
 }
 
 // Values
-pub const DEFAULT_MAX_PIPELINES : Int = 100
+pub const DEFAULT_MAX_PIPELINES : Int32 = 100
 
-pub const DEFAULT_MEMORY_LIMIT : Int = 104857600
+pub const DEFAULT_MEMORY_LIMIT : Int32 = 104857600
 
-pub const DEFAULT_OUT_OF_ORDER_TOLERANCE : Int = 1000
+pub const DEFAULT_OUT_OF_ORDER_TOLERANCE : Int32 = 1000
 
 pub fn create_default_pipeline_manager() -> PipelineManager
 
@@ -22,7 +22,7 @@ pub fn create_default_watermark_service() -> WatermarkService
 
 pub fn create_pipeline(String, PipelineConfig, Array[WindowConfig], CheckpointConfig, SubscriptionConfig) -> StreamConfig
 
-pub fn create_watermark_service(Int) -> WatermarkService
+pub fn create_watermark_service(Int32) -> WatermarkService
 
 pub fn create_window_assigner(WindowType, WindowConfig) -> &WindowAssigner?
 
@@ -46,13 +46,13 @@ pub(all) struct AggregateResult {
   window_id : WindowId
   fn_name : String
   result : @core.Value
-  trigger_time : Int
+  trigger_time : Int32
 }
 
 pub(all) struct AggregateState {
   fn_name : String
   data : @core.Value
-  count : Int
+  count : Int32
 }
 
 pub(all) struct AvgAggregate {
@@ -67,26 +67,26 @@ pub impl AggregateFunction for AvgAggregate
 
 pub(all) struct CallbackScheduler {
   manager : SubscriptionManager
-  max_retries : Int
-  callback_timeout_ms : Int
-  queue_depth : Int
+  max_retries : Int32
+  callback_timeout_ms : Int32
+  queue_depth : Int32
 }
 pub fn CallbackScheduler::callback_with_retry(Self, String, StreamEvent) -> Result[Unit, StreamError]
 pub fn CallbackScheduler::check_backpressure(Self) -> Bool
-pub fn CallbackScheduler::new(SubscriptionManager, Int, Int, Int) -> Self
+pub fn CallbackScheduler::new(SubscriptionManager, Int32, Int32, Int32) -> Self
 pub fn CallbackScheduler::schedule_callback(Self, String, StreamEvent) -> Result[Unit, StreamError]
 
 pub(all) struct CheckpointConfig {
-  interval_ms : Int
-  timeout_ms : Int
+  interval_ms : Int32
+  timeout_ms : Int32
   incremental : Bool
-  max_retained_checkpoints : Int
+  max_retained_checkpoints : Int32
 }
 pub fn CheckpointConfig::default() -> Self
 
 pub(all) struct CheckpointId {
-  value : Int
-  created_at : Int
+  value : Int32
+  created_at : Int32
 }
 
 pub(all) struct CheckpointService {
@@ -96,7 +96,7 @@ pub(all) struct CheckpointService {
   state_store : MemoryStateStore
   snapshot_manager : SnapshotManager
   mut wal : @persistence.WAL?
-  mut next_id : Int
+  mut next_id : Int32
 }
 pub fn CheckpointService::cleanup_old_checkpoints(Self) -> Unit
 pub fn CheckpointService::create_checkpoint(Self, Map[WindowId, WindowState]) -> Result[CheckpointState, StreamError]
@@ -111,7 +111,7 @@ pub fn CheckpointService::set_wal(Self, @persistence.WAL?) -> Unit
 
 pub(all) struct CheckpointState {
   checkpoint_id : CheckpointId
-  timestamp : Int
+  timestamp : Int32
   window_states : Map[WindowId, WindowState]
   aggregate_states : Map[String, @core.Value]
   subscription_states : Map[String, @core.Value]
@@ -142,7 +142,7 @@ pub impl AggregateFunction for CountAggregate
 
 pub(all) struct DefaultTrigger {
 }
-pub fn DefaultTrigger::get_trigger_time(Self, WindowTrigger) -> Int
+pub fn DefaultTrigger::get_trigger_time(Self, WindowTrigger) -> Int32
 pub fn DefaultTrigger::is_triggered(Self, WindowState, WindowTrigger) -> Bool
 pub impl Trigger for DefaultTrigger
 
@@ -168,7 +168,7 @@ pub(all) struct LateDataHandler {
   mut side_output : Array[StreamEvent]
 }
 pub fn LateDataHandler::get_side_output(Self) -> Array[StreamEvent]
-pub fn LateDataHandler::handle_late_data(Self, StreamEvent, Int, WindowState) -> Bool
+pub fn LateDataHandler::handle_late_data(Self, StreamEvent, Int32, WindowState) -> Bool
 pub fn LateDataHandler::new(LateDataPolicy) -> Self
 
 pub(all) enum LateDataPolicy {
@@ -201,22 +201,22 @@ pub impl AggregateFunction for MaxAggregate
 
 pub(all) struct MemoryStateStore {
   mut data : Map[String, @core.Value]
-  mut ttl_map : Map[String, Int]
-  mut current_time : Int
-  memory_limit : Int
+  mut ttl_map : Map[String, Int32]
+  mut current_time : Int32
+  memory_limit : Int32
   enable_overflow : Bool
 }
-pub fn MemoryStateStore::cleanup_expired(Self) -> Int
+pub fn MemoryStateStore::cleanup_expired(Self) -> Int32
 pub fn MemoryStateStore::delete(Self, String) -> Result[Unit, StreamError]
 pub fn MemoryStateStore::get(Self, String) -> Result[@core.Value, StreamError]
-pub fn MemoryStateStore::memory_usage(Self) -> Int
+pub fn MemoryStateStore::memory_usage(Self) -> Int32
 pub fn MemoryStateStore::new() -> Self
 pub fn MemoryStateStore::put(Self, String, @core.Value) -> Result[Unit, StreamError]
 pub fn MemoryStateStore::query(Self, String) -> Result[Array[(String, @core.Value)], StreamError]
-pub fn MemoryStateStore::set_ttl(Self, String, Int) -> Result[Unit, StreamError]
-pub fn MemoryStateStore::size(Self) -> Int
-pub fn MemoryStateStore::update_time(Self, Int) -> Unit
-pub fn MemoryStateStore::with_config(Int, Bool) -> Self
+pub fn MemoryStateStore::set_ttl(Self, String, Int32) -> Result[Unit, StreamError]
+pub fn MemoryStateStore::size(Self) -> Int32
+pub fn MemoryStateStore::update_time(Self, Int32) -> Unit
+pub fn MemoryStateStore::with_config(Int32, Bool) -> Self
 pub impl StateStore for MemoryStateStore
 
 pub(all) struct MinAggregate {
@@ -251,26 +251,26 @@ pub(all) struct Pipeline {
   mut state_store : MemoryStateStore?
   mut checkpoint_service : CheckpointService?
   mut watermark_service : WatermarkService?
-  created_at : Int
-  mut updated_at : Int
-  mut error_count : Int
+  created_at : Int32
+  mut updated_at : Int32
+  mut error_count : Int32
   mut last_error : StreamError?
 }
 
 pub(all) struct PipelineConfig {
-  batch_size : Int
-  buffer_size : Int
+  batch_size : Int32
+  buffer_size : Int32
   backpressure_threshold : Double
-  concurrency : Int
-  retry_count : Int
+  concurrency : Int32
+  retry_count : Int32
 }
 pub fn PipelineConfig::default() -> Self
 
 pub(all) struct PipelineManager {
   mut pipelines : Map[String, Pipeline]
   config : PipelineConfig
-  mut next_id : Int
-  max_pipelines : Int
+  mut next_id : Int32
+  max_pipelines : Int32
 }
 pub fn PipelineManager::create_pipeline(Self, String, StreamConfig) -> Result[Pipeline, StreamError]
 pub fn PipelineManager::delete_pipeline(Self, String) -> Result[Unit, StreamError]
@@ -279,12 +279,12 @@ pub fn PipelineManager::get_pipeline(Self, String) -> Pipeline?
 pub fn PipelineManager::get_pipeline_status(Self, String) -> PipelineStatus?
 pub fn PipelineManager::new() -> Self
 pub fn PipelineManager::pause_pipeline(Self, String) -> Result[Unit, StreamError]
-pub fn PipelineManager::pipeline_count(Self) -> Int
+pub fn PipelineManager::pipeline_count(Self) -> Int32
 pub fn PipelineManager::process_event(Self, String, StreamEvent) -> Result[Unit, StreamError]
 pub fn PipelineManager::resume_pipeline(Self, String) -> Result[Unit, StreamError]
 pub fn PipelineManager::start_pipeline(Self, String) -> Result[Unit, StreamError]
 pub fn PipelineManager::stop_pipeline(Self, String) -> Result[Unit, StreamError]
-pub fn PipelineManager::with_config(PipelineConfig, Int) -> Self
+pub fn PipelineManager::with_config(PipelineConfig, Int32) -> Self
 
 pub(all) enum PipelineStatus {
   Created
@@ -298,49 +298,49 @@ pub fn PipelineStatus::not_equal(Self, Self) -> Bool
 pub fn PipelineStatus::to_repr(Self) -> @debug.Repr
 
 pub(all) struct SessionWindowAssigner {
-  timeout : Int
+  timeout : Int32
   mut active_sessions : Map[String, WindowId]
 }
-pub fn SessionWindowAssigner::assign_windows(Self, Int, WindowConfig) -> Array[WindowId]
-pub fn SessionWindowAssigner::get_window_trigger_time(Self, WindowId) -> Int
-pub fn SessionWindowAssigner::is_late(Self, Int, Int) -> Bool
-pub fn SessionWindowAssigner::new(Int) -> Self
+pub fn SessionWindowAssigner::assign_windows(Self, Int32, WindowConfig) -> Array[WindowId]
+pub fn SessionWindowAssigner::get_window_trigger_time(Self, WindowId) -> Int32
+pub fn SessionWindowAssigner::is_late(Self, Int32, Int32) -> Bool
+pub fn SessionWindowAssigner::new(Int32) -> Self
 pub impl WindowAssigner for SessionWindowAssigner
 
 pub(all) struct SlidingWindowAssigner {
-  window_size : Int
-  slide_size : Int
+  window_size : Int32
+  slide_size : Int32
 }
-pub fn SlidingWindowAssigner::assign_windows(Self, Int, WindowConfig) -> Array[WindowId]
-pub fn SlidingWindowAssigner::get_window_trigger_time(Self, WindowId) -> Int
-pub fn SlidingWindowAssigner::is_late(Self, Int, Int) -> Bool
-pub fn SlidingWindowAssigner::new(Int, Int) -> Self
+pub fn SlidingWindowAssigner::assign_windows(Self, Int32, WindowConfig) -> Array[WindowId]
+pub fn SlidingWindowAssigner::get_window_trigger_time(Self, WindowId) -> Int32
+pub fn SlidingWindowAssigner::is_late(Self, Int32, Int32) -> Bool
+pub fn SlidingWindowAssigner::new(Int32, Int32) -> Self
 pub impl WindowAssigner for SlidingWindowAssigner
 
 pub(all) struct SnapshotManager {
   mut snapshots : Map[String, StateSnapshot]
-  max_snapshots : Int
-  snapshot_interval : Int
-  mut next_id : Int
+  max_snapshots : Int32
+  snapshot_interval : Int32
+  mut next_id : Int32
   mut id_order : Array[String]
 }
 pub fn SnapshotManager::create_snapshot(Self, MemoryStateStore) -> Result[StateSnapshot, StreamError]
 pub fn SnapshotManager::get_all_snapshots(Self) -> Array[StateSnapshot]
 pub fn SnapshotManager::get_snapshot(Self, String) -> StateSnapshot?
-pub fn SnapshotManager::new(Int, Int) -> Self
+pub fn SnapshotManager::new(Int32, Int32) -> Self
 pub fn SnapshotManager::restore_from_snapshot(Self, String, MemoryStateStore) -> Result[Unit, StreamError]
 
 pub(all) struct StateSnapshot {
   snapshot_id : String
-  timestamp : Int
+  timestamp : Int32
   data : Map[String, @core.Value]
 }
 
 pub(all) struct StateStoreFactory {
 }
 pub fn StateStoreFactory::create_memory_store() -> MemoryStateStore
-pub fn StateStoreFactory::create_memory_store_with_config(Int, Bool) -> MemoryStateStore
-pub fn StateStoreFactory::create_snapshot_manager(Int, Int) -> SnapshotManager
+pub fn StateStoreFactory::create_memory_store_with_config(Int32, Bool) -> MemoryStateStore
+pub fn StateStoreFactory::create_snapshot_manager(Int32, Int32) -> SnapshotManager
 
 pub(all) struct StreamConfig {
   name : String
@@ -375,7 +375,7 @@ pub(all) enum StreamError {
   Timeout
   Resource_Exhausted
 } derive(Eq)
-pub fn StreamError::code(Self) -> Int
+pub fn StreamError::code(Self) -> Int32
 pub fn StreamError::equal(Self, Self) -> Bool
 pub fn StreamError::is_fatal(Self) -> Bool
 pub fn StreamError::is_retryable(Self) -> Bool
@@ -387,7 +387,7 @@ pub(all) struct StreamEvent {
   key : String
   value : @core.Value
   event_type : StreamEventType
-  timestamp : Int
+  timestamp : Int32
 }
 
 pub(all) enum StreamEventType {
@@ -400,10 +400,10 @@ pub fn StreamEventType::not_equal(Self, Self) -> Bool
 pub fn StreamEventType::to_repr(Self) -> @debug.Repr
 
 pub(all) struct SubscriptionConfig {
-  max_retries : Int
-  retry_timeout_ms : Int
-  callback_timeout_ms : Int
-  queue_depth : Int
+  max_retries : Int32
+  retry_timeout_ms : Int32
+  callback_timeout_ms : Int32
+  queue_depth : Int32
 }
 pub fn SubscriptionConfig::default() -> Self
 
@@ -413,21 +413,21 @@ pub(all) struct SubscriptionManager {
   mut callbacks : Map[String, (StreamEvent) -> Unit]
   config : SubscriptionConfig
   evaluator : ConditionEvaluator
-  mut next_id : Int
+  mut next_id : Int32
 }
 pub fn SubscriptionManager::get_all_subscriptions(Self) -> Array[SubscriptionState]
 pub fn SubscriptionManager::get_subscription_state(Self, String) -> SubscriptionState?
 pub fn SubscriptionManager::new(SubscriptionConfig) -> Self
-pub fn SubscriptionManager::process_event(Self, StreamEvent) -> Int
+pub fn SubscriptionManager::process_event(Self, StreamEvent) -> Int32
 pub fn SubscriptionManager::subscribe(Self, FilterExpr, (StreamEvent) -> Unit) -> Result[String, StreamError]
 pub fn SubscriptionManager::unsubscribe(Self, String) -> Result[Unit, StreamError]
 
 pub(all) struct SubscriptionState {
   subscription_id : String
   filter_expr : FilterExpr
-  last_event_time : Int
-  pending_events : Int
-  failed_count : Int
+  last_event_time : Int32
+  pending_events : Int32
+  failed_count : Int32
 }
 
 pub(all) struct SumAggregate {
@@ -450,71 +450,71 @@ pub fn TriggerType::not_equal(Self, Self) -> Bool
 pub fn TriggerType::to_repr(Self) -> @debug.Repr
 
 pub(all) struct TumblingWindowAssigner {
-  window_size : Int
+  window_size : Int32
 }
-pub fn TumblingWindowAssigner::assign_windows(Self, Int, WindowConfig) -> Array[WindowId]
-pub fn TumblingWindowAssigner::get_window_trigger_time(Self, WindowId) -> Int
-pub fn TumblingWindowAssigner::is_late(Self, Int, Int) -> Bool
-pub fn TumblingWindowAssigner::new(Int) -> Self
+pub fn TumblingWindowAssigner::assign_windows(Self, Int32, WindowConfig) -> Array[WindowId]
+pub fn TumblingWindowAssigner::get_window_trigger_time(Self, WindowId) -> Int32
+pub fn TumblingWindowAssigner::is_late(Self, Int32, Int32) -> Bool
+pub fn TumblingWindowAssigner::new(Int32) -> Self
 pub impl WindowAssigner for TumblingWindowAssigner
 
 pub(all) struct Watermark {
-  mut timestamp : Int
+  mut timestamp : Int32
   mut advanced : Bool
 }
 
 pub(all) struct WatermarkService {
   mut watermark : Watermark
-  out_of_order_tolerance : Int
-  mut max_watermark : Int
-  stalled_threshold : Int
-  mut last_update_time : Int
+  out_of_order_tolerance : Int32
+  mut max_watermark : Int32
+  stalled_threshold : Int32
+  mut last_update_time : Int32
 }
-pub fn WatermarkService::advance_watermark(Self, Int, Int) -> Watermark
-pub fn WatermarkService::get_stalled_duration(Self, Int) -> Int
+pub fn WatermarkService::advance_watermark(Self, Int32, Int32) -> Watermark
+pub fn WatermarkService::get_stalled_duration(Self, Int32) -> Int32
 pub fn WatermarkService::get_watermark(Self) -> Watermark
-pub fn WatermarkService::is_late_data(Self, Int) -> Bool
-pub fn WatermarkService::is_stalled(Self, Int) -> Bool
-pub fn WatermarkService::new(Int) -> Self
+pub fn WatermarkService::is_late_data(Self, Int32) -> Bool
+pub fn WatermarkService::is_stalled(Self, Int32) -> Bool
+pub fn WatermarkService::new(Int32) -> Self
 
 pub(all) struct WindowConfig {
   name : String
   window_type : WindowType
-  size_ms : Int
-  slide_ms : Int
-  timeout_ms : Int
+  size_ms : Int32
+  slide_ms : Int32
+  timeout_ms : Int32
   late_data_policy : LateDataPolicy
 }
 
 pub(all) struct WindowId {
   pipeline_name : String
   window_name : String
-  start_time : Int
+  start_time : Int32
 } derive(Eq, Hash)
 pub fn WindowId::equal(Self, Self) -> Bool
-pub fn WindowId::hash(Self) -> Int
+pub fn WindowId::hash(Self) -> Int32
 pub fn WindowId::hash_combine(Self, Hasher) -> Unit
 pub fn WindowId::not_equal(Self, Self) -> Bool
 
 pub(all) struct WindowState {
   window_id : WindowId
   mut status : WindowStatus
-  start_time : Int
-  end_time : Int
-  mut elements : Int
+  start_time : Int32
+  end_time : Int32
+  mut elements : Int32
   mut aggregate_state : @core.Value?
 }
 
 pub(all) struct WindowStateManager {
   mut window_states : Map[WindowId, WindowState]
-  state_ttl : Int
+  state_ttl : Int32
 }
 pub fn WindowStateManager::add_element(Self, WindowId) -> Result[Unit, StreamError]
-pub fn WindowStateManager::cleanup_expired(Self, Int) -> Int
-pub fn WindowStateManager::create_window_state(Self, WindowId, Int, Int) -> Result[WindowState, StreamError]
+pub fn WindowStateManager::cleanup_expired(Self, Int32) -> Int32
+pub fn WindowStateManager::create_window_state(Self, WindowId, Int32, Int32) -> Result[WindowState, StreamError]
 pub fn WindowStateManager::get_all_window_states(Self) -> Array[(WindowId, WindowState)]
 pub fn WindowStateManager::get_window_state(Self, WindowId) -> WindowState?
-pub fn WindowStateManager::new(Int) -> Self
+pub fn WindowStateManager::new(Int32) -> Self
 pub fn WindowStateManager::update_window_state(Self, WindowId, WindowStatus) -> Result[Unit, StreamError]
 
 pub(all) enum WindowStatus {
@@ -530,8 +530,8 @@ pub fn WindowStatus::to_repr(Self) -> @debug.Repr
 
 pub(all) enum WindowTrigger {
   WatermarkTrigger
-  CountTrigger(Int)
-  TimeTrigger(Int)
+  CountTrigger(Int32)
+  TimeTrigger(Int32)
 } derive(Eq)
 pub fn WindowTrigger::equal(Self, Self) -> Bool
 pub fn WindowTrigger::not_equal(Self, Self) -> Bool
@@ -562,17 +562,17 @@ pub trait StateStore {
   fn put(Self, String, @core.Value) -> Result[Unit, StreamError]
   fn delete(Self, String) -> Result[Unit, StreamError]
   fn query(Self, String) -> Result[Array[(String, @core.Value)], StreamError]
-  fn memory_usage(Self) -> Int
-  fn size(Self) -> Int
+  fn memory_usage(Self) -> Int32
+  fn size(Self) -> Int32
 }
 
 pub trait Trigger {
   fn is_triggered(Self, WindowState, WindowTrigger) -> Bool
-  fn get_trigger_time(Self, WindowTrigger) -> Int
+  fn get_trigger_time(Self, WindowTrigger) -> Int32
 }
 
 pub trait WindowAssigner {
-  fn assign_windows(Self, Int, WindowConfig) -> Array[WindowId]
-  fn get_window_trigger_time(Self, WindowId) -> Int
-  fn is_late(Self, Int, Int) -> Bool
+  fn assign_windows(Self, Int32, WindowConfig) -> Array[WindowId]
+  fn get_window_trigger_time(Self, WindowId) -> Int32
+  fn is_late(Self, Int32, Int32) -> Bool
 }

@@ -8,7 +8,7 @@ pub(all) struct TenantStateMachine {
   /// 当前状态
   mut status : TenantStatus
   /// 状态转换历史
-  mut state_history : Array[(Int, TenantStatus)]
+  mut state_history : Array[(Int32, TenantStatus)]
 }
 
 ///|
@@ -86,7 +86,7 @@ pub(all) struct TenantManager {
   /// 默认配置
   default_config : TenantConfig
   /// 下一个租户 ID
-  mut next_id : Int
+  mut next_id : Int32
 }
 
 ///|

@@ -73,7 +73,7 @@ pub(all) struct GraphQLExecutor {
 /// DataLoader
 pub(all) struct DataLoader {
   /// 批处理大小
-  batch_size : Int
+  batch_size : Int32
   /// 批处理函数
   batch_fn : (Array[String]) -> Array[@realtime_db.Value]
   /// 缓存
@@ -85,7 +85,7 @@ pub(all) struct DataLoader {
 ///|
 /// 创建 DataLoader
 pub fn DataLoader::new(
-  batch_size : Int,
+  batch_size : Int32,
   batch_fn : (Array[String]) -> Array[@realtime_db.Value],
 ) -> DataLoader {
   { batch_size, batch_fn, cache: Map([]), queue: [], }
@@ -163,18 +163,18 @@ pub(all) struct GraphQLCache {
   /// 缓存数据
   mut cache : Map[String, GraphQLValue]
   /// 最大大小
-  max_size : Int
+  max_size : Int32
   /// TTL（秒）
-  ttl : Int
+  ttl : Int32
   /// 命中次数
-  mut hit_count : Int
+  mut hit_count : Int32
   /// 查询次数
-  mut query_count : Int
+  mut query_count : Int32
 }
 
 ///|
 /// 创建缓存
-pub fn GraphQLCache::new(max_size : Int, ttl : Int) -> GraphQLCache {
+pub fn GraphQLCache::new(max_size : Int32, ttl : Int32) -> GraphQLCache {
   { cache: Map([]), max_size, ttl, hit_count: 0, query_count: 0, }
 }
 
@@ -448,7 +448,7 @@ pub fn create_service(executor : GraphQLExecutor) -> GraphQLService {
 ///|
 /// 创建 DataLoader
 pub fn create_dataloader(
-  batch_size : Int,
+  batch_size : Int32,
   batch_fn : (Array[String]) -> Array[@realtime_db.Value],
 ) -> DataLoader {
   DataLoader::new(batch_size, batch_fn)

@@ -25,23 +25,23 @@ pub(all) enum MetricType {
 }
 
 pub struct Metrics {
-  collection_time : Int
+  collection_time : Int32
   metrics : Array[Metric]
 }
 pub fn Metrics::add_metric(Self, Metric) -> Unit
 pub fn Metrics::metrics(Self) -> Array[Metric]
-pub fn Metrics::new(Int) -> Self
+pub fn Metrics::new(Int32) -> Self
 
 pub struct Monitor {
   registry : Map[String, Metric]
-  interval : Int
+  interval : Int32
 }
 pub fn Monitor::collect(Self) -> Metrics
 pub fn Monitor::expose(Self) -> String
 pub fn Monitor::incr(Self, String, delta? : Double) -> Result[Unit, MonitorError]
-pub fn Monitor::interval(Self) -> Int
-pub fn Monitor::metric_count(Self) -> Int
-pub fn Monitor::new(Int) -> Self
+pub fn Monitor::interval(Self) -> Int32
+pub fn Monitor::metric_count(Self) -> Int32
+pub fn Monitor::new(Int32) -> Self
 pub fn Monitor::observe(Self, String, Double) -> Result[Unit, MonitorError]
 pub fn Monitor::register(Self, Metric) -> Result[Unit, MonitorError]
 pub fn Monitor::set_gauge(Self, String, Double) -> Result[Unit, MonitorError]

@@ -9,22 +9,22 @@ pub struct LoadInfo {
   /// 吞吐量（条/秒）
   throughput : Double
   /// 延迟（微秒）
-  latency_us : Int
+  latency_us : Int32
   /// 错误率
   error_rate : Double
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
 }
 
 ///|
 /// 自适应统计
 pub struct AdaptiveStats {
   /// 当前批次大小
-  mut current_batch_size : Int
+  mut current_batch_size : Int32
   /// 调整次数
-  mut adjust_count : Int
+  mut adjust_count : Int32
   /// 上次调整时间
-  last_adjust_time : Int
+  last_adjust_time : Int32
   /// 平均吞吐量
   mut avg_throughput : Double
 }
@@ -35,29 +35,29 @@ pub struct AdaptiveController {
   /// 配置
   config : AdaptiveConfig
   /// 当前批次大小
-  mut current_batch_size : Int
+  mut current_batch_size : Int32
   /// 负载历史
   load_history : Array[LoadInfo]
   /// 统计信息
   mut stats : AdaptiveStats
   /// 震荡检测计数器
-  mut oscillation_count : Int
+  mut oscillation_count : Int32
 }
 
 ///|
 /// 创建负载信息
 pub fn LoadInfo::new(
   throughput : Double,
-  latency_us : Int,
+  latency_us : Int32,
   error_rate : Double,
-  timestamp : Int,
+  timestamp : Int32,
 ) -> LoadInfo {
   { throughput, latency_us, error_rate, timestamp, }
 }
 
 ///|
 /// 创建自适应统计
-pub fn AdaptiveStats::new(initial_size : Int) -> AdaptiveStats {
+pub fn AdaptiveStats::new(initial_size : Int32) -> AdaptiveStats {
   {
     current_batch_size: initial_size,
     adjust_count: 0,
@@ -85,7 +85,7 @@ pub fn AdaptiveController::new(config : AdaptiveConfig) -> AdaptiveController {
 pub fn AdaptiveController::monitor_load(
   self : AdaptiveController,
   throughput : Double,
-  latency_us : Int,
+  latency_us : Int32,
   error_rate : Double,
 ) -> Unit {
   let load = LoadInfo::new(
@@ -124,7 +124,9 @@ pub fn AdaptiveController::calculate_avg_throughput(
 /// 调整批次大小
 ///
 // 动态调整批次大小，负载感知。
-pub fn AdaptiveController::adjust_batch_size(self : AdaptiveController) -> Int {
+pub fn AdaptiveController::adjust_batch_size(
+  self : AdaptiveController,
+) -> Int32 {
   if self.load_history.is_empty() {
     return self.current_batch_size
   }
@@ -185,7 +187,9 @@ pub fn AdaptiveController::adjust_batch_size(self : AdaptiveController) -> Int {
 
 ///|
 /// 获取当前批次大小
-pub fn AdaptiveController::current_batch_size(self : AdaptiveController) -> Int {
+pub fn AdaptiveController::current_batch_size(
+  self : AdaptiveController,
+) -> Int32 {
   self.current_batch_size
 }
 
@@ -206,6 +210,8 @@ pub fn AdaptiveController::reset(self : AdaptiveController) -> Unit {
 
 ///|
 /// 获取震荡次数
-pub fn AdaptiveController::oscillation_count(self : AdaptiveController) -> Int {
+pub fn AdaptiveController::oscillation_count(
+  self : AdaptiveController,
+) -> Int32 {
   self.oscillation_count
 }

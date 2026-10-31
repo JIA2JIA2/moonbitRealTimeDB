@@ -114,7 +114,7 @@ pub(all) struct LakeConfig {
   /// 路径
   path : String
   /// 批次大小
-  batch_size : Int
+  batch_size : Int32
   /// 压缩类型
   compression : CompressionType
   /// 是否启用 Schema 演化
@@ -219,15 +219,15 @@ pub(all) struct SyncTask {
   /// 同步配置
   config : LakeConfig
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 更新时间
-  mut updated_at : Int
+  mut updated_at : Int32
   /// 最后同步时间
-  mut last_sync_at : Int
+  mut last_sync_at : Int32
   /// 已同步记录数
-  mut synced_records : Int
+  mut synced_records : Int32
   /// 总记录数
-  mut total_records : Int
+  mut total_records : Int32
   /// 错误信息
   mut error_message : String?
 }
@@ -246,9 +246,9 @@ pub(all) struct SyncTaskConfig {
   /// 同步模式
   sync_mode : SyncMode
   /// 批次大小
-  batch_size : Int
+  batch_size : Int32
   /// 同步间隔（秒）
-  sync_interval : Int
+  sync_interval : Int32
   /// 是否启用增量检查点
   incremental_checkpoint : Bool
 }
@@ -265,7 +265,7 @@ pub(all) struct SchemaMapping {
   /// 是否自动同步 Schema
   auto_sync : Bool
   /// 最后同步时间
-  mut last_sync_time : Int
+  mut last_sync_time : Int32
 }
 
 ///|
@@ -299,7 +299,7 @@ pub(all) struct SchemaChange {
   /// 旧列名
   old_column_name : String?
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
 }
 
 ///|
@@ -405,7 +405,7 @@ pub extend LakeError with Debug::{to_repr}
 
 ///|
 /// 获取错误码
-pub fn LakeError::code(self : LakeError) -> Int {
+pub fn LakeError::code(self : LakeError) -> Int32 {
   match self {
     Task_Already_Exists => 4001
     Task_Not_Found => 4002

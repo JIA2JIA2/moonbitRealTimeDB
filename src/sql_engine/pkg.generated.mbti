@@ -62,7 +62,7 @@ pub(all) struct Column {
   column_type : ColumnType
   nullable : Bool
   default_value : @core.Value?
-  length : Int?
+  length : Int32?
   alias_name : String?
 }
 
@@ -86,8 +86,8 @@ pub(all) struct ColumnMeta {
   name : String
   column_type : ColumnType
   nullable : Bool
-  precision : Int
-  scale : Int
+  precision : Int32
+  scale : Int32
 }
 
 pub(all) enum ColumnType {
@@ -219,9 +219,9 @@ pub(all) struct InsertStatement {
 
 pub(all) struct Lexer {
   text : String
-  mut position : Int
-  mut line : Int
-  mut column : Int
+  mut position : Int32
+  mut line : Int32
+  mut column : Int32
   mut current_token : Token?
 }
 pub fn Lexer::match_token(Self, TokenType, String?) -> Result[Token, SqlError]
@@ -285,17 +285,17 @@ pub fn QueryOptimizer::optimize(Self, SqlStatement) -> Result[QueryPlan, SqlErro
 pub(all) struct QueryPlan {
   root : PlanNode
   estimated_cost : Double
-  estimated_rows : Int
+  estimated_rows : Int32
   execution_plan : ExecutionPlan?
 }
 
 pub(all) struct QueryStats {
-  row_count : Int
-  table_size : Int
-  index_count : Int
-  column_count : Int
-  avg_row_size : Int
-  cardinality : Map[String, Int]
+  row_count : Int32
+  table_size : Int32
+  index_count : Int32
+  column_count : Int32
+  avg_row_size : Int32
+  cardinality : Map[String, Int32]
 }
 
 pub(all) struct RollbackStatement {
@@ -322,8 +322,8 @@ pub(all) struct SelectStatement {
   group_by : Array[Expression]?
   having : Expression?
   order_by : Array[OrderByItem]?
-  limit : Int?
-  offset : Int?
+  limit : Int32?
+  offset : Int32?
 }
 
 pub(all) enum SqlError {
@@ -341,7 +341,7 @@ pub(all) enum SqlError {
   Internal_Error(String)
   Not_Implemented(String)
 }
-pub fn SqlError::code(Self) -> Int
+pub fn SqlError::code(Self) -> Int32
 pub fn SqlError::equal(Self, Self) -> Bool
 pub fn SqlError::message(Self) -> String
 pub fn SqlError::not_equal(Self, Self) -> Bool
@@ -385,8 +385,8 @@ pub(all) struct TableSchema {
 pub(all) struct Token {
   token_type : TokenType
   value : String
-  line : Int
-  column : Int
+  line : Int32
+  column : Int32
 }
 
 pub(all) enum TokenType {

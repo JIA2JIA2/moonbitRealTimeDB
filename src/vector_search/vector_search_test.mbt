@@ -8,6 +8,7 @@ test "create_collection_success" {
     128,
     @vector_search.Cosine,
     @vector_search.Exact,
+    None,
     Array(capacity=0),
     "tenant1",
   )
@@ -22,6 +23,7 @@ test "delete_collection_success" {
     128,
     @vector_search.Cosine,
     @vector_search.Exact,
+    None,
     Array(capacity=0),
     "tenant1",
   )
@@ -37,6 +39,7 @@ test "get_collection_success" {
     128,
     @vector_search.Cosine,
     @vector_search.Exact,
+    None,
     Array(capacity=0),
     "tenant1",
   )
@@ -66,6 +69,7 @@ test "list_collections_multiple" {
     128,
     @vector_search.Cosine,
     @vector_search.Exact,
+    None,
     Array(capacity=0),
     "tenant1",
   )
@@ -74,6 +78,7 @@ test "list_collections_multiple" {
     256,
     @vector_search.Euclidean,
     @vector_search.Approximate,
+    None,
     Array(capacity=0),
     "tenant1",
   )
@@ -89,6 +94,7 @@ test "tenant_isolation" {
     128,
     @vector_search.Cosine,
     @vector_search.Exact,
+    None,
     Array(capacity=0),
     "tenant1",
   )
@@ -97,6 +103,7 @@ test "tenant_isolation" {
     128,
     @vector_search.Cosine,
     @vector_search.Exact,
+    None,
     Array(capacity=0),
     "tenant2",
   )
@@ -112,6 +119,7 @@ test "increment_record_count" {
     128,
     @vector_search.Cosine,
     @vector_search.Exact,
+    None,
     Array(capacity=0),
     "tenant1",
   )
@@ -131,6 +139,7 @@ test "vector_writer_insert_single" {
     6,
     @vector_search.Cosine,
     @vector_search.Exact,
+    None,
     Array(capacity=0),
     "tenant1",
   )
@@ -159,6 +168,7 @@ test "vector_writer_insert_batch" {
     6,
     @vector_search.Cosine,
     @vector_search.Exact,
+    None,
     Array(capacity=0),
     "tenant1",
   )
@@ -199,6 +209,7 @@ test "vector_writer_dimension_mismatch" {
     128,
     @vector_search.Cosine,
     @vector_search.Exact,
+    None,
     Array(capacity=0),
     "tenant1",
   )
@@ -222,6 +233,7 @@ test "vector_writer_empty_key" {
     6,
     @vector_search.Cosine,
     @vector_search.Exact,
+    None,
     Array(capacity=0),
     "tenant1",
   )
@@ -285,6 +297,7 @@ test "search_engine_empty_collection" {
     6,
     @vector_search.Cosine,
     @vector_search.Exact,
+    None,
     Array(capacity=0),
     "tenant1",
   )

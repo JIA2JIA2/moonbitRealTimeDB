@@ -136,9 +136,9 @@ pub(all) struct IndexMeta {
   /// 当前状态
   status : IndexStatus
   /// 创建时间（逻辑时钟）
-  created_at : Int
+  created_at : Int32
   /// 更新时间（逻辑时钟）
-  updated_at : Int
+  updated_at : Int32
 }
 
 ///|
@@ -147,32 +147,32 @@ pub(all) struct IndexStats {
   /// 索引名称
   name : String
   /// 基数（唯一值数量）
-  cardinality : Int
+  cardinality : Int32
   /// 总条目数
-  total_entries : Int
+  total_entries : Int32
   /// 内存占用（字节）
-  memory_usage : Int
+  memory_usage : Int32
   /// 碎片率（0.0-1.0）
   fragmentation_rate : Double
   /// 命中率（0.0-1.0）
   hit_rate : Double
   /// 查询延迟 P99（微秒）
-  query_latency_p99 : Int
+  query_latency_p99 : Int32
   /// 更新延迟 P99（微秒）
-  update_latency_p99 : Int
+  update_latency_p99 : Int32
 }
 
 ///|
 /// 索引配置选项
 pub struct IndexOptions {
   /// 缓存大小（条目数）
-  cache_size : Int
+  cache_size : Int32
   /// 并发度
-  concurrency : Int
+  concurrency : Int32
   /// 是否启用统计收集
   enable_stats : Bool
   /// 统计收集间隔（秒）
-  stats_interval : Int
+  stats_interval : Int32
 }
 
 ///|

@@ -40,7 +40,7 @@ pub fn ResourceQuotaManager::check_quota(
   self : ResourceQuotaManager,
   tenant_id : String,
   resource_type : ResourceType,
-  requested : Int,
+  requested : Int32,
 ) -> Result[QuotaCheckResult, TenantError] {
   // 获取租户
   let tenant = match self.tenant_manager.get_tenant(tenant_id.to_string()) {
@@ -79,7 +79,7 @@ pub fn ResourceQuotaManager::record_usage(
   self : ResourceQuotaManager,
   tenant_id : String,
   resource_type : ResourceType,
-  amount : Int,
+  amount : Int32,
 ) -> Result[Unit, TenantError] {
   // 获取租户
   let tenant = match self.tenant_manager.get_tenant(tenant_id) {
@@ -117,7 +117,7 @@ pub fn ResourceQuotaManager::release_usage(
   self : ResourceQuotaManager,
   tenant_id : String,
   resource_type : ResourceType,
-  amount : Int,
+  amount : Int32,
 ) -> Result[Unit, TenantError] {
   // 获取租户
   let tenant = match self.tenant_manager.get_tenant(tenant_id) {
@@ -243,7 +243,7 @@ pub(all) struct AuditLog {
   /// 操作结果
   result : Bool
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
   /// 详情
   details : String?
 }

@@ -10,17 +10,17 @@ pub struct BatchNotification {
   /// 事件列表
   events : Array[@realtime_db.Event]
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
   /// 批次 ID
-  batch_id : Int
+  batch_id : Int32
 }
 
 ///|
 /// 创建批量通知
 pub fn BatchNotification::new(
   events : Array[@realtime_db.Event],
-  timestamp : Int,
-  batch_id : Int,
+  timestamp : Int32,
+  batch_id : Int32,
 ) -> BatchNotification {
   { events, timestamp, batch_id, }
 }
@@ -35,12 +35,12 @@ pub fn BatchNotification::events(
 
 ///|
 /// 获取时间戳
-pub fn BatchNotification::timestamp(self : BatchNotification) -> Int {
+pub fn BatchNotification::timestamp(self : BatchNotification) -> Int32 {
   self.timestamp
 }
 
 ///|
 /// 获取批次 ID
-pub fn BatchNotification::batch_id(self : BatchNotification) -> Int {
+pub fn BatchNotification::batch_id(self : BatchNotification) -> Int32 {
   self.batch_id
 }

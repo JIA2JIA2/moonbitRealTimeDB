@@ -8,23 +8,23 @@
 /// 包含所有管道相关配置参数，支持运行时动态调整。
 pub struct PipelineConfig {
   /// 批量大小（条），默认 1000，范围 1~10000
-  mut batch_size : Int
+  mut batch_size : Int32
   /// 最大飞行中记录数，默认 10000
-  max_in_flight : Int
+  max_in_flight : Int32
   /// 导入超时时间（毫秒），默认 30000
-  import_timeout : Int
+  import_timeout : Int32
   /// 缓冲区大小，默认 10000
-  buffer_size : Int
+  buffer_size : Int32
   /// 背压阈值（百分比），默认 80，范围 0~100
-  mut backpressure_threshold : Int
+  mut backpressure_threshold : Int32
   /// 并发度，默认 4，范围 1~16
-  mut concurrency : Int
+  mut concurrency : Int32
   /// 重试次数，默认 3
-  retry_count : Int
+  retry_count : Int32
   /// 聚合窗口（毫秒），默认 100
-  mut aggregate_window : Int
+  mut aggregate_window : Int32
   /// 最大批量大小，默认 1000
-  mut max_batch_size : Int
+  mut max_batch_size : Int32
   /// 是否去重，默认 true
   deduplicate : Bool
 }
@@ -99,7 +99,7 @@ pub fn PipelineConfig::validate(
 /// 范围：1~10000
 pub fn PipelineConfig::set_batch_size(
   self : PipelineConfig,
-  size : Int,
+  size : Int32,
 ) -> Unit {
   self.batch_size = size
 }
@@ -110,7 +110,7 @@ pub fn PipelineConfig::set_batch_size(
 /// 范围：1~16
 pub fn PipelineConfig::set_concurrency(
   self : PipelineConfig,
-  concurrency : Int,
+  concurrency : Int32,
 ) -> Unit {
   self.concurrency = concurrency
 }
@@ -121,7 +121,7 @@ pub fn PipelineConfig::set_concurrency(
 /// 范围：0~100（百分比）
 pub fn PipelineConfig::set_backpressure_threshold(
   self : PipelineConfig,
-  threshold : Int,
+  threshold : Int32,
 ) -> Unit {
   self.backpressure_threshold = threshold
 }
@@ -130,7 +130,7 @@ pub fn PipelineConfig::set_backpressure_threshold(
 /// 设置聚合窗口（毫秒）
 pub fn PipelineConfig::set_aggregate_window(
   self : PipelineConfig,
-  window_ms : Int,
+  window_ms : Int32,
 ) -> Unit {
   self.aggregate_window = window_ms
 }
@@ -139,31 +139,31 @@ pub fn PipelineConfig::set_aggregate_window(
 /// 设置最大批量大小
 pub fn PipelineConfig::set_max_batch_size(
   self : PipelineConfig,
-  size : Int,
+  size : Int32,
 ) -> Unit {
   self.max_batch_size = size
 }
 
 ///|
 /// 获取批量大小
-pub fn PipelineConfig::batch_size(self : PipelineConfig) -> Int {
+pub fn PipelineConfig::batch_size(self : PipelineConfig) -> Int32 {
   self.batch_size
 }
 
 ///|
 /// 获取并发度
-pub fn PipelineConfig::concurrency(self : PipelineConfig) -> Int {
+pub fn PipelineConfig::concurrency(self : PipelineConfig) -> Int32 {
   self.concurrency
 }
 
 ///|
 /// 获取背压阈值
-pub fn PipelineConfig::backpressure_threshold(self : PipelineConfig) -> Int {
+pub fn PipelineConfig::backpressure_threshold(self : PipelineConfig) -> Int32 {
   self.backpressure_threshold
 }
 
 ///|
 /// 获取聚合窗口（毫秒）
-pub fn PipelineConfig::aggregate_window(self : PipelineConfig) -> Int {
+pub fn PipelineConfig::aggregate_window(self : PipelineConfig) -> Int32 {
   self.aggregate_window
 }

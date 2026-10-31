@@ -8,7 +8,8 @@ pub struct CollectionManager {
   tenant_collections : Map[String, Array[String]]
   records : Map[String, Map[String, VectorRecord]]
   hnsw_indexes : Map[String, HNSWIndex]
-  mut next_id : Int
+  ivf_indexes : Map[String, IVFIndex]
+  mut next_id : Int32
 }
 
 ///|
@@ -18,6 +19,7 @@ pub fn CollectionManager::new() -> CollectionManager {
     tenant_collections: Map([], capacity=0),
     records: Map([], capacity=0),
     hnsw_indexes: Map([], capacity=0),
+    ivf_indexes: Map([], capacity=0),
     next_id: 0,
   }
 }
@@ -26,9 +28,10 @@ pub fn CollectionManager::new() -> CollectionManager {
 pub fn CollectionManager::create_collection(
   self : CollectionManager,
   collection_name : String,
-  dimension : Int,
+  dimension : Int32,
   distance_metric : DistanceMetric,
   index_strategy : IndexStrategy,
+  index_config : IndexConfig?,
   filterable_fields : Array[String],
   tenant_id : String,
 ) -> Unit {
@@ -44,16 +47,30 @@ pub fn CollectionManager::create_collection(
     dimension,
     distance_metric,
     index_strategy,
+    index_config,
     filterable_fields,
     record_count: 0,
     tenant_id,
     created_at: 0,
   }
   self.collections.set(key, meta)
-  // Approximate 策略的集合从创建起就持有空 HNSW 索引，
+  // Approximate 策略的集合从创建起就持有空 HNSW/IVF 索引，
   // 后续写入由 VectorWriter 逐条同步
   if index_strategy is Approximate {
-    self.hnsw_indexes.set(key, HNSWIndex::new(HNSWConfig::default()))
+    match index_config {
+      Some(config) =>
+        match config.index_type {
+          HNSW =>
+            self.hnsw_indexes.set(key, HNSWIndex::new(HNSWConfig::default()))
+          IVF =>
+            match config.ivf_config {
+              Some(ivf_config) =>
+                self.ivf_indexes.set(key, IVFIndex::new(ivf_config, dimension))
+              None => ()
+            }
+        }
+      None => self.hnsw_indexes.set(key, HNSWIndex::new(HNSWConfig::default()))
+    }
   }
   let tenant_list = match self.tenant_collections.get(tenant_id) {
     Some(list) => list
@@ -81,6 +98,7 @@ pub fn CollectionManager::delete_collection(
   self.collections.remove(key)
   self.records.remove(key)
   self.hnsw_indexes.remove(key)
+  self.ivf_indexes.remove(key)
   match self.tenant_collections.get(tenant_id) {
     Some(list) => {
       let new_list = list.filter(fn(name) { name != collection_name })
@@ -118,6 +136,7 @@ pub fn CollectionManager::list_collections(
               dimension: 0,
               distance_metric: Cosine,
               index_strategy: Exact,
+              index_config: None,
               filterable_fields: Array(capacity=0),
               record_count: 0,
               tenant_id,
@@ -130,7 +149,7 @@ pub fn CollectionManager::list_collections(
 }
 
 ///|
-pub fn CollectionManager::validate_dimension(dimension : Int) -> Unit {
+pub fn CollectionManager::validate_dimension(dimension : Int32) -> Unit {
   if dimension < 1 || dimension > 8192 {
     ()
   } else {
@@ -160,7 +179,7 @@ pub fn CollectionManager::increment_record_count(
   self : CollectionManager,
   collection_name : String,
   tenant_id : String,
-  delta : Int,
+  delta : Int32,
 ) -> Unit {
   let key = tenant_id + ":" + collection_name
   match self.collections.get(key) {
@@ -170,6 +189,7 @@ pub fn CollectionManager::increment_record_count(
         dimension: meta.dimension,
         distance_metric: meta.distance_metric,
         index_strategy: meta.index_strategy,
+        index_config: meta.index_config,
         filterable_fields: meta.filterable_fields,
         record_count: meta.record_count + delta,
         tenant_id: meta.tenant_id,
@@ -279,7 +299,7 @@ pub fn CollectionManager::get_record(
 }
 
 ///|
-/// 将已写入的记录同步到集合的 HNSW 索引。
+/// 将已写入的记录同步到集合的 HNSW/IVF 索引。
 /// 主键已存在时先删旧节点再插入；入口点字段是值类型，修改后必须整体写回。
 fn CollectionManager::sync_upsert_to_index(
   self : CollectionManager,
@@ -292,22 +312,61 @@ fn CollectionManager::sync_upsert_to_index(
   if meta.index_strategy is Exact {
     return ()
   }
-  match self.hnsw_indexes.get(key) {
-    Some(index) => {
-      if !is_new {
-        let _ = index.delete(primary_key, meta.distance_metric)
+  match meta.index_config {
+    Some(config) =>
+      match config.index_type {
+        HNSW =>
+          match self.hnsw_indexes.get(key) {
+            Some(index) => {
+              if !is_new {
+                let _ = index.delete(primary_key, meta.distance_metric)
+              }
+              match index.insert(primary_key, vector, meta.distance_metric) {
+                Ok(_) => self.hnsw_indexes.set(key, index)
+                Err(_) => ()
+              }
+            }
+            None => ()
+          }
+        IVF =>
+          match self.ivf_indexes.get(key) {
+            Some(index) => {
+              if !is_new {
+                // IVF 索引不支持删除，由调用方重建索引
+              }
+              match
+                index.insert(VectorRecord::{
+                  primary_key,
+                  vector,
+                  metadata: Map([]),
+                  version: 1,
+                  updated_at: 0,
+                }) {
+                Ok(_) => self.ivf_indexes.set(key, index)
+                Err(_) => ()
+              }
+            }
+            None => ()
+          }
       }
-      match index.insert(primary_key, vector, meta.distance_metric) {
-        Ok(_) => self.hnsw_indexes.set(key, index)
-        Err(_) => ()
+    None =>
+      match self.hnsw_indexes.get(key) {
+        Some(index) => {
+          if !is_new {
+            let _ = index.delete(primary_key, meta.distance_metric)
+          }
+          match index.insert(primary_key, vector, meta.distance_metric) {
+            Ok(_) => self.hnsw_indexes.set(key, index)
+            Err(_) => ()
+          }
+        }
+        None => ()
       }
-    }
-    None => ()
   }
 }
 
 ///|
-/// 使用 HNSW 索引执行近似检索，返回 (主键, 图距离)，距离越小越相似。
+/// 使用 HNSW/IVF 索引执行近似检索，返回 (主键, 图距离)，距离越小越相似。
 ///
 /// 非 Approximate 集合或索引不存在时返回 None，由调用方回退精确检索。
 pub fn CollectionManager::search_index(
@@ -315,7 +374,7 @@ pub fn CollectionManager::search_index(
   collection_name : String,
   tenant_id : String,
   query_vector : Array[Double],
-  top_k : Int,
+  top_k : Int32,
 ) -> Array[(String, Double)]? {
   let key = tenant_id + ":" + collection_name
   match self.collections.get(key) {
@@ -323,10 +382,40 @@ pub fn CollectionManager::search_index(
       if meta.index_strategy is Exact {
         return None
       }
-      match self.hnsw_indexes.get(key) {
-        Some(index) =>
-          Some(index.search_top_k(query_vector, top_k, meta.distance_metric))
-        None => None
+      match meta.index_config {
+        Some(config) =>
+          match config.index_type {
+            HNSW =>
+              match self.hnsw_indexes.get(key) {
+                Some(index) =>
+                  Some(
+                    index.search_top_k(
+                      query_vector,
+                      top_k,
+                      meta.distance_metric,
+                    ),
+                  )
+                None => None
+              }
+            IVF =>
+              match self.ivf_indexes.get(key) {
+                Some(index) => {
+                  if !index.is_trained() {
+                    return None
+                  }
+                  Some(index.search_top_k(query_vector, top_k))
+                }
+                None => None
+              }
+          }
+        None =>
+          match self.hnsw_indexes.get(key) {
+            Some(index) =>
+              Some(
+                index.search_top_k(query_vector, top_k, meta.distance_metric),
+              )
+            None => None
+          }
       }
     }
     None => None

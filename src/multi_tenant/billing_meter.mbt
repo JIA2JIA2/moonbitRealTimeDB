@@ -16,7 +16,7 @@ pub(all) struct BillingData {
   /// 存储使用量（GB时）
   storage_gb_hours : Double
   /// 连接数使用量（连接时）
-  connection_hours : Int
+  connection_hours : Int32
   /// 吞吐量使用量（GB）
   throughput_gb : Double
   /// 计费金额

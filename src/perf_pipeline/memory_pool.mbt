@@ -9,19 +9,19 @@
 /// 管理缓冲区的分配和复用，支持动态扩容。
 pub struct MemoryPool {
   /// 空闲缓冲区列表
-  free_buffers : Array[Array[Int]]
+  free_buffers : Array[Array[Int32]]
   /// 所有缓冲区列表（用于监控）
-  all_buffers : Array[Array[Int]]
+  all_buffers : Array[Array[Int32]]
   /// 初始大小
-  initial_size : Int
+  initial_size : Int32
   /// 最大大小
-  max_size : Int
+  max_size : Int32
   /// 扩容因子
   grow_factor : Double
   /// 命中次数
-  mut hit_count : Int
+  mut hit_count : Int32
   /// 未命中次数
-  mut miss_count : Int
+  mut miss_count : Int32
 }
 
 ///|
@@ -29,8 +29,8 @@ pub struct MemoryPool {
 ///
 /// 预分配 initial_size 个缓冲区，每个缓冲区大小为 buffer_size。
 pub fn MemoryPool::new(
-  initial_size : Int,
-  max_size : Int,
+  initial_size : Int32,
+  max_size : Int32,
   grow_factor : Double,
 ) -> MemoryPool {
   let pool = MemoryPool::new_empty(initial_size, max_size, grow_factor)
@@ -48,8 +48,8 @@ pub fn MemoryPool::new(
 ///|
 /// 创建空内存池
 fn MemoryPool::new_empty(
-  initial_size : Int,
-  max_size : Int,
+  initial_size : Int32,
+  max_size : Int32,
   grow_factor : Double,
 ) -> MemoryPool {
   {
@@ -68,7 +68,7 @@ fn MemoryPool::new_empty(
 ///
 /// 从空闲池获取缓冲区，无空闲对象时按 1.5 倍扩容。
 /// 返回缓冲区，如果内存池耗尽则返回新分配的缓冲区。
-pub fn MemoryPool::acquire_buffer(self : MemoryPool) -> Array[Int] {
+pub fn MemoryPool::acquire_buffer(self : MemoryPool) -> Array[Int32] {
   if self.free_buffers.is_empty() {
     self.miss_count = self.miss_count + 1
     // 动态扩容
@@ -112,7 +112,7 @@ pub fn MemoryPool::acquire_buffer(self : MemoryPool) -> Array[Int] {
 /// 重复释放都会被忽略，避免空闲数超过池容量或同一缓冲区被多次分发。
 pub fn MemoryPool::release_buffer(
   self : MemoryPool,
-  buffer : Array[Int],
+  buffer : Array[Int32],
 ) -> Unit {
   // 只有存在"已借出"的名额时才回收，否则是池外缓冲区或重复释放
   if self.free_buffers.length() >= self.all_buffers.length() {
@@ -144,7 +144,7 @@ pub fn MemoryPool::hit_rate(self : MemoryPool) -> Double {
 /// 获取当前池大小
 ///
 /// 返回当前已分配的缓冲区总数。
-pub fn MemoryPool::current_size(self : MemoryPool) -> Int {
+pub fn MemoryPool::current_size(self : MemoryPool) -> Int32 {
   self.all_buffers.length()
 }
 
@@ -152,18 +152,18 @@ pub fn MemoryPool::current_size(self : MemoryPool) -> Int {
 /// 获取空闲缓冲区数量
 ///
 /// 返回当前空闲的缓冲区数量。
-pub fn MemoryPool::free_count(self : MemoryPool) -> Int {
+pub fn MemoryPool::free_count(self : MemoryPool) -> Int32 {
   self.free_buffers.length()
 }
 
 ///|
 /// 获取命中次数
-pub fn MemoryPool::hit_count(self : MemoryPool) -> Int {
+pub fn MemoryPool::hit_count(self : MemoryPool) -> Int32 {
   self.hit_count
 }
 
 ///|
 /// 获取未命中次数
-pub fn MemoryPool::miss_count(self : MemoryPool) -> Int {
+pub fn MemoryPool::miss_count(self : MemoryPool) -> Int32 {
   self.miss_count
 }

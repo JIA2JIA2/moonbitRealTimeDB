@@ -9,8 +9,8 @@ package "moonbit/realtime_db/src/transaction"
 pub struct LockManager {
   lock_table : Map[String, Map[TransactionId, LockMode]]
 }
-pub fn LockManager::holder_count(Self, String) -> Int
-pub fn LockManager::locked_key_count(Self) -> Int
+pub fn LockManager::holder_count(Self, String) -> Int32
+pub fn LockManager::locked_key_count(Self) -> Int32
 pub fn LockManager::new() -> Self
 pub fn LockManager::release(Self, String, TransactionId) -> Unit
 pub fn LockManager::release_all(Self, TransactionId) -> Unit
@@ -24,11 +24,11 @@ pub(all) enum LockMode {
 pub struct Transaction {
   id : TransactionId
   mut status : TransactionStatus
-  begin_time : Int
+  begin_time : Int32
 }
-pub fn Transaction::begin_time(Self) -> Int
+pub fn Transaction::begin_time(Self) -> Int32
 pub fn Transaction::id(Self) -> TransactionId
-pub fn Transaction::new(TransactionId, Int) -> Self
+pub fn Transaction::new(TransactionId, Int32) -> Self
 pub fn Transaction::status(Self) -> TransactionStatus
 
 pub(all) enum TransactionError {
@@ -37,31 +37,31 @@ pub(all) enum TransactionError {
 }
 
 pub struct TransactionId {
-  value : Int
+  value : Int32
 }
 pub fn TransactionId::equal(Self, Self) -> Bool
-pub fn TransactionId::hash(Self) -> Int
+pub fn TransactionId::hash(Self) -> Int32
 pub fn TransactionId::hash_combine(Self, Hasher) -> Unit
-pub fn TransactionId::new(Int) -> Self
+pub fn TransactionId::new(Int32) -> Self
 pub fn TransactionId::not_equal(Self, Self) -> Bool
-pub fn TransactionId::value(Self) -> Int
+pub fn TransactionId::value(Self) -> Int32
 pub impl Eq for TransactionId
 pub impl Hash for TransactionId
 
 pub struct TransactionManager {
   transactions : Map[TransactionId, Transaction]
-  mut next_tx_id : Int
+  mut next_tx_id : Int32
   lock_manager : LockManager
-  timeout : Int
+  timeout : Int32
 }
-pub fn TransactionManager::active_count(Self) -> Int
-pub fn TransactionManager::begin(Self, Int) -> TransactionId
+pub fn TransactionManager::active_count(Self) -> Int32
+pub fn TransactionManager::begin(Self, Int32) -> TransactionId
 pub fn TransactionManager::commit(Self, TransactionId) -> Result[Unit, TransactionError]
-pub fn TransactionManager::expire_old(Self, Int) -> Array[TransactionId]
+pub fn TransactionManager::expire_old(Self, Int32) -> Array[TransactionId]
 pub fn TransactionManager::get_transaction(Self, TransactionId) -> Transaction?
 pub fn TransactionManager::lock_manager(Self) -> LockManager
-pub fn TransactionManager::new(Int) -> Self
-pub fn TransactionManager::purge_finished(Self) -> Int
+pub fn TransactionManager::new(Int32) -> Self
+pub fn TransactionManager::purge_finished(Self) -> Int32
 pub fn TransactionManager::rollback(Self, TransactionId) -> Result[Unit, TransactionError]
 
 pub(all) enum TransactionStatus {

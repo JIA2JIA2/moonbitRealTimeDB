@@ -7,21 +7,21 @@ import {
 }
 
 // Values
-pub const DEFAULT_BATCH_SIZE : Int = 1000
+pub const DEFAULT_BATCH_SIZE : Int32 = 1000
 
-pub const DEFAULT_CACHE_SIZE : Int = 1000
+pub const DEFAULT_CACHE_SIZE : Int32 = 1000
 
-pub const DEFAULT_COLLECT_INTERVAL : Int = 3600
+pub const DEFAULT_COLLECT_INTERVAL : Int32 = 3600
 
 pub const DEFAULT_FRAGMENTATION_THRESHOLD : Double = 0.3
 
-pub const DEFAULT_QUERY_CACHE_SIZE : Int = 1000
+pub const DEFAULT_QUERY_CACHE_SIZE : Int32 = 1000
 
-pub const DEFAULT_QUERY_TIMEOUT_US : Int = 1_000_000
+pub const DEFAULT_QUERY_TIMEOUT_US : Int32 = 1_000_000
 
 pub const DEFAULT_TARGET_FRAGMENTATION : Double = 0.1
 
-pub let default_order : Int
+pub let default_order : Int32
 
 // Errors
 
@@ -30,25 +30,25 @@ pub(all) struct BTreeIndex {
   name : String
   mut root : BTreeNode?
   mut first_leaf : BTreeNode?
-  mut total_entries : Int
-  mut height : Int
-  order : Int
-  mut memory_bytes : Int
+  mut total_entries : Int32
+  mut height : Int32
+  order : Int32
+  mut memory_bytes : Int32
 }
 pub fn BTreeIndex::batch_update(Self, Array[(@core.Value, String)], Array[(@core.Value, String)]) -> BatchUpdateResult
 pub fn BTreeIndex::clear(Self) -> Unit
 pub fn BTreeIndex::delete(Self, @core.Value, String) -> Bool
-pub fn BTreeIndex::height(Self) -> Int
+pub fn BTreeIndex::height(Self) -> Int32
 pub fn BTreeIndex::index_type(Self) -> IndexType
 pub fn BTreeIndex::insert(Self, @core.Value, String) -> Bool
-pub fn BTreeIndex::memory_usage(Self) -> Int
+pub fn BTreeIndex::memory_usage(Self) -> Int32
 pub fn BTreeIndex::new(String) -> Self
-pub fn BTreeIndex::node_count(Self) -> Int
+pub fn BTreeIndex::node_count(Self) -> Int32
 pub fn BTreeIndex::prefix_query(Self, String) -> Array[String]
 pub fn BTreeIndex::query(Self, @core.Value) -> Array[String]
 pub fn BTreeIndex::range_query(Self, @core.Value?, @core.Value?, Bool?, Bool?) -> Array[String]
-pub fn BTreeIndex::size(Self) -> Int
-pub fn BTreeIndex::with_order(String, Int) -> Self
+pub fn BTreeIndex::size(Self) -> Int32
+pub fn BTreeIndex::with_order(String, Int32) -> Self
 
 pub(all) struct BTreeNode {
   node_type : BTreeNodeType
@@ -63,9 +63,9 @@ pub(all) enum BTreeNodeType {
 }
 
 pub(all) struct BatchUpdateResult {
-  inserted : Int
-  deleted : Int
-  failed : Int
+  inserted : Int32
+  deleted : Int32
+  failed : Int32
 }
 
 pub(all) struct CompositeEntry {
@@ -78,31 +78,31 @@ pub(all) struct CompositeIndex {
   field_paths : Array[String]
   mut sub_indices : Array[IndexStorageHandle]
   mut key_to_values : Map[String, Array[@core.Value]]
-  mut total_entries : Int
-  mut memory_bytes : Int
+  mut total_entries : Int32
+  mut memory_bytes : Int32
 }
 pub fn CompositeIndex::batch_update(Self, Array[(@core.Value, String)], Array[(@core.Value, String)]) -> BatchUpdateResult
 pub fn CompositeIndex::clear(Self) -> Unit
-pub fn CompositeIndex::composite_query(Self, Array[@core.Value?], Int?) -> Array[String]
+pub fn CompositeIndex::composite_query(Self, Array[@core.Value?], Int32?) -> Array[String]
 pub fn CompositeIndex::delete(Self, @core.Value, String) -> Bool
-pub fn CompositeIndex::field_count(Self) -> Int
+pub fn CompositeIndex::field_count(Self) -> Int32
 pub fn CompositeIndex::get_field_paths(Self) -> Array[String]
 pub fn CompositeIndex::index_type(Self) -> IndexType
 pub fn CompositeIndex::insert(Self, @core.Value, String) -> Bool
-pub fn CompositeIndex::memory_usage(Self) -> Int
+pub fn CompositeIndex::memory_usage(Self) -> Int32
 pub fn CompositeIndex::new(String, Array[String]) -> Self
 pub fn CompositeIndex::prefix_query(Self, String) -> Array[String]
 pub fn CompositeIndex::query(Self, @core.Value) -> Array[String]
 pub fn CompositeIndex::range_query(Self, @core.Value?, @core.Value?, Bool?, Bool?) -> Array[String]
 pub fn CompositeIndex::set_sub_indices(Self, Array[IndexStorageHandle]) -> Unit
-pub fn CompositeIndex::size(Self) -> Int
-pub fn CompositeIndex::supports_prefix_match(Self, Int) -> Bool
+pub fn CompositeIndex::size(Self) -> Int32
+pub fn CompositeIndex::supports_prefix_match(Self, Int32) -> Bool
 
 pub(all) struct DefragmentStats {
-  mut total_runs : Int
-  mut indices_processed : Int
-  mut memory_freed : Int
-  mut total_time_us : Int
+  mut total_runs : Int32
+  mut indices_processed : Int32
+  mut memory_freed : Int32
+  mut total_time_us : Int32
 }
 
 pub struct Defragmenter {
@@ -112,7 +112,7 @@ pub struct Defragmenter {
   mut is_defragmenting : Bool
   stats : DefragmentStats
 }
-pub fn Defragmenter::auto_defragment(Self) -> Result[Int, IndexError]
+pub fn Defragmenter::auto_defragment(Self) -> Result[Int32, IndexError]
 pub fn Defragmenter::defragment(Self, String?) -> Result[Unit, IndexError]
 pub fn Defragmenter::get_stats(Self) -> DefragmentStats
 pub fn Defragmenter::is_defragmenting(Self) -> Bool
@@ -124,9 +124,9 @@ pub fn Defragmenter::should_defragment(Self, String) -> Bool
 
 pub struct FieldParser {
   mut cache : Map[String, Array[PathSegment]]
-  max_cache_size : Int
-  mut total_lookups : Int
-  mut cache_hits : Int
+  max_cache_size : Int32
+  mut total_lookups : Int32
+  mut cache_hits : Int32
 }
 pub fn FieldParser::cache_hit_rate(Self) -> Double
 pub fn FieldParser::clear_cache(Self) -> Unit
@@ -134,71 +134,71 @@ pub fn FieldParser::extract_fields(Self, @core.Value, Array[String]) -> Array[@c
 pub fn FieldParser::extract_value(Self, @core.Value, String) -> @core.Value?
 pub fn FieldParser::new() -> Self
 pub fn FieldParser::parse_path(Self, String) -> Result[Array[PathSegment], String]
-pub fn FieldParser::with_cache_size(Int) -> Self
+pub fn FieldParser::with_cache_size(Int32) -> Self
 
 pub(all) struct FulltextIndex {
   name : String
   mut root : TrieNode
-  mut total_entries : Int
-  mut memory_bytes : Int
+  mut total_entries : Int32
+  mut memory_bytes : Int32
 }
 pub fn FulltextIndex::batch_update(Self, Array[(@core.Value, String)], Array[(@core.Value, String)]) -> BatchUpdateResult
 pub fn FulltextIndex::clear(Self) -> Unit
 pub fn FulltextIndex::delete(Self, @core.Value, String) -> Bool
 pub fn FulltextIndex::index_type(Self) -> IndexType
 pub fn FulltextIndex::insert(Self, @core.Value, String) -> Bool
-pub fn FulltextIndex::memory_usage(Self) -> Int
+pub fn FulltextIndex::memory_usage(Self) -> Int32
 pub fn FulltextIndex::new(String) -> Self
-pub fn FulltextIndex::node_count(Self) -> Int
+pub fn FulltextIndex::node_count(Self) -> Int32
 pub fn FulltextIndex::prefix_query(Self, String) -> Array[String]
 pub fn FulltextIndex::query(Self, @core.Value) -> Array[String]
 pub fn FulltextIndex::range_query(Self, @core.Value?, @core.Value?, Bool?, Bool?) -> Array[String]
-pub fn FulltextIndex::size(Self) -> Int
+pub fn FulltextIndex::size(Self) -> Int32
 
 pub(all) struct HashIndex {
   name : String
   mut buckets : Map[String, Array[String]]
   mut key_to_value : Map[String, @core.Value]
-  mut total_entries : Int
-  mut memory_bytes : Int
+  mut total_entries : Int32
+  mut memory_bytes : Int32
 }
 pub fn HashIndex::avg_bucket_depth(Self) -> Double
 pub fn HashIndex::batch_update(Self, Array[(@core.Value, String)], Array[(@core.Value, String)]) -> BatchUpdateResult
-pub fn HashIndex::bucket_count(Self) -> Int
+pub fn HashIndex::bucket_count(Self) -> Int32
 pub fn HashIndex::clear(Self) -> Unit
 pub fn HashIndex::delete(Self, @core.Value, String) -> Bool
 pub fn HashIndex::index_type(Self) -> IndexType
 pub fn HashIndex::insert(Self, @core.Value, String) -> Bool
 pub fn HashIndex::keys(Self) -> Array[String]
-pub fn HashIndex::memory_usage(Self) -> Int
+pub fn HashIndex::memory_usage(Self) -> Int32
 pub fn HashIndex::new(String) -> Self
 pub fn HashIndex::prefix_query(Self, String) -> Array[String]
 pub fn HashIndex::query(Self, @core.Value) -> Array[String]
 pub fn HashIndex::range_query(Self, @core.Value?, @core.Value?, Bool?, Bool?) -> Array[String]
-pub fn HashIndex::size(Self) -> Int
+pub fn HashIndex::size(Self) -> Int32
 pub fn HashIndex::values(Self) -> Array[@core.Value]
 
 pub struct IndexBuilder {
   mut db : @core.DB?
   mut manager : IndexManager?
-  mut batch_size : Int
+  mut batch_size : Int32
   mut is_building : Bool
-  mut processed : Int
-  mut total : Int
+  mut processed : Int32
+  mut total : Int32
 }
-pub fn IndexBuilder::build_from_scan(Self, String, ((Int, Int, Double) -> Unit)?) -> Result[Int, IndexError]
-pub fn IndexBuilder::build_index(Self, String) -> Result[Int, IndexError]
-pub fn IndexBuilder::build_multiple_indices(Self, Array[String], ((Int, Int, Double) -> Unit)?) -> Result[Int, IndexError]
+pub fn IndexBuilder::build_from_scan(Self, String, ((Int32, Int32, Double) -> Unit)?) -> Result[Int32, IndexError]
+pub fn IndexBuilder::build_index(Self, String) -> Result[Int32, IndexError]
+pub fn IndexBuilder::build_multiple_indices(Self, Array[String], ((Int32, Int32, Double) -> Unit)?) -> Result[Int32, IndexError]
 pub fn IndexBuilder::cancel(Self) -> Unit
 pub fn IndexBuilder::is_building_flag(Self) -> Bool
 pub fn IndexBuilder::new() -> Self
-pub fn IndexBuilder::processed_count(Self) -> Int
+pub fn IndexBuilder::processed_count(Self) -> Int32
 pub fn IndexBuilder::progress(Self) -> Double
-pub fn IndexBuilder::set_batch_size(Self, Int) -> Unit
+pub fn IndexBuilder::set_batch_size(Self, Int32) -> Unit
 pub fn IndexBuilder::set_db(Self, @core.DB?) -> Unit
 pub fn IndexBuilder::set_manager(Self, IndexManager?) -> Unit
-pub fn IndexBuilder::total_count(Self) -> Int
-pub fn IndexBuilder::with_batch_size(Int) -> Self
+pub fn IndexBuilder::total_count(Self) -> Int32
+pub fn IndexBuilder::with_batch_size(Int32) -> Self
 
 pub(all) struct IndexDef {
   name : String
@@ -207,9 +207,9 @@ pub(all) struct IndexDef {
   is_unique : Bool
   mut status : IndexStatus
   mut storage : IndexStorageHandle?
-  created_at : Int
-  mut updated_at : Int
-  mut watch_id : Int?
+  created_at : Int32
+  mut updated_at : Int32
+  mut watch_id : Int32?
 }
 
 pub(all) enum IndexError {
@@ -241,8 +241,8 @@ pub struct IndexManager {
   indices : Map[String, IndexDef]
   mut db : @core.DB?
   parser : FieldParser
-  next_id : Int
-  max_indices_per_table : Int
+  next_id : Int32
+  max_indices_per_table : Int32
   config : IndexManagerConfig
 }
 pub fn IndexManager::clear_all(Self) -> Unit
@@ -250,7 +250,7 @@ pub fn IndexManager::create_index(Self, String, Array[String], IndexType, Bool) 
 pub fn IndexManager::drop_index(Self, String) -> Result[Unit, IndexError]
 pub fn IndexManager::get_index_meta(Self, String) -> IndexMeta?
 pub fn IndexManager::get_index_storage(Self, String) -> IndexStorageHandle?
-pub fn IndexManager::index_count(Self) -> Int
+pub fn IndexManager::index_count(Self) -> Int32
 pub fn IndexManager::list_indexes(Self) -> Array[IndexMeta]
 pub fn IndexManager::new() -> Self
 pub fn IndexManager::rebuild_index(Self, String, RebuildMode) -> Result[Unit, IndexError]
@@ -258,9 +258,9 @@ pub fn IndexManager::set_db(Self, @core.DB?) -> Unit
 pub fn IndexManager::with_config(IndexManagerConfig) -> Self
 
 pub struct IndexManagerConfig {
-  max_indices_per_table : Int
+  max_indices_per_table : Int32
   auto_rebuild : Bool
-  rebuild_retry_interval : Int
+  rebuild_retry_interval : Int32
 }
 pub fn IndexManagerConfig::default() -> Self
 
@@ -270,15 +270,15 @@ pub(all) struct IndexMeta {
   index_type : IndexType
   is_unique : Bool
   status : IndexStatus
-  created_at : Int
-  updated_at : Int
+  created_at : Int32
+  updated_at : Int32
 }
 
 pub struct IndexOptions {
-  cache_size : Int
-  concurrency : Int
+  cache_size : Int32
+  concurrency : Int32
   enable_stats : Bool
-  stats_interval : Int
+  stats_interval : Int32
 }
 pub fn IndexOptions::default() -> Self
 
@@ -302,13 +302,13 @@ pub fn IndexSelector::set_stats_collector(Self, StatsCollector?) -> Unit
 
 pub(all) struct IndexStats {
   name : String
-  cardinality : Int
-  total_entries : Int
-  memory_usage : Int
+  cardinality : Int32
+  total_entries : Int32
+  memory_usage : Int32
   fragmentation_rate : Double
   hit_rate : Double
-  query_latency_p99 : Int
-  update_latency_p99 : Int
+  query_latency_p99 : Int32
+  update_latency_p99 : Int32
 }
 
 pub(all) enum IndexStatus {
@@ -336,11 +336,11 @@ pub fn IndexStorageHandle::clear(Self) -> Unit
 pub fn IndexStorageHandle::delete(Self, @core.Value, String) -> Bool
 pub fn IndexStorageHandle::index_type(Self) -> IndexType
 pub fn IndexStorageHandle::insert(Self, @core.Value, String) -> Bool
-pub fn IndexStorageHandle::memory_usage(Self) -> Int
+pub fn IndexStorageHandle::memory_usage(Self) -> Int32
 pub fn IndexStorageHandle::prefix_query(Self, String) -> Array[String]
 pub fn IndexStorageHandle::query(Self, @core.Value) -> Array[String]
 pub fn IndexStorageHandle::range_query(Self, @core.Value?, @core.Value?, Bool?, Bool?) -> Array[String]
-pub fn IndexStorageHandle::size(Self) -> Int
+pub fn IndexStorageHandle::size(Self) -> Int32
 
 pub(all) enum IndexType {
   Hash
@@ -356,7 +356,7 @@ pub impl @debug.Debug for IndexType
 
 pub(all) enum PathSegment {
   Key(String)
-  Index(Int)
+  Index(Int32)
 }
 pub fn PathSegment::equal(Self, Self) -> Bool
 pub fn PathSegment::not_equal(Self, Self) -> Bool
@@ -374,25 +374,25 @@ pub struct QueryEngine {
   mut db : @core.DB?
   mut manager : IndexManager?
   mut selector : IndexSelector?
-  mut timeout_us : Int
+  mut timeout_us : Int32
   mut enable_cache : Bool
   mut cache : Map[String, QueryResult]
-  mut cache_lookups : Int
-  mut cache_hits : Int
+  mut cache_lookups : Int32
+  mut cache_hits : Int32
 }
 pub fn QueryEngine::cache_hit_rate(Self) -> Double
 pub fn QueryEngine::clear_cache(Self) -> Unit
-pub fn QueryEngine::composite_query(Self, String, Array[@core.Value?], Int?) -> Result[QueryResult, QueryError]
+pub fn QueryEngine::composite_query(Self, String, Array[@core.Value?], Int32?) -> Result[QueryResult, QueryError]
 pub fn QueryEngine::fetch_full_data(Self, Array[String]) -> Array[(String, @core.Value)]
-pub fn QueryEngine::index_prefix(Self, String?, String, String, Int?) -> Result[QueryResult, QueryError]
-pub fn QueryEngine::index_query(Self, String?, String, @core.Value, Int?, Int?) -> Result[QueryResult, QueryError]
-pub fn QueryEngine::index_range(Self, String?, String, @core.Value?, @core.Value?, Bool?, Bool?, Int?, Int?) -> Result[QueryResult, QueryError]
+pub fn QueryEngine::index_prefix(Self, String?, String, String, Int32?) -> Result[QueryResult, QueryError]
+pub fn QueryEngine::index_query(Self, String?, String, @core.Value, Int32?, Int32?) -> Result[QueryResult, QueryError]
+pub fn QueryEngine::index_range(Self, String?, String, @core.Value?, @core.Value?, Bool?, Bool?, Int32?, Int32?) -> Result[QueryResult, QueryError]
 pub fn QueryEngine::new() -> Self
 pub fn QueryEngine::set_db(Self, @core.DB?) -> Unit
 pub fn QueryEngine::set_enable_cache(Self, Bool) -> Unit
 pub fn QueryEngine::set_manager(Self, IndexManager?) -> Unit
 pub fn QueryEngine::set_selector(Self, IndexSelector?) -> Unit
-pub fn QueryEngine::set_timeout(Self, Int) -> Unit
+pub fn QueryEngine::set_timeout(Self, Int32) -> Unit
 
 pub(all) enum QueryError {
   Index_Not_Found
@@ -411,7 +411,7 @@ pub impl @debug.Debug for QueryError
 
 pub(all) struct QueryResult {
   keys : Array[String]
-  latency_us : Int
+  latency_us : Int32
   hit_cache : Bool
   index_used : String
 }
@@ -437,12 +437,12 @@ pub impl @debug.Debug for RebuildMode
 
 pub struct StatsCollector {
   mut manager : IndexManager?
-  mut collect_interval : Int
-  mut last_collect_time : Int
+  mut collect_interval : Int32
+  mut last_collect_time : Int32
   mut stats_cache : Map[String, IndexStats]
   mut auto_collect : Bool
-  mut query_count : Int
-  mut hit_count : Int
+  mut query_count : Int32
+  mut hit_count : Int32
 }
 pub fn StatsCollector::clear_cache(Self) -> Unit
 pub fn StatsCollector::collect_stats(Self, String?) -> Result[IndexStats, IndexError]
@@ -452,7 +452,7 @@ pub fn StatsCollector::get_index_stats(Self, String) -> IndexStats?
 pub fn StatsCollector::new() -> Self
 pub fn StatsCollector::record_query(Self, Bool) -> Unit
 pub fn StatsCollector::set_auto_collect(Self, Bool) -> Unit
-pub fn StatsCollector::set_collect_interval(Self, Int) -> Unit
+pub fn StatsCollector::set_collect_interval(Self, Int32) -> Unit
 pub fn StatsCollector::set_manager(Self, IndexManager?) -> Unit
 pub fn StatsCollector::should_collect(Self) -> Bool
 
@@ -463,6 +463,6 @@ pub(all) struct TrieNode {
 }
 
 // Type aliases
-pub type BuildProgressCallback = (Int, Int, Double) -> Unit
+pub type BuildProgressCallback = (Int32, Int32, Double) -> Unit
 
 // Traits

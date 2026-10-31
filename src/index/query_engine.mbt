@@ -9,7 +9,7 @@ pub(all) struct QueryResult {
   /// 匹配的键数组
   keys : Array[String]
   /// 查询耗时（微秒）
-  latency_us : Int
+  latency_us : Int32
   /// 是否命中缓存
   hit_cache : Bool
   /// 使用的索引名称
@@ -26,24 +26,24 @@ pub struct QueryEngine {
   /// 索引选择器引用
   mut selector : IndexSelector?
   /// 查询超时时间（微秒）
-  mut timeout_us : Int
+  mut timeout_us : Int32
   /// 是否启用缓存
   mut enable_cache : Bool
   /// 查询缓存
   mut cache : Map[String, QueryResult]
   /// 缓存查询总次数
-  mut cache_lookups : Int
+  mut cache_lookups : Int32
   /// 缓存命中次数
-  mut cache_hits : Int
+  mut cache_hits : Int32
 }
 
 ///|
 /// 默认查询超时时间（1 秒 = 1,000,000 微秒）
-pub const DEFAULT_QUERY_TIMEOUT_US : Int = 1_000_000
+pub const DEFAULT_QUERY_TIMEOUT_US : Int32 = 1_000_000
 
 ///|
 /// 默认查询缓存大小
-pub const DEFAULT_QUERY_CACHE_SIZE : Int = 1000
+pub const DEFAULT_QUERY_CACHE_SIZE : Int32 = 1000
 
 ///|
 /// 创建查询引擎
@@ -88,8 +88,8 @@ pub fn QueryEngine::index_query(
   index_name : String?,
   field_path : String,
   value : @realtime_db.Value,
-  limit : Int?,
-  offset : Int?,
+  limit : Int32?,
+  offset : Int32?,
 ) -> Result[QueryResult, QueryError] {
   let start_time = self.get_time_us()
 
@@ -180,8 +180,8 @@ pub fn QueryEngine::index_range(
   end : @realtime_db.Value?,
   include_start : Bool?,
   include_end : Bool?,
-  limit : Int?,
-  offset : Int?,
+  limit : Int32?,
+  offset : Int32?,
 ) -> Result[QueryResult, QueryError] {
   let _ = field_path
   let start_time = self.get_time_us()
@@ -229,7 +229,7 @@ pub fn QueryEngine::index_prefix(
   index_name : String?,
   field_path : String,
   prefix : String,
-  limit : Int?,
+  limit : Int32?,
 ) -> Result[QueryResult, QueryError] {
   let start_time = self.get_time_us()
 
@@ -280,7 +280,7 @@ pub fn QueryEngine::composite_query(
   self : QueryEngine,
   index_name : String,
   conditions : Array[@realtime_db.Value?],
-  limit : Int?,
+  limit : Int32?,
 ) -> Result[QueryResult, QueryError] {
   let start_time = self.get_time_us()
 
@@ -339,7 +339,11 @@ pub fn QueryEngine::fetch_full_data(
 
 ///|
 /// 分页辅助：先偏移后截断
-fn paginate(keys : Array[String], offset : Int?, limit : Int?) -> Array[String] {
+fn paginate(
+  keys : Array[String],
+  offset : Int32?,
+  limit : Int32?,
+) -> Array[String] {
   let off = match offset {
     Some(o) => if o < 0 { 0 } else { o }
     None => 0
@@ -353,7 +357,7 @@ fn paginate(keys : Array[String], offset : Int?, limit : Int?) -> Array[String] 
 
 ///|
 /// 可选整数转字符串（缓存键用）
-fn option_int_to_string(v : Int?) -> String {
+fn option_int_to_string(v : Int32?) -> String {
   match v {
     Some(i) => i.to_string()
     None => "-"
@@ -362,7 +366,7 @@ fn option_int_to_string(v : Int?) -> String {
 
 ///|
 /// 获取时间（微秒）——使用逻辑时钟
-fn QueryEngine::get_time_us(self : QueryEngine) -> Int {
+fn QueryEngine::get_time_us(self : QueryEngine) -> Int32 {
   match self.db {
     Some(db) => db.clock()
     None => 0
@@ -379,7 +383,7 @@ pub fn QueryEngine::clear_cache(self : QueryEngine) -> Unit {
 
 ///|
 /// 设置查询超时时间
-pub fn QueryEngine::set_timeout(self : QueryEngine, timeout_us : Int) -> Unit {
+pub fn QueryEngine::set_timeout(self : QueryEngine, timeout_us : Int32) -> Unit {
   if timeout_us > 0 {
     self.timeout_us = timeout_us
   }

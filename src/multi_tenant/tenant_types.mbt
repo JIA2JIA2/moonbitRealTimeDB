@@ -102,21 +102,21 @@ pub(all) struct ResourceUsage {
   /// CPU 限制
   cpu_limit : Double
   /// 内存使用量（字节）
-  mut memory_used : Int
+  mut memory_used : Int32
   /// 内存限制（字节）
-  memory_limit : Int
+  memory_limit : Int32
   /// 存储使用量（字节）
   mut storage_used : Int64
   /// 存储限制（字节）
   storage_limit : Int64
   /// 连接数
-  mut connections_used : Int
+  mut connections_used : Int32
   /// 连接数限制
-  connections_limit : Int
+  connections_limit : Int32
   /// 吞吐量（字节/秒）
-  mut throughput_used : Int
+  mut throughput_used : Int32
   /// 吞吐量限制
-  throughput_limit : Int
+  throughput_limit : Int32
 }
 
 ///|
@@ -142,17 +142,17 @@ pub(all) struct TenantConfig {
   /// CPU 配额（核数）
   cpu_quota : Double
   /// 内存配额（字节）
-  memory_quota : Int
+  memory_quota : Int32
   /// 存储配额（字节）
   storage_quota : Int64
   /// 连接数配额
-  connection_quota : Int
+  connection_quota : Int32
   /// 吞吐量配额（字节/秒）
-  throughput_quota : Int
+  throughput_quota : Int32
   /// 最大命名空间数
-  max_namespaces : Int
+  max_namespaces : Int32
   /// 最大表数
-  max_tables : Int
+  max_tables : Int32
   /// 是否启用自动扩展
   auto_scaling : Bool
   /// 隔离级别
@@ -211,9 +211,9 @@ pub(all) struct Namespace {
   /// 特征表映射
   feature_tables : Map[String, FeatureTable]
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 更新时间
-  updated_at : Int
+  updated_at : Int32
 }
 
 ///|
@@ -226,11 +226,11 @@ pub(all) struct Table {
   /// 表结构
   schema : TableSchema
   /// 数据量
-  row_count : Int
+  row_count : Int32
   /// 存储大小
-  storage_size : Int
+  storage_size : Int32
   /// 创建时间
-  created_at : Int
+  created_at : Int32
 }
 
 ///|
@@ -245,7 +245,7 @@ pub(all) struct FeatureTable {
   /// 表结构
   schema : TableSchema
   /// 创建时间
-  created_at : Int
+  created_at : Int32
 }
 
 ///|
@@ -271,7 +271,7 @@ pub(all) struct Column {
   /// 默认值
   default_value : @realtime_db.Value?
   /// 长度（用于字符串类型）
-  length : Int?
+  length : Int32?
 }
 
 ///|
@@ -382,11 +382,11 @@ pub(all) struct Tenant {
   /// 资源使用量
   resource_usage : ResourceUsage
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 更新时间
-  mut updated_at : Int
+  mut updated_at : Int32
   /// 删除时间
-  deleted_at : Int?
+  deleted_at : Int32?
 }
 
 ///|
@@ -459,7 +459,7 @@ pub extend TenantError with Debug::{to_repr}
 
 ///|
 /// 获取错误码
-pub fn TenantError::code(self : TenantError) -> Int {
+pub fn TenantError::code(self : TenantError) -> Int32 {
   match self {
     Tenant_Already_Exists => 2001
     Tenant_Not_Found => 2002

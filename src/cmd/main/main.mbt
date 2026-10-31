@@ -278,7 +278,7 @@ fn parse_value(s : String) -> @db.Value {
 
 ///|
 /// 解析 Int，失败返回 default。
-fn parse_int_or(s : String, default : Int) -> Int {
+fn parse_int_or(s : String, default : Int32) -> Int32 {
   @string.parse_int(s.to_string_view()) catch {
     _ => default
   }

@@ -13,9 +13,9 @@ pub(all) struct HashIndex {
   /// 键到值的映射（用于快速删除）
   mut key_to_value : Map[String, @realtime_db.Value]
   /// 条目总数（按数据键计数）
-  mut total_entries : Int
+  mut total_entries : Int32
   /// 内存占用估算
-  mut memory_bytes : Int
+  mut memory_bytes : Int32
 }
 
 ///|
@@ -122,13 +122,13 @@ pub fn HashIndex::prefix_query(
 
 ///|
 /// 获取索引内存占用
-pub fn HashIndex::memory_usage(self : HashIndex) -> Int {
+pub fn HashIndex::memory_usage(self : HashIndex) -> Int32 {
   self.memory_bytes
 }
 
 ///|
 /// 获取索引条目数
-pub fn HashIndex::size(self : HashIndex) -> Int {
+pub fn HashIndex::size(self : HashIndex) -> Int32 {
   self.total_entries
 }
 
@@ -261,7 +261,7 @@ pub fn HashIndex::values(self : HashIndex) -> Array[@realtime_db.Value] {
 
 ///|
 /// 获取桶数量（用于统计）
-pub fn HashIndex::bucket_count(self : HashIndex) -> Int {
+pub fn HashIndex::bucket_count(self : HashIndex) -> Int32 {
   self.buckets.length()
 }
 

@@ -10,7 +10,7 @@ pub(all) struct NodeState {
   /// 当前状态
   mut status : NodeStatus
   /// 状态转换历史
-  mut state_history : Array[(Int, NodeStatus)]
+  mut state_history : Array[(Int32, NodeStatus)]
   /// 状态转换锁
   mut is_transitioning : Bool
 }
@@ -69,7 +69,7 @@ pub fn NodeState::update_heartbeat(self : NodeState) -> Unit {
 
 ///|
 /// 增加心跳超时计数
-pub fn NodeState::increment_heartbeat_timeout(self : NodeState) -> Int {
+pub fn NodeState::increment_heartbeat_timeout(self : NodeState) -> Int32 {
   self.info.heartbeat_timeouts = self.info.heartbeat_timeouts + 1
   self.info.heartbeat_timeouts
 }
@@ -82,7 +82,7 @@ pub fn NodeState::reset_heartbeat_timeout(self : NodeState) -> Unit {
 
 ///|
 /// 获取心跳超时次数
-pub fn NodeState::get_heartbeat_timeouts(self : NodeState) -> Int {
+pub fn NodeState::get_heartbeat_timeouts(self : NodeState) -> Int32 {
   self.info.heartbeat_timeouts
 }
 
@@ -120,7 +120,7 @@ pub fn NodeState::decrement_shard_count(self : NodeState) -> Unit {
 
 ///|
 /// 获取分片计数
-pub fn NodeState::get_shard_count(self : NodeState) -> Int {
+pub fn NodeState::get_shard_count(self : NodeState) -> Int32 {
   self.info.shard_count
 }
 
@@ -191,7 +191,7 @@ pub(all) struct NodeManager {
   /// 标签匹配器
   label_matcher : NodeLabelMatcher
   /// 下一个节点 ID
-  mut next_id : Int
+  mut next_id : Int32
 }
 
 ///|
@@ -441,13 +441,13 @@ pub fn NodeManager::recover_node(
 
 ///|
 /// 获取节点数量
-pub fn NodeManager::node_count(self : NodeManager) -> Int {
+pub fn NodeManager::node_count(self : NodeManager) -> Int32 {
   self.nodes.length()
 }
 
 ///|
 /// 获取活跃节点数量
-pub fn NodeManager::active_node_count(self : NodeManager) -> Int {
+pub fn NodeManager::active_node_count(self : NodeManager) -> Int32 {
   let mut count = 0
   for (_, state) in self.nodes {
     if state.is_active() {

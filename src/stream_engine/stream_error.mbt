@@ -70,7 +70,7 @@ pub(all) enum StreamError {
 
 ///|
 /// 获取错误码
-pub fn StreamError::code(self : StreamError) -> Int {
+pub fn StreamError::code(self : StreamError) -> Int32 {
   match self {
     Pipeline_Already_Exists => 1001
     Pipeline_Not_Found => 1002

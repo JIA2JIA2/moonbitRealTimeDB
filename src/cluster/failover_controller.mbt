@@ -12,9 +12,9 @@ pub(all) struct FailureDetector {
   /// 故障节点队列
   mut failed_nodes : Array[String]
   /// 检测间隔（毫秒）
-  detection_interval_ms : Int
+  detection_interval_ms : Int32
   /// 超时阈值
-  timeout_threshold : Int
+  timeout_threshold : Int32
   /// 是否在运行
   mut is_running : Bool
 }
@@ -52,7 +52,7 @@ pub fn FailureDetector::stop(self : FailureDetector) -> Unit {
 /// 检测故障节点
 pub fn FailureDetector::detect_failures(
   self : FailureDetector,
-  current_time : Int,
+  current_time : Int32,
 ) -> Array[String] {
   let timed_out = self.heartbeat_service.check_timeouts(current_time)
 
@@ -96,7 +96,7 @@ pub(all) struct Election {
   /// 选举状态
   mut is_electing : Bool
   /// 选主超时
-  election_timeout_ms : Int
+  election_timeout_ms : Int32
 }
 
 ///|
@@ -125,7 +125,7 @@ pub fn Election::start_election(self : Election) -> Unit {
 /// 检查是否需要选主
 pub fn Election::should_start_election(
   self : Election,
-  current_time : Int,
+  current_time : Int32,
 ) -> Bool {
   if self.raft_node.is_leader() {
     return false
@@ -177,7 +177,7 @@ pub(all) struct FailoverController {
   /// 转移状态
   mut is_in_progress : Bool
   /// 转移超时
-  failover_timeout_ms : Int
+  failover_timeout_ms : Int32
 }
 
 ///|

@@ -133,11 +133,11 @@ pub(all) struct Snapshot {
   /// 元数据
   metadata : Map[String, @realtime_db.Value]
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 过期时间
-  expire_at : Int?
+  expire_at : Int32?
   /// 大小
-  size_bytes : Int
+  size_bytes : Int32
 }
 
 ///|
@@ -154,9 +154,9 @@ pub(all) struct Branch {
   /// 父分支
   parent_branch : String?
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 更新时间
-  mut updated_at : Int
+  mut updated_at : Int32
 }
 
 ///|
@@ -178,7 +178,7 @@ pub(all) struct VersionEntry {
   /// 版本 ID
   version_id : String
   /// 版本号
-  version : Int
+  version : Int32
   /// 快照 ID
   snapshot_id : String
   /// 提交信息
@@ -186,7 +186,7 @@ pub(all) struct VersionEntry {
   /// 作者
   author : String
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
   /// 父版本
   parent_version : String?
   /// 分支名
@@ -248,7 +248,7 @@ pub extend ChangeType with Debug::{to_repr}
 /// 时间点查询请求
 pub(all) struct PointInTimeQuery {
   /// 时间戳
-  timestamp : Int
+  timestamp : Int32
   /// 分支名
   branch_name : String?
   /// 版本 ID
@@ -272,15 +272,15 @@ pub(all) struct VersioningConfig {
   /// 是否自动创建快照
   auto_snapshot : Bool
   /// 快照间隔（秒）
-  snapshot_interval : Int
+  snapshot_interval : Int32
   /// 最大快照数
-  max_snapshots : Int
+  max_snapshots : Int32
   /// 快照保留天数
-  snapshot_retention_days : Int
+  snapshot_retention_days : Int32
   /// 是否启用分支保护
   enable_branch_protection : Bool
   /// 最大分支数
-  max_branches : Int
+  max_branches : Int32
 }
 
 ///|
@@ -352,7 +352,7 @@ pub extend VersioningError with Eq::{equal, not_equal}
 
 ///|
 /// 获取错误码
-pub fn VersioningError::code(self : VersioningError) -> Int {
+pub fn VersioningError::code(self : VersioningError) -> Int32 {
   match self {
     Snapshot_Already_Exists => 8001
     Snapshot_Not_Found => 8002

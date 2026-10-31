@@ -6,13 +6,13 @@
 /// 快照元数据
 pub struct SnapshotMetadata {
   /// 创建时间
-  create_time : Int
+  create_time : Int32
   /// 数据大小（字节）
-  size : Int
+  size : Int32
   /// 校验和
   checksum : String
   /// 快照版本号
-  version : Int
+  version : Int32
 }
 
 ///|
@@ -29,11 +29,11 @@ pub struct Snapshot {
 /// 管理快照的定时触发和保留策略
 pub struct SnapshotScheduler {
   /// 快照间隔（秒）
-  interval : Int
+  interval : Int32
   /// 上次快照时间
-  mut last_snapshot_time : Int
+  mut last_snapshot_time : Int32
   /// 最大保留快照数
-  max_retention : Int
+  max_retention : Int32
   /// 快照文件列表
   snapshots : Array[String]
 }
@@ -41,23 +41,23 @@ pub struct SnapshotScheduler {
 ///|
 /// 创建快照元数据
 pub fn SnapshotMetadata::new(
-  create_time : Int,
-  size : Int,
+  create_time : Int32,
+  size : Int32,
   checksum : String,
-  version : Int,
+  version : Int32,
 ) -> SnapshotMetadata {
   { create_time, size, checksum, version, }
 }
 
 ///|
 /// 获取创建时间
-pub fn SnapshotMetadata::create_time(self : SnapshotMetadata) -> Int {
+pub fn SnapshotMetadata::create_time(self : SnapshotMetadata) -> Int32 {
   self.create_time
 }
 
 ///|
 /// 获取数据大小
-pub fn SnapshotMetadata::size(self : SnapshotMetadata) -> Int {
+pub fn SnapshotMetadata::size(self : SnapshotMetadata) -> Int32 {
   self.size
 }
 
@@ -69,7 +69,7 @@ pub fn SnapshotMetadata::checksum(self : SnapshotMetadata) -> String {
 
 ///|
 /// 获取版本号
-pub fn SnapshotMetadata::version(self : SnapshotMetadata) -> Int {
+pub fn SnapshotMetadata::version(self : SnapshotMetadata) -> Int32 {
   self.version
 }
 
@@ -82,7 +82,10 @@ pub fn SnapshotMetadata::version(self : SnapshotMetadata) -> Int {
 ///
 /// ## 返回
 /// 创建的快照
-pub fn Snapshot::create(data : Map[String, String], version : Int) -> Snapshot {
+pub fn Snapshot::create(
+  data : Map[String, String],
+  version : Int32,
+) -> Snapshot {
   let mut size = 0
   for k, v in data {
     size = size + k.length() + v.length()
@@ -128,8 +131,8 @@ pub fn Snapshot::data(self : Snapshot) -> Map[String, String] {
 ///|
 /// 创建快照调度器
 pub fn SnapshotScheduler::new(
-  interval : Int,
-  max_retention : Int,
+  interval : Int32,
+  max_retention : Int32,
 ) -> SnapshotScheduler {
   { interval, last_snapshot_time: 0, max_retention, snapshots: [], }
 }
@@ -145,7 +148,7 @@ pub fn SnapshotScheduler::new(
 /// - false: 不需要创建快照
 pub fn SnapshotScheduler::should_snapshot(
   self : SnapshotScheduler,
-  current_time : Int,
+  current_time : Int32,
 ) -> Bool {
   current_time - self.last_snapshot_time >= self.interval
 }
@@ -159,7 +162,7 @@ pub fn SnapshotScheduler::should_snapshot(
 pub fn SnapshotScheduler::record_snapshot(
   self : SnapshotScheduler,
   snapshot_path : String,
-  current_time : Int,
+  current_time : Int32,
 ) -> Unit {
   self.last_snapshot_time = current_time
   self.snapshots.push(snapshot_path)
@@ -178,6 +181,6 @@ pub fn SnapshotScheduler::snapshots(self : SnapshotScheduler) -> Array[String] {
 
 ///|
 /// 获取最大保留数
-pub fn SnapshotScheduler::max_retention(self : SnapshotScheduler) -> Int {
+pub fn SnapshotScheduler::max_retention(self : SnapshotScheduler) -> Int32 {
   self.max_retention
 }

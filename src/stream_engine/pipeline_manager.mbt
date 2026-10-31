@@ -24,11 +24,11 @@ pub(all) struct Pipeline {
   /// 水位线服务
   mut watermark_service : WatermarkService?
   /// 创建时间
-  created_at : Int
+  created_at : Int32
   /// 更新时间
-  mut updated_at : Int
+  mut updated_at : Int32
   /// 错误计数
-  mut error_count : Int
+  mut error_count : Int32
   /// 最后错误
   mut last_error : StreamError?
 }
@@ -41,14 +41,14 @@ pub(all) struct PipelineManager {
   /// 配置
   config : PipelineConfig
   /// 下一个管道 ID
-  mut next_id : Int
+  mut next_id : Int32
   /// 最大管道数
-  max_pipelines : Int
+  max_pipelines : Int32
 }
 
 ///|
 /// 默认最大管道数
-pub const DEFAULT_MAX_PIPELINES : Int = 100
+pub const DEFAULT_MAX_PIPELINES : Int32 = 100
 
 ///|
 /// 创建管道管理器
@@ -60,7 +60,7 @@ pub fn PipelineManager::new() -> PipelineManager {
 /// 配置创建管道管理器
 pub fn PipelineManager::with_config(
   config : PipelineConfig,
-  max_pipelines : Int,
+  max_pipelines : Int32,
 ) -> PipelineManager {
   { pipelines: Map([]), config, next_id: 0, max_pipelines, }
 }
@@ -249,7 +249,7 @@ pub fn PipelineManager::get_all_pipelines(
 
 ///|
 /// 获取管道数量
-pub fn PipelineManager::pipeline_count(self : PipelineManager) -> Int {
+pub fn PipelineManager::pipeline_count(self : PipelineManager) -> Int32 {
   self.pipelines.length()
 }
 

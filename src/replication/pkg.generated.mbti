@@ -32,8 +32,8 @@ pub(all) struct ClusterInfo {
   cluster_name : String
   cluster_addr : String
   nodes : Array[NodeInfo]
-  created_at : Int
-  last_active_at : Int
+  created_at : Int32
+  last_active_at : Int32
 }
 
 pub(all) struct ConflictDetector {
@@ -41,9 +41,9 @@ pub(all) struct ConflictDetector {
   version_vector : VersionVector
   strategy : ConflictResolutionStrategy
 }
-pub fn ConflictDetector::detect(Self, String, @core.Value, Int, String, @core.Value, Int, String) -> Bool
+pub fn ConflictDetector::detect(Self, String, @core.Value, Int32, String, @core.Value, Int32, String) -> Bool
 pub fn ConflictDetector::new(ConflictResolutionStrategy) -> Self
-pub fn ConflictDetector::resolve(Self, String, @core.Value, Int, Int, String, @core.Value, Int, Int, String) -> ConflictResolutionResult
+pub fn ConflictDetector::resolve(Self, String, @core.Value, Int32, Int32, String, @core.Value, Int32, Int32, String) -> ConflictResolutionResult
 
 pub(all) struct ConflictRecord {
   conflict_id : String
@@ -51,20 +51,20 @@ pub(all) struct ConflictRecord {
   key : String
   source_value : @core.Value
   target_value : @core.Value
-  source_timestamp : Int
-  target_timestamp : Int
-  source_version : Int
-  target_version : Int
+  source_timestamp : Int32
+  target_timestamp : Int32
+  source_version : Int32
+  target_version : Int32
   resolution_strategy : ConflictResolutionStrategy
   resolved_value : @core.Value?
-  resolved_at : Int
+  resolved_at : Int32
 }
 
 pub(all) struct ConflictResolutionResult {
   key : String
   resolved_value : @core.Value
   resolution_strategy : ConflictResolutionStrategy
-  resolved_at : Int
+  resolved_at : Int32
 }
 
 pub(all) enum ConflictResolutionStrategy {
@@ -85,24 +85,24 @@ pub(all) struct ConflictResolver {
 }
 pub fn ConflictResolver::get_strategy(Self, String) -> ConflictResolutionStrategy
 pub fn ConflictResolver::new(ConflictResolutionStrategy) -> Self
-pub fn ConflictResolver::resolve(Self, String, String, @core.Value, Int, Int, String, @core.Value, Int, Int, String) -> ConflictResolutionResult
+pub fn ConflictResolver::resolve(Self, String, String, @core.Value, Int32, Int32, String, @core.Value, Int32, Int32, String) -> ConflictResolutionResult
 pub fn ConflictResolver::set_strategy(Self, String, ConflictResolutionStrategy) -> Unit
 
 pub(all) struct NodeInfo {
   node_id : String
   node_addr : String
   is_primary : Bool
-  priority : Int
-  latency_ms : Int
+  priority : Int32
+  latency_ms : Int32
   is_healthy : Bool
 }
 
 pub(all) struct ReplicationConfig {
-  default_batch_size : Int
-  default_replication_interval_ms : Int
-  max_retries : Int
-  retry_interval_ms : Int
-  replication_timeout_ms : Int
+  default_batch_size : Int32
+  default_replication_interval_ms : Int32
+  max_retries : Int32
+  retry_interval_ms : Int32
+  replication_timeout_ms : Int32
   enable_checkpoint : Bool
 }
 pub fn ReplicationConfig::default() -> Self
@@ -120,7 +120,7 @@ pub(all) enum ReplicationError {
   Checkpoint_Failed
   Internal_Error(String)
 }
-pub fn ReplicationError::code(Self) -> Int
+pub fn ReplicationError::code(Self) -> Int32
 pub fn ReplicationError::equal(Self, Self) -> Bool
 pub fn ReplicationError::message(Self) -> String
 pub fn ReplicationError::not_equal(Self, Self) -> Bool
@@ -135,7 +135,7 @@ pub(all) struct ReplicationLog {
   operation : String
   key : String
   value : @core.Value?
-  timestamp : Int
+  timestamp : Int32
   source_cluster : String
   target_cluster : String
   success : Bool
@@ -148,7 +148,7 @@ pub(all) struct ReplicationManager {
   mut replication_logs : Array[ReplicationLog]
   conflict_records : Array[ConflictRecord]
   config : ReplicationConfig
-  mut next_task_id : Int
+  mut next_task_id : Int32
 }
 pub fn ReplicationManager::create_replication_task(Self, ReplicationTaskConfig) -> Result[String, ReplicationError]
 pub fn ReplicationManager::delete_replication_task(Self, String) -> Result[Unit, ReplicationError]
@@ -180,14 +180,14 @@ pub impl Eq for ReplicationMode
 
 pub(all) struct ReplicationStats {
   task_id : String
-  total_records : Int
-  replicated_records : Int
-  failed_records : Int
-  conflict_records : Int
+  total_records : Int32
+  replicated_records : Int32
+  failed_records : Int32
+  conflict_records : Int32
   avg_latency_ms : Double
-  p99_latency_ms : Int
+  p99_latency_ms : Int32
   throughput_qps : Double
-  replication_lag_ms : Int
+  replication_lag_ms : Int32
 }
 
 pub(all) enum ReplicationStatus {
@@ -212,11 +212,11 @@ pub(all) struct ReplicationTask {
   mode : ReplicationMode
   mut status : ReplicationStatus
   conflict_strategy : ConflictResolutionStrategy
-  created_at : Int
-  mut updated_at : Int
-  replicated_records : Int
-  total_records : Int
-  replication_lag_ms : Int
+  created_at : Int32
+  mut updated_at : Int32
+  replicated_records : Int32
+  total_records : Int32
+  replication_lag_ms : Int32
   error_message : String?
 }
 
@@ -227,11 +227,11 @@ pub(all) struct ReplicationTaskConfig {
   topology : ReplicationTopology
   mode : ReplicationMode
   conflict_strategy : ConflictResolutionStrategy
-  batch_size : Int
-  replication_interval_ms : Int
+  batch_size : Int32
+  replication_interval_ms : Int32
   enable_checkpoint : Bool
-  max_retries : Int
-  retry_interval_ms : Int
+  max_retries : Int32
+  retry_interval_ms : Int32
 }
 
 pub(all) enum ReplicationTopology {
@@ -248,21 +248,21 @@ pub impl Eq for ReplicationTopology
 pub impl @debug.Debug for ReplicationTopology
 
 pub(all) struct VectorClock {
-  mut clocks : Map[String, Int]
+  mut clocks : Map[String, Int32]
 }
 pub fn VectorClock::compare(Self, Self) -> ClockOrder
-pub fn VectorClock::get(Self, String) -> Int
+pub fn VectorClock::get(Self, String) -> Int32
 pub fn VectorClock::new() -> Self
-pub fn VectorClock::update(Self, String, Int) -> Unit
+pub fn VectorClock::update(Self, String, Int32) -> Unit
 
 pub(all) struct VersionVector {
-  mut versions : Map[String, Int]
+  mut versions : Map[String, Int32]
 }
-pub fn VersionVector::get(Self, String) -> Int
-pub fn VersionVector::increment(Self, String) -> Int
+pub fn VersionVector::get(Self, String) -> Int32
+pub fn VersionVector::increment(Self, String) -> Int32
 pub fn VersionVector::merge(Self, Self) -> Unit
 pub fn VersionVector::new() -> Self
-pub fn VersionVector::update(Self, String, Int) -> Unit
+pub fn VersionVector::update(Self, String, Int32) -> Unit
 
 // Type aliases
 

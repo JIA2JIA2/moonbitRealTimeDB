@@ -70,9 +70,9 @@ pub(all) struct FeatureStoreManager {
   /// 配置
   config : FeatureStoreConfig
   /// 下一个表 ID
-  mut next_table_id : Int
+  mut next_table_id : Int32
   /// 下一个视图 ID
-  mut next_view_id : Int
+  mut next_view_id : Int32
 }
 
 ///|
@@ -104,7 +104,7 @@ pub trait OnlineStorage {
     FeatureError,
   ]
   /// 获取内存占用
-  fn memory_usage(self : Self) -> Int
+  fn memory_usage(self : Self) -> Int32
 }
 
 ///|
@@ -125,7 +125,7 @@ pub trait OfflineStorage {
     self : Self,
     table_id : String,
     entity_id : String,
-    version : Int,
+    version : Int32,
   ) -> Result[FeatureVector, FeatureError]
   /// 导出数据
   fn export_data(self : Self, table_id : String, format : String) -> Result[
@@ -140,12 +140,12 @@ pub(all) struct MemoryOnlineStorage {
   /// 数据存储：表ID -> 实体ID -> 特征向量
   mut data : Map[String, Map[String, FeatureVector]]
   /// 内存限制
-  memory_limit : Int
+  memory_limit : Int32
 }
 
 ///|
 /// 创建内存在线存储
-pub fn MemoryOnlineStorage::new(memory_limit : Int) -> MemoryOnlineStorage {
+pub fn MemoryOnlineStorage::new(memory_limit : Int32) -> MemoryOnlineStorage {
   { data: Map([]), memory_limit, }
 }
 
@@ -232,7 +232,7 @@ pub impl OnlineStorage for MemoryOnlineStorage with fn batch_put(
 ///|
 pub impl OnlineStorage for MemoryOnlineStorage with fn memory_usage(
   self : MemoryOnlineStorage,
-) -> Int {
+) -> Int32 {
   let mut total = 0
   for (_, table_data) in self.data {
     total = total + table_data.length() * 1024 // 估算每个向量 1KB
@@ -256,18 +256,18 @@ pub(all) struct FeatureCache {
   /// 缓存数据
   mut cache : Map[String, FeatureVector]
   /// 缓存大小
-  max_size : Int
+  max_size : Int32
   /// 缓存 TTL（秒）
-  ttl : Int
+  ttl : Int32
   /// 命中次数
-  mut hit_count : Int
+  mut hit_count : Int32
   /// 总查询次数
-  mut query_count : Int
+  mut query_count : Int32
 }
 
 ///|
 /// 创建特征缓存
-pub fn FeatureCache::new(max_size : Int, ttl : Int) -> FeatureCache {
+pub fn FeatureCache::new(max_size : Int32, ttl : Int32) -> FeatureCache {
   { cache: Map([]), max_size, ttl, hit_count: 0, query_count: 0, }
 }
 
@@ -712,7 +712,7 @@ pub impl OfflineStorage for DeltaLakeOfflineStorage with fn read_history(
   self : DeltaLakeOfflineStorage,
   table_id : String,
   entity_id : String,
-  version : Int,
+  version : Int32,
 ) -> Result[FeatureVector, FeatureError] {
   let _ = self
   let _ = table_id

@@ -10,6 +10,7 @@ fn build_writer_engine(
     2,
     Cosine,
     strategy,
+    None,
     Array(capacity=0),
     "tenant1",
   )

@@ -18,11 +18,11 @@ pub(all) struct TimeSeriesEngine {
   /// 统计
   mut stats : TimeSeriesStats
   /// 下一个度量 ID
-  mut next_metric_id : Int
+  mut next_metric_id : Int32
   /// 下一个策略 ID
-  mut next_policy_id : Int
+  mut next_policy_id : Int32
   /// 下一个查询 ID
-  mut next_query_id : Int
+  mut next_query_id : Int32
 }
 
 ///|
@@ -122,7 +122,7 @@ pub fn TimeSeriesEngine::delete_metric(
 pub fn TimeSeriesEngine::write_data_point(
   self : TimeSeriesEngine,
   metric_name : String,
-  timestamp : Int,
+  timestamp : Int32,
   value : Double,
 ) -> Result[Unit, TimeSeriesError] {
   // 获取度量
@@ -249,7 +249,7 @@ fn TimeSeriesEngine::aggregate_data(
   self : TimeSeriesEngine,
   data : Array[DataPoint],
   aggregation : AggregationType,
-  window_seconds : Int?,
+  window_seconds : Int32?,
 ) -> Array[DataPoint] {
   if data.length() == 0 {
     return []
@@ -405,7 +405,7 @@ pub fn TimeSeriesEngine::create_downsample_policy(
   policy_name : String,
   precision : DownsamplePrecision,
   aggregation : AggregationType,
-  retention_seconds : Int,
+  retention_seconds : Int32,
 ) -> Result[String, TimeSeriesError] {
   // 检查策略是否已存在
   if self.downsample_policies.contains(policy_name) {
@@ -439,9 +439,9 @@ pub fn TimeSeriesEngine::create_continuous_query(
   query_name : String,
   source_metric : String,
   target_metric : String,
-  query_interval_seconds : Int,
+  query_interval_seconds : Int32,
   aggregation : AggregationType,
-  window_seconds : Int,
+  window_seconds : Int32,
 ) -> Result[String, TimeSeriesError] {
   // 检查查询是否已存在
   if self.continuous_queries.contains(query_name) {
@@ -481,9 +481,9 @@ pub fn TimeSeriesEngine::create_retention_policy(
   self : TimeSeriesEngine,
   policy_name : String,
   policy_type : RetentionPolicyType,
-  retention_seconds : Int,
-  max_data_points : Int,
-  max_size_bytes : Int,
+  retention_seconds : Int32,
+  max_data_points : Int32,
+  max_size_bytes : Int32,
 ) -> Result[String, TimeSeriesError] {
   // 检查策略是否已存在
   if self.retention_policies.contains(policy_name) {
@@ -560,8 +560,8 @@ pub fn TimeSeriesEngine::execute_continuous_queries(
 /// 拷贝赋值不会生效。
 pub fn TimeSeriesEngine::cleanup_expired_data(
   self : TimeSeriesEngine,
-  current_time? : Int,
-) -> Int {
+  current_time? : Int32,
+) -> Int32 {
   let retention_seconds = self.config.default_retention_seconds
   if retention_seconds <= 0 {
     return 0
@@ -586,10 +586,7 @@ pub fn TimeSeriesEngine::cleanup_expired_data(
       }
     }
     if removed {
-      self.metrics.set(
-        metric_name,
-        { ..metric, data_points: valid_data },
-      )
+      self.metrics.set(metric_name, { ..metric, data_points: valid_data, })
     }
   }
   cleaned_count
@@ -598,7 +595,7 @@ pub fn TimeSeriesEngine::cleanup_expired_data(
 ///|
 /// 计算数据驱动的水位时间：全部度量数据点中的最大时间戳。
 /// 无任何数据时返回 0。
-fn TimeSeriesEngine::data_watermark(self : TimeSeriesEngine) -> Int {
+fn TimeSeriesEngine::data_watermark(self : TimeSeriesEngine) -> Int32 {
   let mut max_ts = 0
   for _, metric in self.metrics {
     for dp in metric.data_points {

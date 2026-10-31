@@ -26,5 +26,4 @@ preferred_target = "wasm"
 description = "RealTimeDB: in-memory KV store with watch subscription, TTL expiration, and batch operations"
 
 import {
-  "moonbitlang/x@0.5.4",
 }

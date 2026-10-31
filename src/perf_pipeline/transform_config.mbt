@@ -51,9 +51,9 @@ pub struct TransformConfig {
   /// 转换规则列表
   rules : Array[TransformRule]
   /// 最大转换规则数
-  mut max_transforms : Int
+  mut max_transforms : Int32
   /// 转换超时时间（毫秒）
-  mut transform_timeout : Int
+  mut transform_timeout : Int32
 }
 
 ///|
@@ -122,7 +122,7 @@ pub fn TransformConfig::validate(
 /// 设置最大转换规则数
 pub fn TransformConfig::set_max_transforms(
   self : TransformConfig,
-  max : Int,
+  max : Int32,
 ) -> Unit {
   self.max_transforms = max
 }
@@ -131,7 +131,7 @@ pub fn TransformConfig::set_max_transforms(
 /// 设置转换超时时间
 pub fn TransformConfig::set_transform_timeout(
   self : TransformConfig,
-  timeout : Int,
+  timeout : Int32,
 ) -> Unit {
   self.transform_timeout = timeout
 }

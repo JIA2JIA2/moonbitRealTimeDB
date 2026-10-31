@@ -5,7 +5,7 @@
 
 ///|
 /// 构建进度回调类型：(已处理数, 总条目数, 进度百分比)
-pub type BuildProgressCallback = (Int, Int, Double) -> Unit
+pub type BuildProgressCallback = (Int32, Int32, Double) -> Unit
 
 ///|
 /// 索引构建器结构体
@@ -15,18 +15,18 @@ pub struct IndexBuilder {
   /// 索引管理器引用
   mut manager : IndexManager?
   /// 批次大小
-  mut batch_size : Int
+  mut batch_size : Int32
   /// 是否在构建中
   mut is_building : Bool
   /// 已处理条目数
-  mut processed : Int
+  mut processed : Int32
   /// 总条目数
-  mut total : Int
+  mut total : Int32
 }
 
 ///|
 /// 默认批次大小
-pub const DEFAULT_BATCH_SIZE : Int = 1000
+pub const DEFAULT_BATCH_SIZE : Int32 = 1000
 
 ///|
 /// 创建索引构建器
@@ -43,7 +43,7 @@ pub fn IndexBuilder::new() -> IndexBuilder {
 
 ///|
 /// 指定批次大小创建索引构建器
-pub fn IndexBuilder::with_batch_size(batch_size : Int) -> IndexBuilder {
+pub fn IndexBuilder::with_batch_size(batch_size : Int32) -> IndexBuilder {
   {
     db: None,
     manager: None,
@@ -75,7 +75,7 @@ pub fn IndexBuilder::build_from_scan(
   self : IndexBuilder,
   index_name : String,
   progress_callback : BuildProgressCallback?,
-) -> Result[Int, IndexError] {
+) -> Result[Int32, IndexError] {
   let db = match self.db {
     Some(d) => d
     None => return Err(Internal_Error("Database not set"))
@@ -171,7 +171,7 @@ pub fn IndexBuilder::build_from_scan(
 pub fn IndexBuilder::build_index(
   self : IndexBuilder,
   index_name : String,
-) -> Result[Int, IndexError] {
+) -> Result[Int32, IndexError] {
   self.build_from_scan(index_name, None)
 }
 
@@ -181,7 +181,7 @@ pub fn IndexBuilder::build_multiple_indices(
   self : IndexBuilder,
   index_names : Array[String],
   progress_callback : BuildProgressCallback?,
-) -> Result[Int, IndexError] {
+) -> Result[Int32, IndexError] {
   let mut total_built = 0
   for name in index_names {
     match self.build_from_scan(name, progress_callback) {
@@ -206,13 +206,13 @@ pub fn IndexBuilder::is_building_flag(self : IndexBuilder) -> Bool {
 
 ///|
 /// 获取已处理条目数
-pub fn IndexBuilder::processed_count(self : IndexBuilder) -> Int {
+pub fn IndexBuilder::processed_count(self : IndexBuilder) -> Int32 {
   self.processed
 }
 
 ///|
 /// 获取总条目数
-pub fn IndexBuilder::total_count(self : IndexBuilder) -> Int {
+pub fn IndexBuilder::total_count(self : IndexBuilder) -> Int32 {
   self.total
 }
 
@@ -228,7 +228,7 @@ pub fn IndexBuilder::progress(self : IndexBuilder) -> Double {
 
 ///|
 /// 设置批次大小
-pub fn IndexBuilder::set_batch_size(self : IndexBuilder, size : Int) -> Unit {
+pub fn IndexBuilder::set_batch_size(self : IndexBuilder, size : Int32) -> Unit {
   if size > 0 {
     self.batch_size = size
   }
