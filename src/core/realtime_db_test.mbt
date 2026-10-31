@@ -162,6 +162,33 @@ test "expire_now_manual" {
 }
 
 ///|
+/// 回归测试：Expire 回调中对同批过期键重新写入未过期的新值，
+/// 该键不能被误删，也不能触发伪造的 Expire 事件。
+/// 断言对 Map 迭代顺序不敏感（a/b 无论谁先被处理均成立）。
+test "expire_now_recheck_survives_callback_set" {
+  let db = @core.DB::new()
+  let events : Array[@core.Event] = []
+  let _ = db.watch_all(fn(e) {
+    events.push(e)
+    if e is @core.Expire("a", _) {
+      db.set("b", @core.Int(99)) // 回调内复活 b（永不过期）
+    }
+  })
+  db.set("a", @core.Int(1), ttl=2)
+  db.set("b", @core.Int(2), ttl=2)
+  let _ = db.advance(2) // a、b 同批过期
+  assert_eq(db.get("a"), None)
+  assert_eq(db.get("b"), Some(@core.Int(99))) // 新值必须存活
+  let mut fake_expire = false
+  for e in events {
+    if e is @core.Expire("b", @core.Int(99)) {
+      fake_expire = true
+    }
+  }
+  assert_false(fake_expire) // 不允许伪造 Expire("b", 99)
+}
+
+///|
 test "mset_mget_mdelete" {
   let db = @core.DB::new()
   db.mset([("a", @core.Int(1)), ("b", @core.Str("x"))])

@@ -171,6 +171,9 @@ pub fn DB::advance(self : DB, n : Int) -> Int {
 
 ///|
 /// 清理所有已过期键，对每个触发 Expire 事件。返回清理的键数。
+///
+/// 派发阶段会重新校验过期状态：若前序 Expire 回调对同批键重新
+/// 写入了未过期的新值（set/touch），该键不再被清理，避免误删。
 pub fn DB::expire_now(self : DB) -> Int {
   let expired : Array[String] = []
   for k, e in self.data {
@@ -178,11 +181,14 @@ pub fn DB::expire_now(self : DB) -> Int {
       expired.push(k)
     }
   }
+  let mut removed = 0
   for k in expired {
     guard self.data.get(k) is Some(e) else { continue }
+    guard self.is_expired(e) else { continue }
     self.do_expire(k, e.value)
+    removed = removed + 1
   }
-  expired.length()
+  removed
 }
 
 ///|
