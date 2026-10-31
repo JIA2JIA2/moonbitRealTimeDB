@@ -80,3 +80,39 @@ pub fn VectorWriter::upsert_single(
 ) -> Unit {
   self.insert_single(collection_name, tenant_id, primary_key, vector, metadata)
 }
+
+///|
+/// 删除一条向量记录，并同步维护集合记录数。
+pub fn VectorWriter::delete_single(
+  self : VectorWriter,
+  collection_name : String,
+  tenant_id : String,
+  primary_key : String,
+) -> Bool {
+  let deleted = self.collection_manager.delete_record(
+    collection_name, tenant_id, primary_key,
+  )
+  if deleted {
+    self.collection_manager.increment_record_count(
+      collection_name, tenant_id, -1,
+    )
+  }
+  deleted
+}
+
+///|
+/// 批量删除向量记录，返回实际删除的条数。
+pub fn VectorWriter::delete_batch(
+  self : VectorWriter,
+  collection_name : String,
+  tenant_id : String,
+  primary_keys : Array[String],
+) -> Int32 {
+  let mut deleted = 0
+  for primary_key in primary_keys {
+    if self.delete_single(collection_name, tenant_id, primary_key) {
+      deleted = deleted + 1
+    }
+  }
+  deleted
+}

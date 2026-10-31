@@ -9,6 +9,8 @@ pub struct CollectionManager {
   records : Map[String, Map[String, VectorRecord]]
   hnsw_indexes : Map[String, HNSWIndex]
   ivf_indexes : Map[String, IVFIndex]
+  subscribers : Map[String, Array[Subscriber]]
+  subscriber_bindings : Map[String, String]
   mut next_id : Int32
 }
 
@@ -20,6 +22,8 @@ pub fn CollectionManager::new() -> CollectionManager {
     records: Map([], capacity=0),
     hnsw_indexes: Map([], capacity=0),
     ivf_indexes: Map([], capacity=0),
+    subscribers: Map([], capacity=0),
+    subscriber_bindings: Map([], capacity=0),
     next_id: 0,
   }
 }
@@ -39,7 +43,7 @@ pub fn CollectionManager::create_collection(
   if self.collections.contains(key) {
     return ()
   }
-  if dimension < 1 || dimension > 8192 {
+  if CollectionManager::validate_dimension(dimension) is Err(_) {
     return ()
   }
   let meta = VectorCollectionMeta::{
@@ -95,10 +99,21 @@ pub fn CollectionManager::delete_collection(
   if !self.collections.contains(key) {
     return ()
   }
+  self.publish_change(key, collection_name, "", CollectionDropped)
   self.collections.remove(key)
   self.records.remove(key)
   self.hnsw_indexes.remove(key)
   self.ivf_indexes.remove(key)
+  self.subscribers.remove(key)
+  let stale_subscriptions : Array[String] = Array(capacity=0)
+  for sub_id, bound_key in self.subscriber_bindings.copy() {
+    if bound_key == key {
+      stale_subscriptions.push(sub_id)
+    }
+  }
+  for sub_id in stale_subscriptions {
+    self.subscriber_bindings.remove(sub_id)
+  }
   match self.tenant_collections.get(tenant_id) {
     Some(list) => {
       let new_list = list.filter(fn(name) { name != collection_name })
@@ -149,12 +164,14 @@ pub fn CollectionManager::list_collections(
 }
 
 ///|
-pub fn CollectionManager::validate_dimension(dimension : Int32) -> Unit {
+/// 校验向量维度是否在 [1, 8192] 内。
+pub fn CollectionManager::validate_dimension(
+  dimension : Int32,
+) -> Result[Unit, String] {
   if dimension < 1 || dimension > 8192 {
-    ()
-  } else {
-    ()
+    return Err("dimension must be in [1, 8192]")
   }
+  Ok(())
 }
 
 ///|
@@ -240,6 +257,8 @@ pub fn CollectionManager::upsert_record(
           )
         None => ()
       }
+      let change_type = if is_new { Inserted } else { Updated }
+      self.publish_change(key, collection_name, primary_key, change_type)
       is_new
     }
     None => {
@@ -258,6 +277,7 @@ pub fn CollectionManager::upsert_record(
           self.sync_upsert_to_index(key, meta, primary_key, record.vector, true)
         None => ()
       }
+      self.publish_change(key, collection_name, primary_key, Inserted)
       true
     }
   }
@@ -299,6 +319,156 @@ pub fn CollectionManager::get_record(
 }
 
 ///|
+/// 删除一条向量记录，并同步移除近似索引中的节点。
+///
+/// 仅当记录存在时返回 true；record_count 由调用方维护（与 upsert_record 一致）。
+pub fn CollectionManager::delete_record(
+  self : CollectionManager,
+  collection_name : String,
+  tenant_id : String,
+  primary_key : String,
+) -> Bool {
+  let key = tenant_id + ":" + collection_name
+  match self.records.get(key) {
+    Some(store) => {
+      if !store.contains(primary_key) {
+        return false
+      }
+      store.remove(primary_key)
+      match self.collections.get(key) {
+        Some(meta) => self.sync_delete_to_index(key, meta, primary_key)
+        None => ()
+      }
+      self.publish_change(key, collection_name, primary_key, Deleted)
+      true
+    }
+    None => false
+  }
+}
+
+///|
+/// 将删除同步到集合的 HNSW/IVF 索引。
+fn CollectionManager::sync_delete_to_index(
+  self : CollectionManager,
+  key : String,
+  meta : VectorCollectionMeta,
+  primary_key : String,
+) -> Unit {
+  if meta.index_strategy is Exact {
+    return ()
+  }
+  match meta.index_config {
+    Some(config) =>
+      match config.index_type {
+        HNSW =>
+          match self.hnsw_indexes.get(key) {
+            Some(index) => {
+              let _ = index.delete(primary_key, meta.distance_metric)
+              self.hnsw_indexes.set(key, index)
+            }
+            None => ()
+          }
+        IVF =>
+          match self.ivf_indexes.get(key) {
+            Some(index) => {
+              let _ = index.delete(primary_key)
+              self.ivf_indexes.set(key, index)
+            }
+            None => ()
+          }
+      }
+    None =>
+      match self.hnsw_indexes.get(key) {
+        Some(index) => {
+          let _ = index.delete(primary_key, meta.distance_metric)
+          self.hnsw_indexes.set(key, index)
+        }
+        None => ()
+      }
+  }
+}
+
+///|
+/// 订阅集合的变更事件，返回订阅 ID。
+///
+/// 隔离（isolated）的订阅者不会收到回调。
+pub fn CollectionManager::subscribe(
+  self : CollectionManager,
+  collection_name : String,
+  tenant_id : String,
+  callback : (ChangeEvent) -> Unit,
+) -> String {
+  let key = tenant_id + ":" + collection_name
+  let subscription_id = "sub-" + self.next_id.to_string()
+  self.next_id = self.next_id + 1
+  let subscribers = match self.subscribers.get(key) {
+    Some(list) => list
+    None => {
+      let new_list : Array[Subscriber] = Array(capacity=0)
+      self.subscribers.set(key, new_list)
+      new_list
+    }
+  }
+  subscribers.push(Subscriber::{ subscription_id, callback, isolated: false, })
+  self.subscriber_bindings.set(subscription_id, key)
+  subscription_id
+}
+
+///|
+/// 取消订阅，返回是否移除了有效的订阅。
+pub fn CollectionManager::unsubscribe(
+  self : CollectionManager,
+  subscription_id : String,
+) -> Bool {
+  match self.subscriber_bindings.get(subscription_id) {
+    Some(key) =>
+      match self.subscribers.get(key) {
+        Some(list) => {
+          let remaining = list.filter(fn(sub) {
+            sub.subscription_id != subscription_id
+          })
+          let removed = remaining.length() < list.length()
+          self.subscribers.set(key, remaining)
+          self.subscriber_bindings.remove(subscription_id)
+          removed
+        }
+        None => {
+          self.subscriber_bindings.remove(subscription_id)
+          false
+        }
+      }
+    None => false
+  }
+}
+
+///|
+/// 向集合的订阅者发布变更事件。
+fn CollectionManager::publish_change(
+  self : CollectionManager,
+  key : String,
+  collection_name : String,
+  primary_key : String,
+  change_type : ChangeEventType,
+) -> Unit {
+  match self.subscribers.get(key) {
+    Some(list) => {
+      let event = ChangeEvent::{
+        collection_name,
+        primary_key,
+        change_type,
+        occurred_at: 0,
+      }
+      for subscriber in list.copy() {
+        if !subscriber.isolated {
+          (subscriber.callback)(event)
+        }
+      }
+    }
+    None => ()
+  }
+}
+
+///|
 /// 将已写入的记录同步到集合的 HNSW/IVF 索引。
 /// 主键已存在时先删旧节点再插入；入口点字段是值类型，修改后必须整体写回。
 fn CollectionManager::sync_upsert_to_index(
@@ -332,7 +502,7 @@ fn CollectionManager::sync_upsert_to_index(
           match self.ivf_indexes.get(key) {
             Some(index) => {
               if !is_new {
-                // IVF 索引不支持删除，由调用方重建索引
+                let _ = index.delete(primary_key)
               }
               match
                 index.insert(VectorRecord::{

@@ -320,6 +320,32 @@ pub fn IVFIndex::insert(
 }
 
 ///|
+/// 删除记录：从所有聚类桶中移除指定主键的记录。
+/// 命中时更新桶计数并返回 Ok；不存在或索引未训练时返回 Err。
+pub fn IVFIndex::delete(self : IVFIndex, id : String) -> Result[Unit, String] {
+  if !self.trained {
+    return Err("IVF index not trained")
+  }
+  let mut i = 0
+  while i < self.buckets.length() {
+    let bucket = self.buckets[i]
+    let remaining = bucket.records.filter(fn(record) {
+      record.primary_key != id
+    })
+    if remaining.length() < bucket.records.length() {
+      self.buckets[i] = IvfBucket::{
+        centroid: bucket.centroid,
+        records: remaining,
+        count: bucket.count - 1,
+      }
+      return Ok(())
+    }
+    i = i + 1
+  }
+  Err("Record not found")
+}
+
+///|
 /// 搜索 Top-K：找到最近的 n_probe 个桶，桶内精确扫描取 Top-K。
 ///
 /// 返回 (主键, 距离)，距离越小越近。

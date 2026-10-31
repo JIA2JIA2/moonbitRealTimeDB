@@ -36,10 +36,13 @@ pub struct CollectionManager {
   records : Map[String, Map[String, VectorRecord]]
   hnsw_indexes : Map[String, HNSWIndex]
   ivf_indexes : Map[String, IVFIndex]
+  subscribers : Map[String, Array[Subscriber]]
+  subscriber_bindings : Map[String, String]
   mut next_id : Int32
 }
 pub fn CollectionManager::create_collection(Self, String, Int32, DistanceMetric, IndexStrategy, IndexConfig?, Array[String], String) -> Unit
 pub fn CollectionManager::delete_collection(Self, String, String) -> Unit
+pub fn CollectionManager::delete_record(Self, String, String, String) -> Bool
 pub fn CollectionManager::get_collection(Self, String, String) -> VectorCollectionMeta?
 pub fn CollectionManager::get_record(Self, String, String, String) -> VectorRecord?
 pub fn CollectionManager::has_collection(Self, String, String) -> Bool
@@ -48,8 +51,10 @@ pub fn CollectionManager::list_collections(Self, String) -> Array[VectorCollecti
 pub fn CollectionManager::list_records(Self, String, String) -> Array[VectorRecord]
 pub fn CollectionManager::new() -> Self
 pub fn CollectionManager::search_index(Self, String, String, Array[Double], Int32) -> Array[(String, Double)]?
+pub fn CollectionManager::subscribe(Self, String, String, (ChangeEvent) -> Unit) -> String
+pub fn CollectionManager::unsubscribe(Self, String) -> Bool
 pub fn CollectionManager::upsert_record(Self, String, String, VectorRecord) -> Bool
-pub fn CollectionManager::validate_dimension(Int32) -> Unit
+pub fn CollectionManager::validate_dimension(Int32) -> Result[Unit, String]
 pub fn CollectionManager::validate_metric(DistanceMetric) -> Bool
 
 pub struct DistanceCalculator {
@@ -135,6 +140,7 @@ pub struct IVFIndex {
   dimension : Int32
   mut trained : Bool
 }
+pub fn IVFIndex::delete(Self, String) -> Result[Unit, String]
 pub fn IVFIndex::dimension(Self) -> Int32
 pub fn IVFIndex::insert(Self, VectorRecord) -> Result[Unit, String]
 pub fn IVFIndex::is_trained(Self) -> Bool
@@ -316,6 +322,8 @@ pub struct VectorWriter {
   collection_manager : CollectionManager
   wal : @persistence.WAL
 }
+pub fn VectorWriter::delete_batch(Self, String, String, Array[String]) -> Int32
+pub fn VectorWriter::delete_single(Self, String, String, String) -> Bool
 pub fn VectorWriter::insert_batch(Self, String, String, Array[(String, Array[Double], Map[String, @core.Value])]) -> Unit
 pub fn VectorWriter::insert_single(Self, String, String, String, Array[Double], Map[String, @core.Value]) -> Unit
 pub fn VectorWriter::new(CollectionManager, @persistence.WAL) -> Self

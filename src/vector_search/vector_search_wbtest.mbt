@@ -63,3 +63,68 @@ test "approx_index_reflects_upsert" {
     assert_true(hit.primary_key == "a" || hit.primary_key == "b")
   }
 }
+
+///|
+test "ivf_delete_removes_from_index" {
+  let mgr = CollectionManager::new()
+  mgr.create_collection(
+    "ivf",
+    2,
+    Cosine,
+    Approximate,
+    Some(
+      IndexConfig::new_ivf(IVFConfig::{ n_list: 2, n_probe: 2, metric: Cosine, }),
+    ),
+    Array(capacity=0),
+    "tenant1",
+  )
+  let key = "tenant1:ivf"
+  let records : Array[(String, Array[Double])] = [
+    ("a", [1.0, 0.0]),
+    ("b", [0.9, 0.1]),
+    ("c", [0.0, 1.0]),
+    ("d", [0.1, 0.9]),
+  ]
+  for (pk, vector) in records {
+    let _ = mgr.upsert_record("ivf", "tenant1", VectorRecord::{
+      primary_key: pk,
+      vector,
+      metadata: Map([]),
+      version: 1,
+      updated_at: 0,
+    })
+  }
+
+  // 集合创建时 IVF 索引未训练，先训练再补齐插入
+  let index = match mgr.ivf_indexes.get(key) {
+    Some(i) => i
+    None => {
+      assert_true(false)
+      return
+    }
+  }
+  let training : Array[Array[Double]] = []
+  for (_, vector) in records {
+    training.push(vector)
+  }
+  match index.train(training) {
+    Ok(_) => ()
+    Err(_) => assert_true(false)
+  }
+  for record in mgr.list_records("ivf", "tenant1") {
+    let _ = index.insert(record)
+  }
+  mgr.ivf_indexes.set(key, index)
+  assert_eq(index.size(), 4)
+
+  assert_true(mgr.delete_record("ivf", "tenant1", "a"))
+  match mgr.ivf_indexes.get(key) {
+    Some(updated) => {
+      assert_eq(updated.size(), 3)
+      for hit in updated.search_top_k([1.0, 0.0], 10) {
+        assert_true(hit.0 != "a")
+      }
+    }
+    None => assert_true(false)
+  }
+}
