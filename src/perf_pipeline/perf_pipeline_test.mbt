@@ -239,7 +239,8 @@ test "streaming_processor_processes_records" {
   assert_eq(result.failed_count(), 0)
   // 处理完后缓冲区清空
   assert_eq(sp.in_flight(), 0)
-  assert_eq(result.latency_p99(), 100)
+  // 无真实时钟来源，延迟指标保持默认 0（原为硬编码假值 100）
+  assert_eq(result.latency_p99(), 0)
 }
 
 ///|
@@ -613,4 +614,64 @@ test "compression_rejects_decompression_bomb" {
     0.to_byte(),
   ]
   assert_true(processor.decompress(bomb, @perf_pipeline.Gzip) is Err(@perf_pipeline.Compression_Bomb))
+}
+
+///|
+/// 持续高压下背压按电平每轮拒绝（修复前边沿触发只挡一次，
+/// 之后每轮放行、缓冲区无限增长）
+test "streaming_processor_backpressure_sustained" {
+  let config = @perf_pipeline.PipelineConfig::default()
+  config.set_backpressure_threshold(10)
+  let sp = @perf_pipeline.StreamingProcessor::new(None, None, None, config)
+
+  // 写入 2000 条：写入前 usage=0 未触发，写入后消费 4 条
+  let r1 = sp.stream_write(Array::make(2000, (@realtime_db.Int(1), 0)))
+  assert_true(r1.completed())
+
+  // usage = 1996 * 100 / 10000 = 19% > 10%：背压触发
+  let r2 = sp.stream_write(Array::make(10, (@realtime_db.Int(1), 0)))
+  assert_false(r2.completed())
+  assert_eq(r2.failed_count(), 10)
+
+  // 电平判定：后续轮次持续拒绝，缓冲区不再堆积
+  let r3 = sp.stream_write(Array::make(10, (@realtime_db.Int(1), 0)))
+  assert_false(r3.completed())
+  assert_eq(sp.in_flight(), 1996)
+}
+
+///|
+/// 缓冲区容量为硬上限：剩余空间不足容纳整批时整批拒绝
+test "streaming_processor_buffer_bounded" {
+  let config = @perf_pipeline.PipelineConfig::default()
+  let sp = @perf_pipeline.StreamingProcessor::new(None, None, None, config)
+
+  // 第一批 6000 条被接纳（消费 4 条后余 5996）
+  let r1 = sp.stream_write(Array::make(6000, (@realtime_db.Int(1), 0)))
+  assert_true(r1.completed())
+  assert_eq(sp.in_flight(), 5996)
+
+  // 第二批 5000 条：5996 + 5000 > 10000，整批拒绝
+  let r2 = sp.stream_write(Array::make(5000, (@realtime_db.Int(1), 0)))
+  assert_false(r2.completed())
+  assert_eq(r2.failed_count(), 5000)
+  assert_eq(sp.in_flight(), 5996)
+}
+
+///|
+/// 消费顺序为先进先出：队首老记录先于队尾新记录被处理
+test "streaming_processor_consumes_fifo" {
+  let config = @perf_pipeline.PipelineConfig::default()
+  config.set_concurrency(1)
+  let sp = @perf_pipeline.StreamingProcessor::new(None, None, None, config)
+
+  // 队首有效、队尾无效：FIFO 下先消费队首（LIFO 会先消费队尾）
+  let r1 = sp.stream_write([(@realtime_db.Int(1), 0), (@realtime_db.Int(2), -1)])
+  assert_eq(r1.success_count(), 1)
+  assert_eq(r1.failed_count(), 0)
+  assert_eq(sp.in_flight(), 1)
+
+  // 下一轮消费队尾的无效记录
+  let r2 = sp.stream_write([])
+  assert_eq(r2.failed_count(), 1)
+  assert_eq(sp.in_flight(), 0)
 }

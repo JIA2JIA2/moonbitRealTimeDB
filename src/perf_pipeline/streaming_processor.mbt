@@ -37,8 +37,9 @@ pub fn StreamingProcessor::new(
 ///|
 /// 同步流式写入
 ///
-/// 检查缓冲区使用率，超过阈值触发背压。
-/// 批量取出记录并行处理。
+/// 检查缓冲区使用率，超过阈值触发背压并拒绝整批；
+/// 缓冲区有硬容量上限（buffer_size），超出同样拒绝整批。
+/// 被接纳的批次按并发度上限从队首消费。
 pub fn StreamingProcessor::stream_write(
   self : StreamingProcessor,
   records : Array[(@realtime_db.Value, Int)],
@@ -46,16 +47,39 @@ pub fn StreamingProcessor::stream_write(
   let result = StreamResult::new()
   result.set_total_records(records.length())
 
-  // 检查背压
-  let buffer_usage = self.buffer.length() * 100 / self.config.buffer_size
+  // 检查背压：按电平判定（is_backpressured）。
+  // 修复前使用 bp.check() 的边沿返回值：持续高压下仅第一次拒绝，
+  // 之后每轮都放行并把全部记录压入缓冲区，内存无限增长。
+  let buffer_usage = self.buffer_usage()
+  let mut rejected = false
   match self.backpressure {
-    Some(bp) =>
-      if bp.check(buffer_usage) {
-        // 背压触发
-        result.set_completed(false)
-        return result
+    Some(bp) => {
+      let _ = bp.check(buffer_usage) // 维持状态机与超时计时
+      if bp.is_backpressured() {
+        rejected = true
       }
+    }
     None => ()
+  }
+
+  // 缓冲区容量硬上限：buffer_size 从仅参与百分比计算改为实际
+  // 入队上限，剩余空间不足容纳整批时拒绝（调用方应分批重试）
+  if !rejected &&
+    (
+      self.config.buffer_size <= 0 ||
+      self.buffer.length() + records.length() > self.config.buffer_size
+    ) {
+    rejected = true
+  }
+
+  if rejected {
+    result.set_completed(false)
+    let mut f = 0
+    while f < records.length() {
+      result.add_failure()
+      f = f + 1
+    }
+    return result
   }
 
   // 写入缓冲区
@@ -63,9 +87,14 @@ pub fn StreamingProcessor::stream_write(
     self.buffer.push(record)
   }
 
-  // 批量处理（并发度由配置决定）
-  let batch_size = if self.config.concurrency < self.buffer.length() {
+  // 批量处理（每轮消费上限由并发度决定，至少消费 1 条）
+  let effective_concurrency = if self.config.concurrency < 1 {
+    1
+  } else {
     self.config.concurrency
+  }
+  let batch_size = if effective_concurrency < self.buffer.length() {
+    effective_concurrency
   } else {
     self.buffer.length()
   }
@@ -82,7 +111,6 @@ pub fn StreamingProcessor::stream_write(
       f = f + 1
     }
     result.set_completed(true)
-    result.set_latency_p99(100) // 目标 P99 <= 100μs
   } else {
     // 空批次也算完成
     result.set_completed(true)
@@ -94,7 +122,8 @@ pub fn StreamingProcessor::stream_write(
 ///|
 /// 处理批次
 ///
-/// 顺序处理多条记录（并发度上限），支持重试，返回成功处理的条数。
+/// 按先进先出顺序处理多条记录（并发度上限），支持重试，
+/// 返回成功处理的条数。
 fn StreamingProcessor::process_batch(
   self : StreamingProcessor,
   batch_size : Int,
@@ -102,12 +131,14 @@ fn StreamingProcessor::process_batch(
   let mut processed = 0
   let mut i = 0
   while i < batch_size {
-    match self.buffer.pop() {
-      Some(record) =>
-        if self.process_with_retry(record) >= 0 {
-          processed = processed + 1
-        }
-      None => ()
+    if self.buffer.length() == 0 {
+      break
+    }
+    // FIFO：从队首取出。修复前 buffer.pop() 弹队尾（LIFO），
+    // 持续写入时队首的老记录永远轮不到处理而被饿死
+    let record = self.buffer.remove(0)
+    if self.process_with_retry(record) >= 0 {
+      processed = processed + 1
     }
     i = i + 1
   }
@@ -152,6 +183,9 @@ fn StreamingProcessor::process_record(
 ///|
 /// 获取缓冲区使用率
 pub fn StreamingProcessor::buffer_usage(self : StreamingProcessor) -> Int {
+  if self.config.buffer_size <= 0 {
+    return 100 // 无容量配置视为满载，拒绝写入而非除零 panic
+  }
   self.buffer.length() * 100 / self.config.buffer_size
 }
 
