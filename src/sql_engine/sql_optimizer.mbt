@@ -13,6 +13,8 @@ pub(all) struct QueryPlan {
   estimated_rows : Int32
   /// 执行计划
   execution_plan : ExecutionPlan?
+  /// 原始 SELECT 语句（执行器据此完成过滤、投影与排序）
+  select : SelectStatement?
 }
 
 ///|
@@ -199,6 +201,7 @@ fn QueryOptimizer::generate_initial_plan(
         estimated_cost: 0.0,
         estimated_rows: 0,
         execution_plan: None,
+        select: None,
       }
   }
 }
@@ -281,6 +284,7 @@ fn QueryOptimizer::generate_select_plan(
     estimated_cost: 0.0,
     estimated_rows: self.stats.row_count,
     execution_plan: None,
+    select: Some(select),
   }
 }
 
@@ -298,6 +302,7 @@ fn QueryOptimizer::apply_cbo(
     estimated_cost: cost,
     estimated_rows: plan.estimated_rows,
     execution_plan: None,
+    select: plan.select,
   }
 }
 
@@ -357,10 +362,14 @@ pub fn QueryExecutor::execute(
     None => return Err(Internal_Error("Database not set"))
   }
 
-  // 执行查询计划
-  let result = self.execute_node(plan.root, db)
-
-  Ok(result)
+  match plan.select {
+    Some(select) => self.execute_select_statement(select)
+    None => {
+      // 非 SELECT 计划：沿用旧的节点执行路径
+      let result = self.execute_node(plan.root, db)
+      Ok(result)
+    }
+  }
 }
 
 ///|

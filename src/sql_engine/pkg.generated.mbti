@@ -270,6 +270,7 @@ pub(all) struct QueryExecutor {
   mut tenant_id : String?
 }
 pub fn QueryExecutor::execute(Self, QueryPlan) -> Result[Array[@core.Value], SqlError]
+pub fn QueryExecutor::execute_select_statement(Self, SelectStatement) -> Result[Array[@core.Value], SqlError]
 pub fn QueryExecutor::new() -> Self
 pub fn QueryExecutor::set_db(Self, @core.DB?) -> Unit
 pub fn QueryExecutor::set_tenant(Self, String?) -> Unit
@@ -287,6 +288,7 @@ pub(all) struct QueryPlan {
   estimated_cost : Double
   estimated_rows : Int32
   execution_plan : ExecutionPlan?
+  select : SelectStatement?
 }
 
 pub(all) struct QueryStats {

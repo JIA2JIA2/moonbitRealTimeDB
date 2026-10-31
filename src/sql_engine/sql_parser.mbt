@@ -723,9 +723,81 @@ fn Parser::parse_and_expr(self : Parser) -> Result[Expression, SqlError] {
 }
 
 ///|
+/// 解析加减表达式
+fn Parser::parse_additive_expr(self : Parser) -> Result[Expression, SqlError] {
+  let mut left = match self.parse_multiplicative_expr() {
+    Ok(e) => e
+    Err(e) => return Err(e)
+  }
+  let mut has_more = true
+  while has_more {
+    let operator : BinaryOperator? = if self.is_value("+") {
+      Some(Add)
+    } else if self.is_value("-") {
+      Some(Subtract)
+    } else {
+      None
+    }
+    match operator {
+      Some(op) => {
+        match self.advance() {
+          Ok(_) => ()
+          Err(e) => return Err(e)
+        }
+        let right = match self.parse_multiplicative_expr() {
+          Ok(e) => e
+          Err(e) => return Err(e)
+        }
+        left = BinaryOp(BinaryOpExpr::{ operator: op, left, right, })
+      }
+      None => has_more = false
+    }
+  }
+  Ok(left)
+}
+
+///|
+/// 解析乘除模表达式
+fn Parser::parse_multiplicative_expr(
+  self : Parser,
+) -> Result[Expression, SqlError] {
+  let mut left = match self.parse_primary_expr() {
+    Ok(e) => e
+    Err(e) => return Err(e)
+  }
+  let mut has_more = true
+  while has_more {
+    let operator : BinaryOperator? = if self.is_value("*") {
+      Some(Multiply)
+    } else if self.is_value("/") {
+      Some(Divide)
+    } else if self.is_value("%") {
+      Some(Modulo)
+    } else {
+      None
+    }
+    match operator {
+      Some(op) => {
+        match self.advance() {
+          Ok(_) => ()
+          Err(e) => return Err(e)
+        }
+        let right = match self.parse_primary_expr() {
+          Ok(e) => e
+          Err(e) => return Err(e)
+        }
+        left = BinaryOp(BinaryOpExpr::{ operator: op, left, right, })
+      }
+      None => has_more = false
+    }
+  }
+  Ok(left)
+}
+
+///|
 /// 解析比较表达式
 fn Parser::parse_comparison_expr(self : Parser) -> Result[Expression, SqlError] {
-  let left = match self.parse_primary_expr() {
+  let left = match self.parse_additive_expr() {
     Ok(e) => e
     Err(e) => return Err(e)
   }
@@ -752,7 +824,7 @@ fn Parser::parse_comparison_expr(self : Parser) -> Result[Expression, SqlError] 
         Ok(_) => ()
         Err(e) => return Err(e)
       }
-      let right = match self.parse_primary_expr() {
+      let right = match self.parse_additive_expr() {
         Ok(e) => e
         Err(e) => return Err(e)
       }
@@ -794,8 +866,7 @@ fn Parser::parse_primary_expr(self : Parser) -> Result[Expression, SqlError] {
       Err(e) => return Err(e)
     }
     Ok(ColumnRef(token.value.to_string()))
-  } else if token.token_type == StringLiteral ||
-    token.token_type == NumberLiteral {
+  } else if token.token_type == StringLiteral {
     match self.advance() {
       Ok(_) => ()
       Err(e) => return Err(e)
@@ -807,8 +878,75 @@ fn Parser::parse_primary_expr(self : Parser) -> Result[Expression, SqlError] {
         is_null: false,
       }),
     )
+  } else if token.token_type == NumberLiteral {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    let text = token.value.to_string()
+    // 整数字面量保持 Int，含小数点/指数的按 Double 解析
+    let is_float = text.contains(".") ||
+      text.contains("e") ||
+      text.contains("E")
+    if is_float {
+      let value = @string.parse_double(text) catch { _ => 0.0 }
+      Ok(
+        Literal(SqlValue::{
+          value_type: Double,
+          value: @realtime_db.Float(value),
+          is_null: false,
+        }),
+      )
+    } else {
+      let value = @string.parse_int(text) catch { _ => 0 }
+      Ok(
+        Literal(SqlValue::{
+          value_type: Int,
+          value: @realtime_db.Int(value),
+          is_null: false,
+        }),
+      )
+    }
+  } else if token.token_type == Keyword {
+    // NULL / TRUE / FALSE 字面量
+    let upper = token.value.to_upper()
+    if upper == "NULL" {
+      match self.advance() {
+        Ok(_) => ()
+        Err(e) => return Err(e)
+      }
+      Ok(
+        Literal(SqlValue::{
+          value_type: Null,
+          value: @realtime_db.Null,
+          is_null: true,
+        }),
+      )
+    } else if upper == "TRUE" || upper == "FALSE" {
+      match self.advance() {
+        Ok(_) => ()
+        Err(e) => return Err(e)
+      }
+      Ok(
+        Literal(SqlValue::{
+          value_type: Boolean,
+          value: @realtime_db.Bool(upper == "TRUE"),
+          is_null: false,
+        }),
+      )
+    } else {
+      // 非字面量关键字（如 key）作为列引用，避免 WHERE key = ... 被误判
+      match self.advance() {
+        Ok(_) => Ok(ColumnRef(token.value.to_string()))
+        Err(e) => Err(e)
+      }
+    }
   } else {
-    Ok(Wildcard)
+    // 通配符等无法归类的 token 仍需消费，避免词法位置停滞
+    match self.advance() {
+      Ok(_) => Ok(Wildcard)
+      Err(e) => Err(e)
+    }
   }
 }
 
