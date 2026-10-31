@@ -3,6 +3,6 @@
 // 提供节点管理、分片管理、Raft 共识、故障转移、再平衡
 
 import {
-  "moonbit/realtime_db/src/core" @realtime_db,
-  "moonbit/realtime_db/src/persistence",
+  "JIA2JIA2/moonbitRealTimeDB/src/core" @realtime_db,
+  "JIA2JIA2/moonbitRealTimeDB/src/persistence",
 }

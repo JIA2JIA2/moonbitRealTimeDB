@@ -523,7 +523,7 @@ pub fn Parser::parse(self : Parser) -> Result[SqlStatement, SqlError] {
     "SELECT" => self.parse_select()
     "INSERT" => Ok(self.parse_insert())
     "UPDATE" => Ok(self.parse_update())
-    "DELETE" => Ok(self.parse_delete())
+    "DELETE" => self.parse_delete()
     "CREATE" => Ok(self.parse_create())
     "DROP" => Ok(self.parse_drop())
     "BEGIN" => Ok(self.parse_begin())
@@ -1423,10 +1423,47 @@ fn Parser::parse_update(self : Parser) -> SqlStatement {
 
 ///|
 /// 解析 DELETE 语句
-fn Parser::parse_delete(self : Parser) -> SqlStatement {
-  let _ = self
-  // 简化实现
-  Delete(DeleteStatement::{ table: "".to_string(), where_condition: None, })
+fn Parser::parse_delete(self : Parser) -> Result[SqlStatement, SqlError] {
+  // 跳过 DELETE
+  match self.advance() {
+    Ok(_) => ()
+    Err(e) => return Err(e)
+  }
+
+  // 解析 FROM
+  if !self.is_keyword("FROM") {
+    return Err(Syntax_Error)
+  }
+  match self.advance() {
+    Ok(_) => ()
+    Err(e) => return Err(e)
+  }
+
+  // 解析表名
+  let table = match self.parse_identifier() {
+    Ok(name) => name
+    Err(e) => return Err(e)
+  }
+  if table == "" {
+    return Err(Syntax_Error)
+  }
+
+  // 解析 WHERE 子句
+  let mut where_condition : Expression? = None
+  if self.is_keyword("WHERE") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    where_condition = Some(
+      match self.parse_expression() {
+        Ok(expr) => expr
+        Err(e) => return Err(e)
+      },
+    )
+  }
+
+  Ok(Delete(DeleteStatement::{ table, where_condition, }))
 }
 
 ///|

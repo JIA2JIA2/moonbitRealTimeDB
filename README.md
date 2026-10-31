@@ -1,4 +1,4 @@
-# moonbit/realtime_db
+# JIA2JIA2/moonbitRealTimeDB
 
 RealTimeDB 是一个高可用实时数据库，基于 MoonBit 语言实现的内存键值存储引擎。
 
@@ -53,14 +53,16 @@ RealTimeDB 是一个高可用实时数据库，基于 MoonBit 语言实现的内
 ### 扩展模块
 - **分布式集群**：节点管理、分片、路由
 - **多租户**：租户隔离与配额
-- **SQL 引擎**：查询解析、优化与执行
+- **SQL 引擎**：语句解析、查询优化与执行；SELECT 支持过滤、投影、排序、
+  LIMIT/OFFSET、DISTINCT、GROUP BY/HAVING、聚合函数与 CASE WHEN，DELETE
+  支持按 WHERE 条件删除记录
 - **数据湖集成**：湖仓同步
 - **跨集群复制**：副本管理与同步
 - **特征存储**：在线特征读写
 - **GraphQL**：GraphQL 查询服务
 - **版本控制**：快照、分支、合并、时间点查询
 - **时间序列**：降采样、保留策略、连续查询
-- **向量检索**：高维向量存储与最近邻检索
+- **向量检索**：高维向量存储、IVF 倒排索引、元数据过滤、最近邻检索与向量删除
 
 ## 安装
 
@@ -68,14 +70,14 @@ RealTimeDB 是一个高可用实时数据库，基于 MoonBit 语言实现的内
 
 ```
 import {
-  "moonbit/realtime_db/src/core@0.1.0",
+  "JIA2JIA2/moonbitRealTimeDB/src/core@0.1.0",
 }
 ```
 
 也可以通过统一门面包一次性导入所有模块的公共类型：
 
 ```moonbit
-import { "moonbit/realtime_db/src/api" }
+import { "JIA2JIA2/moonbitRealTimeDB/src/api" }
 
 let db = @api.DB::new()
 let idx = @api.IndexManager::new()
@@ -101,6 +103,23 @@ db.set("key", @core.Str("new")) // 触发回调
 
 // 推进时间，清理过期键
 let _ = db.advance(10)
+```
+
+### SQL 查询与删除
+
+先导入 `JIA2JIA2/moonbitRealTimeDB/src/sql_engine`（下例假设 `db` 中已有 `users` 记录）：
+
+```moonbit
+let executor = @sql_engine.create_query_executor()
+executor.set_db(Some(db))
+
+// SELECT：返回结果行
+let select = @sql_engine.parse_sql("SELECT name FROM users WHERE age > 18").unwrap()
+let rows = executor.execute_statement(select)
+
+// DELETE：返回被删除记录的键
+let delete = @sql_engine.parse_sql("DELETE FROM users WHERE age < 18").unwrap()
+let deleted = executor.execute_statement(delete)
 ```
 
 ## API 文档
@@ -223,10 +242,27 @@ let _ = db.advance(10)
 | `PipelineManager::stop_pipeline(name)` | 停止管道 |
 | `PipelineManager::process_event(name, event)` | 处理事件 |
 
+### SQL 引擎 API
+
+| 方法 | 说明 |
+|------|------|
+| `parse_sql(sql)` | 解析 SQL 语句，返回 `SqlStatement` |
+| `QueryOptimizer::optimize(statement)` | 生成查询计划 |
+| `QueryExecutor::set_db(db)` | 绑定待查询的数据库 |
+| `QueryExecutor::execute_statement(statement)` | 执行 SELECT / DELETE 语句 |
+| `QueryExecutor::execute_select_statement(select)` | 执行 SELECT，返回结果行 |
+| `QueryExecutor::execute_delete_statement(delete)` | 执行 DELETE，返回被删除记录的键 |
+| `QueryExecutor::execute(plan)` | 按查询计划执行 |
+
+SELECT 已支持 WHERE 过滤、字段投影、ORDER BY、LIMIT/OFFSET、DISTINCT、
+GROUP BY/HAVING、聚合函数、LIKE/IN/BETWEEN/IS NULL 与 CASE WHEN；DELETE 支持
+`DELETE FROM table [WHERE ...]`。INSERT/UPDATE 目前仅完成语法解析，执行会返回
+`Not_Implemented`。
+
 ## 测试
 
 ```bash
-moon test           # 运行全部测试（当前 262 个）
+moon test           # 运行全部测试（当前 399 个）
 moon coverage analyze > uncovered.log   # 查看未覆盖代码
 ```
 
@@ -269,7 +305,7 @@ moonbitRealTimeDB/
 `src/api/` 包通过 `pub using` 重导出所有模块的公共类型，提供单一导入入口：
 
 ```moonbit
-import { "moonbit/realtime_db/src/api" }
+import { "JIA2JIA2/moonbitRealTimeDB/src/api" }
 
 let db = @api.DB::new()
 let idx = @api.IndexManager::new()
@@ -313,8 +349,8 @@ MoonBit 采用「每个目录一个包」。模块根目录只放工程配置与
 
 ```moonbit
 import {
-  "moonbit/realtime_db/src/core" @realtime_db,
-  "moonbit/realtime_db/src/persistence",
+  "JIA2JIA2/moonbitRealTimeDB/src/core" @realtime_db,
+  "JIA2JIA2/moonbitRealTimeDB/src/persistence",
 }
 ```
 
@@ -352,7 +388,6 @@ moon run src/cmd/main -- "help"   # 运行 CLI（每条命令作为一个带引�
 
 改动后收尾流程：`moon info && moon fmt`，检查 `.mbti` 差异是否符合预期，
 再跑 `moon test`。影响快照输出时用 `moon test --update` 刷新快照。
-需求/设计/任务文档位于 `.codeartsdoer/specs/{module}/`。
 
 ## 性能指标
 

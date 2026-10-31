@@ -1,10 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit/realtime_db/src/lake_integration"
+package "JIA2JIA2/moonbitRealTimeDB/src/lake_integration"
 
 import {
-  "moonbit/realtime_db/src/core",
-  "moonbit/realtime_db/src/multi_tenant",
-  "moonbit/realtime_db/src/sql_engine",
+  "JIA2JIA2/moonbitRealTimeDB/src/core",
+  "JIA2JIA2/moonbitRealTimeDB/src/multi_tenant",
+  "JIA2JIA2/moonbitRealTimeDB/src/sql_engine",
   "moonbitlang/core/debug",
 }
 

@@ -3,5 +3,5 @@
 // 提供租户隔离、资源配额、计费计量、审计
 
 import {
-  "moonbit/realtime_db/src/core" @realtime_db,
+  "JIA2JIA2/moonbitRealTimeDB/src/core" @realtime_db,
 }

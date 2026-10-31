@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit/realtime_db/src/graphql"
+package "JIA2JIA2/moonbitRealTimeDB/src/graphql"
 
 import {
-  "moonbit/realtime_db/src/core",
+  "JIA2JIA2/moonbitRealTimeDB/src/core",
   "moonbitlang/core/debug",
 }
 

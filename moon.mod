@@ -9,13 +9,13 @@
 //   "moonbitlang/x@0.4.6",
 // }
 
-name = "moonbit/realtime_db"
+name = "JIA2JIA2/moonbitRealTimeDB"
 
 version = "0.1.0"
 
 readme = "README.md"
 
-repository = ""
+repository = "https://github.com/JIA2JIA2/moonbitRealTimeDB"
 
 license = "Apache-2.0"
 

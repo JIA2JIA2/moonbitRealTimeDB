@@ -3,5 +3,5 @@
 // 提供 WAL 预写日志和快照持久化
 
 import {
-  "moonbit/realtime_db/src/core" @realtime_db,
+  "JIA2JIA2/moonbitRealTimeDB/src/core" @realtime_db,
 }

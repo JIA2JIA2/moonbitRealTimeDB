@@ -15,6 +15,8 @@ pub(all) struct QueryPlan {
   execution_plan : ExecutionPlan?
   /// 原始 SELECT 语句（执行器据此完成过滤、投影与排序）
   select : SelectStatement?
+  /// 原始语句（承载非 SELECT 语句，供执行器分发）
+  statement : SqlStatement?
 }
 
 ///|
@@ -202,6 +204,7 @@ fn QueryOptimizer::generate_initial_plan(
         estimated_rows: 0,
         execution_plan: None,
         select: None,
+        statement: Some(statement),
       }
   }
 }
@@ -285,6 +288,7 @@ fn QueryOptimizer::generate_select_plan(
     estimated_rows: self.stats.row_count,
     execution_plan: None,
     select: Some(select),
+    statement: None,
   }
 }
 
@@ -303,6 +307,7 @@ fn QueryOptimizer::apply_cbo(
     estimated_rows: plan.estimated_rows,
     execution_plan: None,
     select: plan.select,
+    statement: plan.statement,
   }
 }
 
@@ -364,11 +369,17 @@ pub fn QueryExecutor::execute(
 
   match plan.select {
     Some(select) => self.execute_select_statement(select)
-    None => {
-      // 非 SELECT 计划：沿用旧的节点执行路径
-      let result = self.execute_node(plan.root, db)
-      Ok(result)
-    }
+    None =>
+      match plan.statement {
+        Some(Select(select)) => self.execute_select_statement(select)
+        Some(Delete(delete)) => self.execute_delete_statement(delete)
+        Some(_) => Err(Not_Implemented("statement is not supported"))
+        None => {
+          // 无原始语句的计划：沿用旧的节点执行路径
+          let result = self.execute_node(plan.root, db)
+          Ok(result)
+        }
+      }
   }
 }
 

@@ -1,10 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit/realtime_db/src/perf_pipeline"
+package "JIA2JIA2/moonbitRealTimeDB/src/perf_pipeline"
 
 import {
-  "moonbit/realtime_db/src/core",
-  "moonbit/realtime_db/src/monitor",
-  "moonbit/realtime_db/src/persistence",
+  "JIA2JIA2/moonbitRealTimeDB/src/core",
+  "JIA2JIA2/moonbitRealTimeDB/src/monitor",
+  "JIA2JIA2/moonbitRealTimeDB/src/persistence",
   "moonbitlang/core/debug",
 }
 

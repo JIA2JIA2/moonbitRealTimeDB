@@ -3,7 +3,7 @@
 // 提供零拷贝批量导入、流式处理、压缩、转换、调度
 
 import {
-  "moonbit/realtime_db/src/core" @realtime_db,
-  "moonbit/realtime_db/src/persistence",
-  "moonbit/realtime_db/src/monitor",
+  "JIA2JIA2/moonbitRealTimeDB/src/core" @realtime_db,
+  "JIA2JIA2/moonbitRealTimeDB/src/persistence",
+  "JIA2JIA2/moonbitRealTimeDB/src/monitor",
 }

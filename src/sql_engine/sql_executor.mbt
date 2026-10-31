@@ -35,6 +35,61 @@ pub fn QueryExecutor::execute_select_statement(
 }
 
 ///|
+/// 执行语句：SELECT 返回结果行，DELETE 返回被删除行的键。
+pub fn QueryExecutor::execute_statement(
+  self : QueryExecutor,
+  statement : SqlStatement,
+) -> Result[Array[@realtime_db.Value], SqlError] {
+  match statement {
+    Select(select) => self.execute_select_statement(select)
+    Delete(delete) => self.execute_delete_statement(delete)
+    _ => Err(Not_Implemented("statement is not supported"))
+  }
+}
+
+///|
+/// 执行 DELETE 语句：按 WHERE 过滤后删除匹配记录，返回被删除记录的键。
+///
+/// 过滤阶段会先对所有行求值，任一表达式错误都会整体失败且不删除任何记录。
+pub fn QueryExecutor::execute_delete_statement(
+  self : QueryExecutor,
+  delete : DeleteStatement,
+) -> Result[Array[@realtime_db.Value], SqlError] {
+  let db = match self.db {
+    Some(d) => d
+    None => return Err(Internal_Error("Database not set"))
+  }
+  let rows = build_rows(db)
+  let filtered = match filter_rows(rows, delete.where_condition) {
+    Ok(rows) => rows
+    Err(error) => return Err(error)
+  }
+  let deleted : Array[@realtime_db.Value] = []
+  for row in filtered {
+    let key = match row_record_key(row) {
+      Some(key) => key
+      None => return Err(Internal_Error("row key is missing"))
+    }
+    let _ = db.delete(key)
+    deleted.push(@realtime_db.Str(key))
+  }
+  Ok(deleted)
+}
+
+///|
+/// 读取行内的记录键（build_rows 保证存在）。
+fn row_record_key(row : @realtime_db.Value) -> String? {
+  match row {
+    @realtime_db.Map(fields) =>
+      match fields.get("key") {
+        Some(@realtime_db.Str(key)) => Some(key)
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
 /// WHERE 过滤。
 fn filter_rows(
   rows : Array[@realtime_db.Value],

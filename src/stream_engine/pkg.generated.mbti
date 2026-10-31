@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit/realtime_db/src/stream_engine"
+package "JIA2JIA2/moonbitRealTimeDB/src/stream_engine"
 
 import {
-  "moonbit/realtime_db/src/core",
-  "moonbit/realtime_db/src/persistence",
+  "JIA2JIA2/moonbitRealTimeDB/src/core",
+  "JIA2JIA2/moonbitRealTimeDB/src/persistence",
   "moonbitlang/core/debug",
 }
 

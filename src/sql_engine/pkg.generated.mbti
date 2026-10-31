@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "moonbit/realtime_db/src/sql_engine"
+package "JIA2JIA2/moonbitRealTimeDB/src/sql_engine"
 
 import {
-  "moonbit/realtime_db/src/core",
+  "JIA2JIA2/moonbitRealTimeDB/src/core",
   "moonbitlang/core/debug",
 }
 
@@ -270,7 +270,9 @@ pub(all) struct QueryExecutor {
   mut tenant_id : String?
 }
 pub fn QueryExecutor::execute(Self, QueryPlan) -> Result[Array[@core.Value], SqlError]
+pub fn QueryExecutor::execute_delete_statement(Self, DeleteStatement) -> Result[Array[@core.Value], SqlError]
 pub fn QueryExecutor::execute_select_statement(Self, SelectStatement) -> Result[Array[@core.Value], SqlError]
+pub fn QueryExecutor::execute_statement(Self, SqlStatement) -> Result[Array[@core.Value], SqlError]
 pub fn QueryExecutor::new() -> Self
 pub fn QueryExecutor::set_db(Self, @core.DB?) -> Unit
 pub fn QueryExecutor::set_tenant(Self, String?) -> Unit
@@ -289,6 +291,7 @@ pub(all) struct QueryPlan {
   estimated_rows : Int32
   execution_plan : ExecutionPlan?
   select : SelectStatement?
+  statement : SqlStatement?
 }
 
 pub(all) struct QueryStats {

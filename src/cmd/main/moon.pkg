@@ -1,5 +1,5 @@
 import {
-  "moonbit/realtime_db/src/core" @db,
+  "JIA2JIA2/moonbitRealTimeDB/src/core" @db,
   "moonbitlang/core/env",
   "moonbitlang/core/string",
 }
