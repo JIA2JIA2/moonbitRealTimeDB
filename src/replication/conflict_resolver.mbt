@@ -53,10 +53,12 @@ pub fn VectorClock::compare(
     }
   }
 
+  // self 缺失的节点分量按 0 处理：other 中大于 0 的分量说明 self 该分量更小，
+  // 因此否定"self 处处不小于 other"（all_greater），但不影响"处处不大于"。
   for (node_id, time) in other.clocks {
     if !self.clocks.contains(node_id.to_string()) {
       if time > 0 {
-        all_less = false
+        all_greater = false
       }
     }
   }

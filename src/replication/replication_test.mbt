@@ -96,6 +96,27 @@ test "test_vector_clock_compare" {
   // vc1 应该在 vc2 之前
   let order = vc1.compare(vc2)
   assert_eq(order, @replication.Before)
+  assert_eq(vc2.compare(vc1), @replication.After)
+}
+
+///|
+test "test_vector_clock_compare_missing_components" {
+  // 空时钟应视为最小，缺失分量按 0 处理
+  let empty = @replication.VectorClock::new()
+  let filled = @replication.VectorClock::new()
+  filled.update("node1", 5)
+
+  assert_eq(empty.compare(filled), @replication.Before)
+  assert_eq(filled.compare(empty), @replication.After)
+
+  // 各自持有对方缺失的节点，互不可比，应为并发
+  let left = @replication.VectorClock::new()
+  left.update("node1", 5)
+  let right = @replication.VectorClock::new()
+  right.update("node2", 5)
+
+  assert_eq(left.compare(right), @replication.Concurrent)
+  assert_eq(right.compare(left), @replication.Concurrent)
 }
 
 ///|
