@@ -392,3 +392,40 @@ test "test_aggregate_processor" {
     Err(_) => assert_true(false)
   }
 }
+
+///|
+/// 快照 ID 单调递增：淘汰最旧后新 ID 不得与现存快照冲突覆盖。
+/// 修复前用 snapshots.length() 生成 ID，max=3 时第 4 个快照 ID
+/// 为 snapshot_2，覆盖现存的 snapshot_2，数据静默丢失。
+test "snapshot_manager_ids_never_collide" {
+  let store = @stream_engine.MemoryStateStore::new()
+  let manager = @stream_engine.SnapshotManager::new(3, 100)
+
+  let _ = store.put("a", @realtime_db.Int(1))
+  let s0 = manager.create_snapshot(store).unwrap()
+  assert_eq(s0.snapshot_id, "snapshot_0")
+
+  let _ = store.put("b", @realtime_db.Int(2))
+  let s1 = manager.create_snapshot(store).unwrap()
+  assert_eq(s1.snapshot_id, "snapshot_1")
+
+  let _ = store.put("c", @realtime_db.Int(3))
+  let s2 = manager.create_snapshot(store).unwrap()
+  assert_eq(s2.snapshot_id, "snapshot_2")
+
+  // 第 4 个快照：淘汰最旧 snapshot_0，新 ID 为 snapshot_3
+  let _ = store.put("d", @realtime_db.Int(4))
+  let s3 = manager.create_snapshot(store).unwrap()
+  assert_eq(s3.snapshot_id, "snapshot_3")
+  assert_eq(manager.get_all_snapshots().length(), 3)
+  assert_true(manager.get_snapshot("snapshot_0") is None)
+  assert_true(manager.get_snapshot("snapshot_1") is Some(_))
+  assert_true(manager.get_snapshot("snapshot_2") is Some(_))
+  assert_true(manager.get_snapshot("snapshot_3") is Some(_))
+
+  // snapshot_2 的数据未被 snapshot_3 覆盖：恢复后含 c、不含 d
+  let restored = @stream_engine.MemoryStateStore::new()
+  assert_true(manager.restore_from_snapshot("snapshot_2", restored) is Ok(_))
+  assert_true(restored.get("d") is Err(_))
+  assert_true(restored.get("c") is Ok(_))
+}

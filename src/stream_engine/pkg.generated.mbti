@@ -321,6 +321,8 @@ pub(all) struct SnapshotManager {
   mut snapshots : Map[String, StateSnapshot]
   max_snapshots : Int
   snapshot_interval : Int
+  mut next_id : Int
+  mut id_order : Array[String]
 }
 pub fn SnapshotManager::create_snapshot(Self, MemoryStateStore) -> Result[StateSnapshot, StreamError]
 pub fn SnapshotManager::get_all_snapshots(Self) -> Array[StateSnapshot]

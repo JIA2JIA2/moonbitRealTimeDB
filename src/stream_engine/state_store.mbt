@@ -215,6 +215,10 @@ pub(all) struct SnapshotManager {
   max_snapshots : Int
   /// 快照间隔
   snapshot_interval : Int
+  /// 下一个快照编号（单调递增，保证 ID 永不重复）
+  mut next_id : Int
+  /// 按创建顺序记录的快照 ID（用于确定性地淘汰最旧快照）
+  mut id_order : Array[String]
 }
 
 ///|
@@ -223,7 +227,13 @@ pub fn SnapshotManager::new(
   max_snapshots : Int,
   snapshot_interval : Int,
 ) -> SnapshotManager {
-  { snapshots: Map([]), max_snapshots, snapshot_interval, }
+  {
+    snapshots: Map([]),
+    max_snapshots,
+    snapshot_interval,
+    next_id: 0,
+    id_order: [],
+  }
 }
 
 ///|
@@ -234,12 +244,19 @@ pub fn SnapshotManager::create_snapshot(
 ) -> Result[StateSnapshot, StreamError] {
   // 检查快照数量限制
   if self.snapshots.length() >= self.max_snapshots {
-    // 删除最旧的快照
+    // 删除最旧的快照（按创建顺序）
     let oldest_id = self.get_oldest_snapshot_id()
-    self.snapshots.remove(oldest_id)
+    if oldest_id != "" {
+      let _ = self.snapshots.remove(oldest_id)
+    }
   }
 
-  let snapshot_id = "snapshot_" + self.snapshots.length().to_string()
+  // 用单调递增编号生成 ID。修复前用 snapshots.length() 生成：
+  // 淘汰最旧快照后 length 减小，新 ID 会与现存快照冲突并被
+  // set 覆盖，静默丢失中间快照、恢复出错误数据。
+  let snapshot_id = "snapshot_" + self.next_id.to_string()
+  self.next_id = self.next_id + 1
+  self.id_order.push(snapshot_id)
   let snapshot = StateSnapshot::{
     snapshot_id,
     timestamp: store.current_time,
@@ -267,24 +284,15 @@ pub fn SnapshotManager::restore_from_snapshot(
 }
 
 ///|
-/// 获取最旧的快照 ID
+/// 获取最旧的快照 ID（按创建顺序，跳过已被外部删除的条目）
 fn SnapshotManager::get_oldest_snapshot_id(self : SnapshotManager) -> String {
-  let mut oldest_id : String? = None
-  let mut oldest_time : Int? = None
-  for (id, snapshot) in self.snapshots {
-    match oldest_time {
-      Some(time) if snapshot.timestamp < time => {
-        oldest_time = Some(snapshot.timestamp)
-        oldest_id = Some(id.to_string())
-      }
-      None => {
-        oldest_time = Some(snapshot.timestamp)
-        oldest_id = Some(id.to_string())
-      }
-      _ => ()
-    }
+  while self.id_order.length() > 0 && !self.snapshots.contains(self.id_order[0]) {
+    let _ = self.id_order.remove(0)
   }
-  oldest_id.unwrap_or("")
+  if self.id_order.length() == 0 {
+    return ""
+  }
+  self.id_order[0]
 }
 
 ///|
