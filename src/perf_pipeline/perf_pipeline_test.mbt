@@ -461,3 +461,156 @@ test "batch_aggregator_unsubscribe" {
   aggregator.flush(id)
   assert_eq(received.length(), 0)
 }
+
+///|
+/// 高冗余数据：压缩后体积缩减，解压无损还原，魔数可被识别
+test "compression_roundtrip_high_redundancy" {
+  let processor = @perf_pipeline.CompressionProcessor::new(
+    @perf_pipeline.CompressionConfig::default(),
+    None,
+  )
+  let data : Array[Byte] = []
+  let mut i = 0
+  while i < 1024 {
+    data.push(0x41)
+    i = i + 1
+  }
+  let compressed = processor.compress(data, @perf_pipeline.Gzip, None).unwrap()
+  assert_true(compressed.length() < data.length())
+  assert_true(@perf_pipeline.CompressionProcessor::detect_format(compressed) is @perf_pipeline.Gzip)
+  let restored = processor.decompress(compressed, @perf_pipeline.Gzip).unwrap()
+  assert_eq(restored.length(), data.length())
+  let mut same = true
+  let mut k = 0
+  while k < data.length() {
+    if restored[k] != data[k] {
+      same = false
+    }
+    k = k + 1
+  }
+  assert_true(same)
+}
+
+///|
+/// 低冗余数据：退化为原样存储模式，同样无损往返
+test "compression_roundtrip_low_redundancy" {
+  let processor = @perf_pipeline.CompressionProcessor::new(
+    @perf_pipeline.CompressionConfig::default(),
+    None,
+  )
+  let data : Array[Byte] = []
+  let mut i = 0
+  while i < 256 {
+    data.push(((i * 31 + 7) % 256).to_byte())
+    i = i + 1
+  }
+  let compressed = processor.compress(data, @perf_pipeline.Zstd, None).unwrap()
+  // 原样存储：载荷 + 10 字节帧头
+  assert_eq(compressed.length(), data.length() + 10)
+  let restored = processor.decompress(compressed, @perf_pipeline.Zstd).unwrap()
+  let mut same = true
+  let mut k = 0
+  while k < data.length() {
+    if restored[k] != data[k] {
+      same = false
+    }
+    k = k + 1
+  }
+  assert_true(same)
+}
+
+///|
+/// 三种格式均可压缩并还原
+test "compression_roundtrip_all_formats" {
+  let formats : Array[@perf_pipeline.CompressionFormat] = [
+    @perf_pipeline.Gzip,
+    @perf_pipeline.Zstd,
+    @perf_pipeline.Lz4,
+  ]
+  for format in formats {
+    let processor = @perf_pipeline.CompressionProcessor::new(
+      @perf_pipeline.CompressionConfig::default(),
+      None,
+    )
+    let data : Array[Byte] = []
+    let mut i = 0
+    while i < 64 {
+      if i % 3 == 0 {
+        data.push(0.to_byte())
+      } else {
+        data.push((i % 256).to_byte())
+      }
+      i = i + 1
+    }
+    let compressed = processor.compress(data, format, None).unwrap()
+    let restored = processor.decompress(compressed, format).unwrap()
+    assert_eq(restored.length(), data.length())
+    let mut same = true
+    let mut k = 0
+    while k < data.length() {
+      if restored[k] != data[k] {
+        same = false
+      }
+      k = k + 1
+    }
+    assert_true(same)
+  }
+}
+
+///|
+/// 空数据也能完整往返
+test "compression_roundtrip_empty" {
+  let processor = @perf_pipeline.CompressionProcessor::new(
+    @perf_pipeline.CompressionConfig::default(),
+    None,
+  )
+  let data : Array[Byte] = []
+  let compressed = processor.compress(data, @perf_pipeline.Lz4, None).unwrap()
+  let restored = processor.decompress(compressed, @perf_pipeline.Lz4).unwrap()
+  assert_eq(restored.length(), 0)
+}
+
+///|
+/// 损坏与格式不匹配的输入被明确拒绝，而非静默返回空数据
+test "compression_rejects_corrupted_input" {
+  let processor = @perf_pipeline.CompressionProcessor::new(
+    @perf_pipeline.CompressionConfig::default(),
+    None,
+  )
+  // 截断数据（不足帧头长度）
+  let short : Array[Byte] = [0x1f.to_byte(), 0x8b.to_byte()]
+  assert_true(
+    processor.decompress(short, @perf_pipeline.Gzip) is Err(_),
+  )
+  // 格式不匹配：Gzip 产物用 Zstd 解压
+  let data : Array[Byte] = [1.to_byte(), 2.to_byte(), 2.to_byte()]
+  let gzip_data = processor.compress(data, @perf_pipeline.Gzip, None).unwrap()
+  assert_true(processor.decompress(gzip_data, @perf_pipeline.Zstd) is Err(@perf_pipeline.Unsupported_Format))
+  // 篡改声明的原始长度（stored 模式长度校验失败）
+  let tampered = gzip_data.copy()
+  tampered[6] = (tampered[6].to_int() + 1).to_byte()
+  assert_true(processor.decompress(tampered, @perf_pipeline.Gzip) is Err(_))
+}
+
+///|
+/// 声明超大展开尺寸的帧被解压炸弹防护拒绝
+test "compression_rejects_decompression_bomb" {
+  let processor = @perf_pipeline.CompressionProcessor::new(
+    @perf_pipeline.CompressionConfig::default(),
+    None,
+  )
+  // 手工构造帧：gzip 魔数 + 版本 1 + RLE 模式 + 声明 300MB 展开长度
+  let bomb : Array[Byte] = [
+    0x1f.to_byte(),
+    0x8b.to_byte(),
+    0x4d.to_byte(),
+    0x42.to_byte(),
+    1.to_byte(),
+    0.to_byte(),
+    0.to_byte(),
+    0.to_byte(),
+    0x12.to_byte(),
+    0.to_byte(),
+  ]
+  assert_true(processor.decompress(bomb, @perf_pipeline.Gzip) is Err(@perf_pipeline.Compression_Bomb))
+}
