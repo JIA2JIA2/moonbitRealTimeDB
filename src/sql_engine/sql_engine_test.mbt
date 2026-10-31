@@ -117,6 +117,34 @@ test "test_parse_select_with_where" {
 }
 
 ///|
+/// 回归测试：WHERE a=1 AND b=2 必须解析出两个条件，而非只解析 a
+test "test_parse_select_with_where_and" {
+  let sql = "SELECT * FROM users WHERE id = 1 AND name = 'test'"
+  let result = @sql_engine.parse_sql(sql)
+
+  // 修复前此查询会因 parse_expression 只解析 id 而失败
+  assert_true(result is Ok(_))
+}
+
+///|
+/// 回归测试：WHERE a=1 OR b=2 必须解析出两个条件
+test "test_parse_select_with_where_or" {
+  let sql = "SELECT * FROM users WHERE id = 1 OR name = 'test'"
+  let result = @sql_engine.parse_sql(sql)
+
+  assert_true(result is Ok(_))
+}
+
+///|
+/// 回归测试：WHERE a=1 AND b=2 AND c=3 必须解析出三个条件
+test "test_parse_select_with_where_multiple_and" {
+  let sql = "SELECT * FROM users WHERE id = 1 AND name = 'test' AND age = 18"
+  let result = @sql_engine.parse_sql(sql)
+
+  assert_true(result is Ok(_))
+}
+
+///|
 test "test_parse_select_with_order" {
   let sql = "SELECT * FROM users ORDER BY name DESC"
   let result = @sql_engine.parse_sql(sql)

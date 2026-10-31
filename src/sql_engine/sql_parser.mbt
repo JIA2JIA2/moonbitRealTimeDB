@@ -675,15 +675,133 @@ fn Parser::parse_select_items(
 }
 
 ///|
-/// 解析表达式
+/// 解析表达式（入口）
 fn Parser::parse_expression(self : Parser) -> Result[Expression, SqlError] {
-  // 简化实现：解析列引用或字面量
+  self.parse_or_expr()
+}
+
+///|
+/// 解析 OR 表达式
+fn Parser::parse_or_expr(self : Parser) -> Result[Expression, SqlError] {
+  let mut left = match self.parse_and_expr() {
+    Ok(e) => e
+    Err(e) => return Err(e)
+  }
+  while self.is_keyword("OR") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    let right = match self.parse_and_expr() {
+      Ok(e) => e
+      Err(e) => return Err(e)
+    }
+    left = BinaryOp(BinaryOpExpr::{
+      operator: Or,
+      left,
+      right,
+    })
+  }
+  Ok(left)
+}
+
+///|
+/// 解析 AND 表达式
+fn Parser::parse_and_expr(self : Parser) -> Result[Expression, SqlError] {
+  let mut left = match self.parse_comparison_expr() {
+    Ok(e) => e
+    Err(e) => return Err(e)
+  }
+  while self.is_keyword("AND") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    let right = match self.parse_comparison_expr() {
+      Ok(e) => e
+      Err(e) => return Err(e)
+    }
+    left = BinaryOp(BinaryOpExpr::{
+      operator: And,
+      left,
+      right,
+    })
+  }
+  Ok(left)
+}
+
+///|
+/// 解析比较表达式
+fn Parser::parse_comparison_expr(self : Parser) -> Result[Expression, SqlError] {
+  let left = match self.parse_primary_expr() {
+    Ok(e) => e
+    Err(e) => return Err(e)
+  }
+  if self.current_token is Some(_) {
+    let token = self.current_token.unwrap();
+    if token.token_type == Operator {
+      let op_val = token.value.to_upper();
+      let op = if op_val == "=" {
+        Equal
+      } else if op_val == "!=" || op_val == "<>" {
+        NotEqual
+      } else if op_val == "<" {
+        LessThan
+      } else if op_val == ">" {
+        GreaterThan
+      } else if op_val == "<=" {
+        LessThanOrEqual
+      } else if op_val == ">=" {
+        GreaterThanOrEqual
+      } else {
+        return Ok(left)
+      };
+      match self.advance() {
+        Ok(_) => ()
+        Err(e) => return Err(e)
+      }
+      let right = match self.parse_primary_expr() {
+        Ok(e) => e
+        Err(e) => return Err(e)
+      }
+      return Ok(BinaryOp(BinaryOpExpr::{
+        operator: op,
+        left,
+        right,
+      }))
+    }
+  }
+  Ok(left)
+}
+
+///|
+/// 解析基本表达式（列引用、字面量、括号表达式）
+fn Parser::parse_primary_expr(self : Parser) -> Result[Expression, SqlError] {
   let token = match self.current_token {
     Some(t) => t
     None => return Err(Syntax_Error)
   }
 
-  if token.token_type == Identifier {
+  // 括号表达式
+  if token.token_type == LeftParen {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    let expr = match self.parse_or_expr() {
+      Ok(e) => e
+      Err(e) => return Err(e)
+    }
+    match self.current_token {
+      Some(t) if t.token_type == RightParen => {
+        match self.advance() {
+          Ok(_) => Ok(expr)
+          Err(e) => return Err(e)
+        }
+      }
+      _ => Err(Syntax_Error)
+    }
+  } else if token.token_type == Identifier {
     match self.advance() {
       Ok(_) => ()
       Err(e) => return Err(e)
