@@ -82,6 +82,7 @@ pub(all) enum FilterExpr {
   Or(Array[FilterExpr])
   Not(FilterExpr)
 } derive(@debug.Debug)
+pub fn FilterExpr::evaluate(Self, Map[String, @core.Value]) -> Bool
 pub fn FilterExpr::to_repr(Self) -> @debug.Repr
 
 pub(all) struct HNSWConfig {
@@ -198,8 +199,8 @@ pub struct SearchEngine {
   distance_calculator : DistanceCalculator
 }
 pub fn SearchEngine::new(CollectionManager) -> Self
-pub fn SearchEngine::search_approximate(Self, String, String, Array[Double], Int) -> Array[SearchHit]
-pub fn SearchEngine::search_exact(Self, String, String, Array[Double], Int) -> Array[SearchHit]
+pub fn SearchEngine::search_approximate(Self, String, String, Array[Double], Int, filter? : FilterExpr) -> Array[SearchHit]
+pub fn SearchEngine::search_exact(Self, String, String, Array[Double], Int, filter? : FilterExpr) -> Array[SearchHit]
 
 pub struct SearchHit {
   primary_key : String
