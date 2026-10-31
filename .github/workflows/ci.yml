@@ -51,11 +51,10 @@ jobs:
             exit 1
           fi
 
-      - name: Update Registry Index & Install Dependencies
+      - name: Update Registry Index
         run: |
           moon version
           moon update
-          moon install
 
       - name: Run moon check
         run: moon check
