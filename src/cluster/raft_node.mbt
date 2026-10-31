@@ -247,7 +247,10 @@ pub fn RaftNode::receive_vote_response(
   // 检查投票
   if resp.vote_granted {
     let count = self.state.increment_vote_count()
-    let majority = self.peers.length() / 2 + 1
+    // 多数派按含自身的总节点数计算：peers 不含本节点，
+    // 总数 = peers.length() + 1，多数 = 总数 / 2 + 1。
+    // 修复前按 peers/2+1 计算，偶数集群下少数派即可当选（脑裂）。
+    let majority = (self.peers.length() + 1) / 2 + 1
     if count >= majority {
       // 成为 Leader
       self.state.become_leader()
