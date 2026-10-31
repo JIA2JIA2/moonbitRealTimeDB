@@ -579,6 +579,42 @@ fn Parser::parse_select(self : Parser) -> Result[SqlStatement, SqlError] {
     )
   }
 
+  // 解析 GROUP BY 子句
+  let mut group_by : Array[Expression]? = None
+  if self.is_keyword("GROUP") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    if self.is_keyword("BY") {
+      match self.advance() {
+        Ok(_) => ()
+        Err(e) => return Err(e)
+      }
+      group_by = Some(
+        match self.parse_group_by() {
+          Ok(items) => items
+          Err(e) => return Err(e)
+        },
+      )
+    }
+  }
+
+  // 解析 HAVING 子句
+  let mut having : Expression? = None
+  if self.is_keyword("HAVING") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    having = Some(
+      match self.parse_expression() {
+        Ok(expr) => expr
+        Err(e) => return Err(e)
+      },
+    )
+  }
+
   // 解析 ORDER BY 子句
   let mut order_by : Array[OrderByItem]? = None
   if self.is_keyword("ORDER") {
@@ -620,8 +656,8 @@ fn Parser::parse_select(self : Parser) -> Result[SqlStatement, SqlError] {
       select_items,
       from,
       where_condition,
-      group_by: None,
-      having: None,
+      group_by,
+      having,
       order_by,
       limit,
       offset: None,
@@ -865,7 +901,13 @@ fn Parser::parse_primary_expr(self : Parser) -> Result[Expression, SqlError] {
       Ok(_) => ()
       Err(e) => return Err(e)
     }
-    Ok(ColumnRef(token.value.to_string()))
+    let name = token.value.to_string()
+    // 标识符后紧跟左括号时按函数调用解析，如 COUNT(*)
+    if self.is_value("(") {
+      self.parse_function_call(name)
+    } else {
+      Ok(ColumnRef(name))
+    }
   } else if token.token_type == StringLiteral {
     match self.advance() {
       Ok(_) => ()
@@ -985,6 +1027,83 @@ fn Parser::parse_number(self : Parser) -> Result[Int32, SqlError] {
       }
     None => Ok(0)
   }
+}
+
+///|
+/// 解析 GROUP BY 表达式列表
+fn Parser::parse_group_by(self : Parser) -> Result[Array[Expression], SqlError] {
+  let items : Array[Expression] = []
+  let mut has_more = true
+  while has_more {
+    let expr = match self.parse_expression() {
+      Ok(e) => e
+      Err(e) => return Err(e)
+    }
+    items.push(expr)
+    if self.is_value(",") {
+      match self.advance() {
+        Ok(_) => ()
+        Err(e) => return Err(e)
+      }
+    } else {
+      has_more = false
+    }
+  }
+  Ok(items)
+}
+
+///|
+/// 解析函数调用，调用时左括号尚未消费
+fn Parser::parse_function_call(
+  self : Parser,
+  name : String,
+) -> Result[Expression, SqlError] {
+  match self.advance() {
+    Ok(_) => ()
+    Err(e) => return Err(e)
+  }
+  let mut distinct = false
+  if self.is_keyword("DISTINCT") {
+    distinct = true
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+  }
+  let arguments : Array[Expression] = []
+  if !self.is_value(")") {
+    let mut has_more = true
+    while has_more {
+      if self.is_value(")") {
+        has_more = false
+      } else {
+        let expr = match self.parse_expression() {
+          Ok(e) => e
+          Err(e) => return Err(e)
+        }
+        arguments.push(expr)
+        if self.is_value(",") {
+          match self.advance() {
+            Ok(_) => ()
+            Err(e) => return Err(e)
+          }
+        } else {
+          has_more = false
+        }
+      }
+    }
+  }
+  if self.is_value(")") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+  } else {
+    return Err(Syntax_Error)
+  }
+  Ok(
+    FunctionCall(FunctionCallExpr::{ function_name: name, arguments, distinct, }),
+  )
 }
 
 ///|

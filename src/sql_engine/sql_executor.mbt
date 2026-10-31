@@ -14,18 +14,37 @@ pub fn QueryExecutor::execute_select_statement(
     Some(d) => d
     None => return Err(Internal_Error("Database not set"))
   }
-  if select.group_by is Some(_) || select.having is Some(_) {
-    return Err(Not_Implemented("GROUP BY / HAVING are not supported"))
+  let rows = build_rows(db)
+  let filtered = match filter_rows(rows, select.where_condition) {
+    Ok(rows) => rows
+    Err(error) => return Err(error)
   }
 
-  let rows = build_rows(db)
+  let has_group = select.group_by is Some(_)
+  let having_aggregate = match select.having {
+    Some(condition) => is_aggregate_expression(condition)
+    None => false
+  }
+  let has_aggregate = select_items_have_aggregate(select.select_items) ||
+    having_aggregate
+  if has_group || has_aggregate {
+    execute_grouped(select, filtered)
+  } else {
+    execute_simple(select, filtered)
+  }
+}
 
-  // WHERE 过滤
+///|
+/// WHERE 过滤。
+fn filter_rows(
+  rows : Array[@realtime_db.Value],
+  condition : Expression?,
+) -> Result[Array[@realtime_db.Value], SqlError] {
   let filtered : Array[@realtime_db.Value] = []
-  match select.where_condition {
-    Some(condition) =>
+  match condition {
+    Some(expr) =>
       for row in rows {
-        let value = match eval_expression(condition, row) {
+        let value = match eval_expression(expr, row) {
           Ok(value) => value
           Err(error) => return Err(error)
         }
@@ -43,8 +62,15 @@ pub fn QueryExecutor::execute_select_statement(
         filtered.push(row)
       }
   }
+  Ok(filtered)
+}
 
-  // ORDER BY 在投影前求值，允许按未投影的列排序
+///|
+/// 非聚合查询：排序、投影、LIMIT。
+fn execute_simple(
+  select : SelectStatement,
+  filtered : Array[@realtime_db.Value],
+) -> Result[Array[@realtime_db.Value], SqlError] {
   let sorted = match select.order_by {
     Some(items) =>
       match sort_rows(filtered, items) {
@@ -53,26 +79,579 @@ pub fn QueryExecutor::execute_select_statement(
       }
     None => filtered
   }
-
-  // 投影
   let projected : Array[@realtime_db.Value] = []
   for row in sorted {
-    match project_row(row, select.select_items) {
-      Ok(value) => projected.push(value)
+    let value = match project_row(row, select.select_items) {
+      Ok(value) => value
       Err(error) => return Err(error)
     }
+    projected.push(value)
   }
+  apply_limit(projected, select.limit)
+  Ok(projected)
+}
 
-  // LIMIT
-  match select.limit {
-    Some(limit) =>
-      if limit >= 0 && limit < projected.length() {
-        projected.truncate(limit)
+///|
+fn apply_limit(rows : Array[@realtime_db.Value], limit : Int32?) -> Unit {
+  match limit {
+    Some(value) =>
+      if value >= 0 && value < rows.length() {
+        rows.truncate(value)
       }
     None => ()
   }
+}
 
+///|
+/// 分组结果：代表行用于求值非聚合列，rows 保存组内全部行供聚合使用。
+priv struct Group {
+  representative : @realtime_db.Value
+  rows : Array[@realtime_db.Value]
+}
+
+///|
+/// 分组执行：GROUP BY → HAVING → 投影 → ORDER BY → LIMIT。
+fn execute_grouped(
+  select : SelectStatement,
+  filtered : Array[@realtime_db.Value],
+) -> Result[Array[@realtime_db.Value], SqlError] {
+  let groups = match build_groups(filtered, select.group_by) {
+    Ok(groups) => groups
+    Err(error) => return Err(error)
+  }
+
+  let kept : Array[Group] = []
+  match select.having {
+    Some(condition) =>
+      for group in groups {
+        let value = match
+          eval_group_expression(condition, group.representative, group.rows) {
+          Ok(value) => value
+          Err(error) => return Err(error)
+        }
+        let matched = match value {
+          @realtime_db.Bool(flag) => flag
+          @realtime_db.Null => false
+          _ => return Err(Type_Mismatch)
+        }
+        if matched {
+          kept.push(group)
+        }
+      }
+    None =>
+      for group in groups {
+        kept.push(group)
+      }
+  }
+
+  let outputs : Array[(@realtime_db.Value, Group)] = []
+  for group in kept {
+    let value = match project_group(group, select.select_items) {
+      Ok(value) => value
+      Err(error) => return Err(error)
+    }
+    outputs.push((value, group))
+  }
+
+  let sorted = match select.order_by {
+    Some(items) =>
+      match sort_group_outputs(outputs, items) {
+        Ok(pairs) => pairs
+        Err(error) => return Err(error)
+      }
+    None => outputs
+  }
+  let projected : Array[@realtime_db.Value] = []
+  for pair in sorted {
+    projected.push(pair.0)
+  }
+  apply_limit(projected, select.limit)
   Ok(projected)
+}
+
+///|
+/// 构建分组；无 GROUP BY 时所有行归入单一分组（空输入也返回一组，用于整表聚合）。
+fn build_groups(
+  rows : Array[@realtime_db.Value],
+  group_by : Array[Expression]?,
+) -> Result[Array[Group], SqlError] {
+  match group_by {
+    Some(expressions) => {
+      let groups : Map[String, Group] = Map([])
+      let order : Array[String] = []
+      for row in rows {
+        let key_values : Array[@realtime_db.Value] = []
+        for expr in expressions {
+          let value = match eval_expression(expr, row) {
+            Ok(value) => value
+            Err(error) => return Err(error)
+          }
+          key_values.push(value)
+        }
+        let key = group_key(key_values)
+        match groups.get(key) {
+          Some(group) => {
+            group.rows.push(row)
+            groups.set(key, group)
+          }
+          None => {
+            let group_rows : Array[@realtime_db.Value] = []
+            group_rows.push(row)
+            groups.set(key, Group::{ representative: row, rows: group_rows, })
+            order.push(key)
+          }
+        }
+      }
+      let result : Array[Group] = []
+      for key in order {
+        match groups.get(key) {
+          Some(group) => result.push(group)
+          None => ()
+        }
+      }
+      Ok(result)
+    }
+    None => {
+      let group_rows : Array[@realtime_db.Value] = []
+      for row in rows {
+        group_rows.push(row)
+      }
+      let representative = if group_rows.length() > 0 {
+        group_rows[0]
+      } else {
+        @realtime_db.Map(Map([]))
+      }
+      Ok([Group::{ representative, rows: group_rows, }])
+    }
+  }
+}
+
+///|
+fn group_key(values : Array[@realtime_db.Value]) -> String {
+  let parts : Array[String] = []
+  for value in values {
+    parts.push(group_value_key(value))
+  }
+  parts.join("|")
+}
+
+///|
+/// 分组键的类型化字符串表示，避免 Int(1) 与 Str("1") 冲突。
+fn group_value_key(value : @realtime_db.Value) -> String {
+  match value {
+    @realtime_db.Str(text) => "s" + text.length().to_string() + ":" + text
+    @realtime_db.Int(number) => "i:" + number.to_string()
+    @realtime_db.Float(number) => "f:" + number.to_string()
+    @realtime_db.Bool(flag) => if flag { "b:1" } else { "b:0" }
+    @realtime_db.Null => "n"
+    @realtime_db.Arr(_) => "a:" + value.to_string()
+    @realtime_db.Map(_) => "m:" + value.to_string()
+  }
+}
+
+///|
+/// 分组上下文的表达式求值：聚合函数基于组内全部行计算。
+fn eval_group_expression(
+  expr : Expression,
+  representative : @realtime_db.Value,
+  rows : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, SqlError] {
+  match expr {
+    FunctionCall(call) => eval_aggregate(call, rows)
+    BinaryOp(op) =>
+      match op.operator {
+        And | Or => {
+          let left = match
+            eval_group_expression(op.left, representative, rows) {
+            Ok(value) => value
+            Err(error) => return Err(error)
+          }
+          let left_flag = match left {
+            @realtime_db.Bool(flag) => flag
+            @realtime_db.Null => false
+            _ => return Err(Type_Mismatch)
+          }
+          if op.operator is And && !left_flag {
+            return Ok(@realtime_db.Bool(false))
+          }
+          if op.operator is Or && left_flag {
+            return Ok(@realtime_db.Bool(true))
+          }
+          let right = match
+            eval_group_expression(op.right, representative, rows) {
+            Ok(value) => value
+            Err(error) => return Err(error)
+          }
+          let right_flag = match right {
+            @realtime_db.Bool(flag) => flag
+            @realtime_db.Null => false
+            _ => return Err(Type_Mismatch)
+          }
+          Ok(@realtime_db.Bool(right_flag))
+        }
+        _ => {
+          let left = match
+            eval_group_expression(op.left, representative, rows) {
+            Ok(value) => value
+            Err(error) => return Err(error)
+          }
+          let right = match
+            eval_group_expression(op.right, representative, rows) {
+            Ok(value) => value
+            Err(error) => return Err(error)
+          }
+          eval_binary_values(op.operator, left, right)
+        }
+      }
+    UnaryOp(op) => {
+      let operand = match
+        eval_group_expression(op.operand, representative, rows) {
+        Ok(value) => value
+        Err(error) => return Err(error)
+      }
+      eval_unary_value(op.operator, operand)
+    }
+    _ => eval_expression(expr, representative)
+  }
+}
+
+///|
+/// 聚合函数求值。
+fn eval_aggregate(
+  call : FunctionCallExpr,
+  rows : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, SqlError] {
+  match call.function_name.to_upper() {
+    "COUNT" => eval_count(call, rows)
+    "SUM" => eval_sum(call, rows)
+    "AVG" => eval_avg(call, rows)
+    "MIN" => eval_min_max(call, rows, true)
+    "MAX" => eval_min_max(call, rows, false)
+    _ =>
+      Err(
+        Not_Implemented("function " + call.function_name + " is not supported"),
+      )
+  }
+}
+
+///|
+fn eval_count(
+  call : FunctionCallExpr,
+  rows : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, SqlError] {
+  if call.arguments.length() == 0 {
+    return Err(Invalid_Value)
+  }
+  match call.arguments[0] {
+    Wildcard => Ok(@realtime_db.Int(rows.length()))
+    argument => {
+      let mut count = 0
+      let seen : Map[String, Bool] = Map([])
+      for row in rows {
+        let value = match eval_expression(argument, row) {
+          Ok(value) => value
+          Err(error) => return Err(error)
+        }
+        match value {
+          @realtime_db.Null => ()
+          _ =>
+            if call.distinct {
+              let key = group_value_key(value)
+              if !seen.contains(key) {
+                seen.set(key, true)
+                count = count + 1
+              }
+            } else {
+              count = count + 1
+            }
+        }
+      }
+      Ok(@realtime_db.Int(count))
+    }
+  }
+}
+
+///|
+fn eval_sum(
+  call : FunctionCallExpr,
+  rows : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, SqlError] {
+  if call.arguments.length() != 1 {
+    return Err(Invalid_Value)
+  }
+  let argument = call.arguments[0]
+  let mut int_sum = 0
+  let mut float_sum = 0.0
+  let mut has_value = false
+  let mut use_float = false
+  for row in rows {
+    let value = match eval_expression(argument, row) {
+      Ok(value) => value
+      Err(error) => return Err(error)
+    }
+    match value {
+      @realtime_db.Int(number) => {
+        has_value = true
+        int_sum = int_sum + number
+        float_sum = float_sum + number.to_double()
+      }
+      @realtime_db.Float(number) => {
+        has_value = true
+        use_float = true
+        float_sum = float_sum + number
+      }
+      @realtime_db.Null => ()
+      _ => return Err(Type_Mismatch)
+    }
+  }
+  if !has_value {
+    Ok(@realtime_db.Null)
+  } else if use_float {
+    Ok(@realtime_db.Float(float_sum))
+  } else {
+    Ok(@realtime_db.Int(int_sum))
+  }
+}
+
+///|
+fn eval_avg(
+  call : FunctionCallExpr,
+  rows : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, SqlError] {
+  if call.arguments.length() != 1 {
+    return Err(Invalid_Value)
+  }
+  let argument = call.arguments[0]
+  let mut total = 0.0
+  let mut count = 0
+  for row in rows {
+    let value = match eval_expression(argument, row) {
+      Ok(value) => value
+      Err(error) => return Err(error)
+    }
+    match value {
+      @realtime_db.Int(number) => {
+        total = total + number.to_double()
+        count = count + 1
+      }
+      @realtime_db.Float(number) => {
+        total = total + number
+        count = count + 1
+      }
+      @realtime_db.Null => ()
+      _ => return Err(Type_Mismatch)
+    }
+  }
+  if count == 0 {
+    Ok(@realtime_db.Null)
+  } else {
+    Ok(@realtime_db.Float(total / count.to_double()))
+  }
+}
+
+///|
+fn eval_min_max(
+  call : FunctionCallExpr,
+  rows : Array[@realtime_db.Value],
+  want_min : Bool,
+) -> Result[@realtime_db.Value, SqlError] {
+  if call.arguments.length() != 1 {
+    return Err(Invalid_Value)
+  }
+  let argument = call.arguments[0]
+  let mut best : @realtime_db.Value? = None
+  for row in rows {
+    let value = match eval_expression(argument, row) {
+      Ok(value) => value
+      Err(error) => return Err(error)
+    }
+    match value {
+      @realtime_db.Null => ()
+      _ =>
+        match best {
+          None => best = Some(value)
+          Some(current) => {
+            let order = match compare_ordered(value, current) {
+              Ok(order) => order
+              Err(error) => return Err(error)
+            }
+            if (want_min && order < 0) || (!want_min && order > 0) {
+              best = Some(value)
+            }
+          }
+        }
+    }
+  }
+  match best {
+    Some(value) => Ok(value)
+    None => Ok(@realtime_db.Null)
+  }
+}
+
+///|
+fn is_aggregate_name(name : String) -> Bool {
+  match name.to_upper() {
+    "COUNT" | "SUM" | "AVG" | "MIN" | "MAX" => true
+    _ => false
+  }
+}
+
+///|
+fn is_aggregate_expression(expr : Expression) -> Bool {
+  match expr {
+    FunctionCall(call) => is_aggregate_name(call.function_name)
+    BinaryOp(op) =>
+      is_aggregate_expression(op.left) || is_aggregate_expression(op.right)
+    UnaryOp(op) => is_aggregate_expression(op.operand)
+    _ => false
+  }
+}
+
+///|
+fn select_items_have_aggregate(items : Array[SelectItem]) -> Bool {
+  for item in items {
+    if is_aggregate_expression(item.expression) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+fn project_group(
+  group : Group,
+  items : Array[SelectItem],
+) -> Result[@realtime_db.Value, SqlError] {
+  let fields : Map[String, @realtime_db.Value] = Map([])
+  let mut index = 0
+  for item in items {
+    match item.expression {
+      Wildcard =>
+        match group.representative {
+          @realtime_db.Map(source) =>
+            match source.get("value") {
+              Some(@realtime_db.Map(inner)) =>
+                for name, value in inner.copy() {
+                  fields.set(name, value)
+                }
+              _ => {
+                match source.get("key") {
+                  Some(value) => fields.set("key", value)
+                  None => ()
+                }
+                match source.get("value") {
+                  Some(value) => fields.set("value", value)
+                  None => ()
+                }
+              }
+            }
+          _ => ()
+        }
+      _ => {
+        let value = match
+          eval_group_expression(
+            item.expression,
+            group.representative,
+            group.rows,
+          ) {
+          Ok(value) => value
+          Err(error) => return Err(error)
+        }
+        let name = match item.alias_name {
+          Some(alias_name) => alias_name
+          None =>
+            match item.expression {
+              ColumnRef(column) => column
+              _ => "column_" + index.to_string()
+            }
+        }
+        fields.set(name, value)
+      }
+    }
+    index = index + 1
+  }
+  Ok(@realtime_db.Map(fields))
+}
+
+///|
+fn eval_order_expression(
+  expr : Expression,
+  output_row : @realtime_db.Value,
+  group : Group,
+) -> Result[@realtime_db.Value, SqlError] {
+  if is_aggregate_expression(expr) {
+    eval_group_expression(expr, group.representative, group.rows)
+  } else {
+    match eval_expression(expr, output_row) {
+      Ok(value) => Ok(value)
+      Err(Column_Not_Found) =>
+        eval_group_expression(expr, group.representative, group.rows)
+      Err(error) => Err(error)
+    }
+  }
+}
+
+///|
+fn sort_group_outputs(
+  outputs : Array[(@realtime_db.Value, Group)],
+  items : Array[OrderByItem],
+) -> Result[Array[(@realtime_db.Value, Group)], SqlError] {
+  let keyed : Array[((@realtime_db.Value, Group), Array[@realtime_db.Value])] = []
+  for pair in outputs {
+    let keys : Array[@realtime_db.Value] = []
+    for item in items {
+      let value = match eval_order_expression(item.expression, pair.0, pair.1) {
+        Ok(value) => value
+        Err(error) => return Err(error)
+      }
+      keys.push(value)
+    }
+    keyed.push((pair, keys))
+  }
+  keyed.sort_by(fn(a, b) {
+    let mut result = 0
+    let mut i = 0
+    while i < items.length() && result == 0 {
+      match compare_ordered(a.1[i], b.1[i]) {
+        Ok(order) => {
+          let directed = if items[i].ascending { order } else { -order }
+          result = if directed < 0 { -1 } else if directed > 0 { 1 } else { 0 }
+        }
+        Err(_) => result = 0
+      }
+      i = i + 1
+    }
+    result
+  })
+  let sorted : Array[(@realtime_db.Value, Group)] = []
+  for pair in keyed {
+    sorted.push(pair.0)
+  }
+  Ok(sorted)
+}
+
+///|
+/// 一元运算的纯值求值，供行上下文与分组上下文复用。
+fn eval_unary_value(
+  operator : UnaryOperator,
+  operand : @realtime_db.Value,
+) -> Result[@realtime_db.Value, SqlError] {
+  match operator {
+    Negate =>
+      match operand {
+        @realtime_db.Int(i) => Ok(@realtime_db.Int(-i))
+        @realtime_db.Float(f) => Ok(@realtime_db.Float(-f))
+        _ => Err(Type_Mismatch)
+      }
+    Not =>
+      match operand {
+        @realtime_db.Bool(flag) => Ok(@realtime_db.Bool(!flag))
+        @realtime_db.Null => Ok(@realtime_db.Bool(true))
+        _ => Err(Type_Mismatch)
+      }
+    IsNull => Ok(@realtime_db.Bool(operand is @realtime_db.Null))
+    IsNotNull => Ok(@realtime_db.Bool(!(operand is @realtime_db.Null)))
+  }
 }
 
 ///|
@@ -355,22 +934,7 @@ fn eval_unary(
     Ok(value) => value
     Err(error) => return Err(error)
   }
-  match op.operator {
-    Negate =>
-      match operand {
-        @realtime_db.Int(i) => Ok(@realtime_db.Int(-i))
-        @realtime_db.Float(f) => Ok(@realtime_db.Float(-f))
-        _ => Err(Type_Mismatch)
-      }
-    Not =>
-      match operand {
-        @realtime_db.Bool(flag) => Ok(@realtime_db.Bool(!flag))
-        @realtime_db.Null => Ok(@realtime_db.Bool(true))
-        _ => Err(Type_Mismatch)
-      }
-    IsNull => Ok(@realtime_db.Bool(operand is @realtime_db.Null))
-    IsNotNull => Ok(@realtime_db.Bool(!(operand is @realtime_db.Null)))
-  }
+  eval_unary_value(op.operator, operand)
 }
 
 ///|
