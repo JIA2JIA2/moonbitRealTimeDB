@@ -696,11 +696,7 @@ fn Parser::parse_or_expr(self : Parser) -> Result[Expression, SqlError] {
       Ok(e) => e
       Err(e) => return Err(e)
     }
-    left = BinaryOp(BinaryOpExpr::{
-      operator: Or,
-      left,
-      right,
-    })
+    left = BinaryOp(BinaryOpExpr::{ operator: Or, left, right, })
   }
   Ok(left)
 }
@@ -721,11 +717,7 @@ fn Parser::parse_and_expr(self : Parser) -> Result[Expression, SqlError] {
       Ok(e) => e
       Err(e) => return Err(e)
     }
-    left = BinaryOp(BinaryOpExpr::{
-      operator: And,
-      left,
-      right,
-    })
+    left = BinaryOp(BinaryOpExpr::{ operator: And, left, right, })
   }
   Ok(left)
 }
@@ -738,9 +730,9 @@ fn Parser::parse_comparison_expr(self : Parser) -> Result[Expression, SqlError] 
     Err(e) => return Err(e)
   }
   if self.current_token is Some(_) {
-    let token = self.current_token.unwrap();
+    let token = self.current_token.unwrap()
     if token.token_type == Operator {
-      let op_val = token.value.to_upper();
+      let op_val = token.value.to_upper()
       let op = if op_val == "=" {
         Equal
       } else if op_val == "!=" || op_val == "<>" {
@@ -755,7 +747,7 @@ fn Parser::parse_comparison_expr(self : Parser) -> Result[Expression, SqlError] 
         GreaterThanOrEqual
       } else {
         return Ok(left)
-      };
+      }
       match self.advance() {
         Ok(_) => ()
         Err(e) => return Err(e)
@@ -764,11 +756,7 @@ fn Parser::parse_comparison_expr(self : Parser) -> Result[Expression, SqlError] 
         Ok(e) => e
         Err(e) => return Err(e)
       }
-      return Ok(BinaryOp(BinaryOpExpr::{
-        operator: op,
-        left,
-        right,
-      }))
+      return Ok(BinaryOp(BinaryOpExpr::{ operator: op, left, right, }))
     }
   }
   Ok(left)
@@ -793,12 +781,11 @@ fn Parser::parse_primary_expr(self : Parser) -> Result[Expression, SqlError] {
       Err(e) => return Err(e)
     }
     match self.current_token {
-      Some(t) if t.token_type == RightParen => {
+      Some(t) if t.token_type == RightParen =>
         match self.advance() {
           Ok(_) => Ok(expr)
           Err(e) => return Err(e)
         }
-      }
       _ => Err(Syntax_Error)
     }
   } else if token.token_type == Identifier {
