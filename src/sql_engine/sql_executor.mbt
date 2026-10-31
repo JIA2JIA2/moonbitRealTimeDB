@@ -338,6 +338,7 @@ fn eval_group_expression(
       }
       eval_unary_value(op.operator, operand)
     }
+    Case(case_expr) => eval_case_group(case_expr, representative, rows)
     _ => eval_expression(expr, representative)
   }
 }
@@ -530,6 +531,21 @@ fn is_aggregate_expression(expr : Expression) -> Bool {
     BinaryOp(op) =>
       is_aggregate_expression(op.left) || is_aggregate_expression(op.right)
     UnaryOp(op) => is_aggregate_expression(op.operand)
+    Case(case_expr) => {
+      let mut found = match case_expr.operand {
+        Some(operand) => is_aggregate_expression(operand)
+        None => false
+      }
+      for pair in case_expr.when_clauses {
+        if is_aggregate_expression(pair.0) || is_aggregate_expression(pair.1) {
+          found = true
+        }
+      }
+      match case_expr.else_clause {
+        Some(expr) => found || is_aggregate_expression(expr)
+        None => found
+      }
+    }
     _ => false
   }
 }
@@ -739,7 +755,7 @@ fn eval_expression(
         eval_scalar_function(call, row)
       }
     Subquery(_) => Err(Not_Implemented("subqueries are not supported"))
-    Case(_) => Err(Not_Implemented("CASE expressions are not supported"))
+    Case(case_expr) => eval_case(case_expr, row)
   }
 }
 
@@ -1324,4 +1340,71 @@ fn row_key(row : @realtime_db.Value) -> String {
     }
     _ => row.to_string()
   }
+}
+
+///|
+/// CASE 求值：evaluate 由行上下文或分组上下文提供。
+fn eval_case_with(
+  case_expr : CaseExpr,
+  evaluate : (Expression) -> Result[@realtime_db.Value, SqlError],
+) -> Result[@realtime_db.Value, SqlError] {
+  match case_expr.operand {
+    Some(operand_expr) => {
+      let operand = match evaluate(operand_expr) {
+        Ok(value) => value
+        Err(error) => return Err(error)
+      }
+      for pair in case_expr.when_clauses {
+        let candidate = match evaluate(pair.0) {
+          Ok(value) => value
+          Err(error) => return Err(error)
+        }
+        let order = match compare_ordered(operand, candidate) {
+          Ok(order) => order
+          Err(_) => 1
+        }
+        if order == 0 {
+          return evaluate(pair.1)
+        }
+      }
+    }
+    None =>
+      for pair in case_expr.when_clauses {
+        let condition = match evaluate(pair.0) {
+          Ok(value) => value
+          Err(error) => return Err(error)
+        }
+        let matched = match condition {
+          @realtime_db.Bool(flag) => flag
+          @realtime_db.Null => false
+          _ => return Err(Type_Mismatch)
+        }
+        if matched {
+          return evaluate(pair.1)
+        }
+      }
+  }
+  match case_expr.else_clause {
+    Some(expr) => evaluate(expr)
+    None => Ok(@realtime_db.Null)
+  }
+}
+
+///|
+fn eval_case(
+  case_expr : CaseExpr,
+  row : @realtime_db.Value,
+) -> Result[@realtime_db.Value, SqlError] {
+  eval_case_with(case_expr, fn(expr) { eval_expression(expr, row) })
+}
+
+///|
+fn eval_case_group(
+  case_expr : CaseExpr,
+  representative : @realtime_db.Value,
+  rows : Array[@realtime_db.Value],
+) -> Result[@realtime_db.Value, SqlError] {
+  eval_case_with(case_expr, fn(expr) {
+    eval_group_expression(expr, representative, rows)
+  })
 }

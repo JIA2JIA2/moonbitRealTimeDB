@@ -1129,9 +1129,11 @@ fn Parser::parse_primary_expr(self : Parser) -> Result[Expression, SqlError] {
       )
     }
   } else if token.token_type == Keyword {
-    // NULL / TRUE / FALSE 字面量
+    // CASE / NULL / TRUE / FALSE 字面量
     let upper = token.value.to_upper()
-    if upper == "NULL" {
+    if upper == "CASE" {
+      return self.parse_case_expr()
+    } else if upper == "NULL" {
       match self.advance() {
         Ok(_) => ()
         Err(e) => return Err(e)
@@ -1169,6 +1171,69 @@ fn Parser::parse_primary_expr(self : Parser) -> Result[Expression, SqlError] {
       Err(e) => Err(e)
     }
   }
+}
+
+///|
+/// 解析 CASE WHEN 表达式，支持 searched CASE 与带操作数的 simple CASE
+fn Parser::parse_case_expr(self : Parser) -> Result[Expression, SqlError] {
+  // 消费 CASE
+  match self.advance() {
+    Ok(_) => ()
+    Err(e) => return Err(e)
+  }
+  let mut operand : Expression? = None
+  if !self.is_keyword("WHEN") {
+    operand = Some(
+      match self.parse_expression() {
+        Ok(e) => e
+        Err(e) => return Err(e)
+      },
+    )
+  }
+  let when_clauses : Array[(Expression, Expression)] = []
+  while self.is_keyword("WHEN") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    let condition = match self.parse_expression() {
+      Ok(e) => e
+      Err(e) => return Err(e)
+    }
+    if !self.is_keyword("THEN") {
+      return Err(Syntax_Error)
+    }
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    let result = match self.parse_expression() {
+      Ok(e) => e
+      Err(e) => return Err(e)
+    }
+    when_clauses.push((condition, result))
+  }
+  let mut else_clause : Expression? = None
+  if self.is_keyword("ELSE") {
+    match self.advance() {
+      Ok(_) => ()
+      Err(e) => return Err(e)
+    }
+    else_clause = Some(
+      match self.parse_expression() {
+        Ok(e) => e
+        Err(e) => return Err(e)
+      },
+    )
+  }
+  if !self.is_keyword("END") {
+    return Err(Syntax_Error)
+  }
+  match self.advance() {
+    Ok(_) => ()
+    Err(e) => return Err(e)
+  }
+  Ok(Case(CaseExpr::{ operand, when_clauses, else_clause, }))
 }
 
 ///|
