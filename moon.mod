@@ -11,7 +11,7 @@
 
 name = "JIA2JIA2/moonbitRealTimeDB"
 
-version = "0.1.0"
+version = "0.1.1"
 
 readme = "README.md"
 
